@@ -59,6 +59,8 @@ $pathArg = ($paths -join ';')
 
 $flags = @(
   '-B', '-Q',
+  # Sources are UTF-8 (with or without BOM); without this, files without a BOM are read in the ANSI code page.
+  '--codepage:65001',
   '-NSSystem;Winapi;FMX;System.Win;Data;Xml;Vcl',
   "-E$OutDir", "-NU$DcuDir",
   "-U$pathArg", "-I$pathArg", "-R$pathArg",

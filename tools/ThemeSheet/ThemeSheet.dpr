@@ -4,7 +4,7 @@ program ThemeSheet;
 /// window), to check the painter and the theme colors without the ribbon control.
 
 uses
-  System.SysUtils, System.Types, System.UITypes, System.IOUtils, System.Math.Vectors, FMX.Types, FMX.Graphics, FMX.Forms,
+  System.SysUtils, System.Classes, System.Types, System.UITypes, System.IOUtils, System.Math.Vectors, FMX.Types, FMX.Graphics, FMX.Forms,
   FMR.Ribbon.Theme, FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Painter;
 
 {$R WinApp.res}
@@ -151,10 +151,53 @@ begin
   end;
 end;
 
+procedure WriteTokenTable(const AFileName: string);
+var
+  L: TStringList;
+  T: TFmrToken;
+  Light, Dark: TFmrTheme;
+
+  function Desc(const F: TFmrFill): string;
+  var
+    S: TFmrGradientStop;
+  begin
+    if F.Kind = TFmrFillKind.Solid then
+    begin
+      if TAlphaColorRec(F.Color).A = 0 then
+        Exit('none');
+      Exit('#' + IntToHex(F.Color, 8));
+    end;
+    Result := 'gradient';
+    for S in F.Stops do
+      Result := Result + ' #' + IntToHex(S.Color, 8);
+  end;
+
+begin
+  Light := TFmrTheme.CreateTheme('Office365White');
+  Dark := TFmrTheme.CreateTheme('Office365Black');
+  L := TStringList.Create;
+  try
+    L.Add('| Token (StyleName) | Office 365 White | Office 365 Black |');
+    L.Add('|---|---|---|');
+    for T := Low(TFmrToken) to High(TFmrToken) do
+      L.Add(Format('| `%s` | %s | %s |', [TFmrTheme.TokenStyleName(T), Desc(Light.Fills[T]), Desc(Dark.Fills[T])]));
+    L.SaveToFile(AFileName, TEncoding.UTF8);
+  finally
+    L.Free;
+    Light.Free;
+    Dark.Free;
+  end;
+end;
+
 var
   OutDir, N: string;
 begin
   Application.Initialize;
+  if (ParamCount = 2) and SameText(ParamStr(1), '/tokens') then
+  begin
+    WriteTokenTable(ParamStr(2));
+    Exit;
+  end;
   OutDir := TPath.Combine(TPath.GetDirectoryName(TPath.GetDirectoryName(TPath.GetDirectoryName(
     TPath.GetDirectoryName(ParamStr(0))))), 'shots\themes');
   if ParamCount > 0 then
