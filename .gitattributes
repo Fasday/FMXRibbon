@@ -1,0 +1,27 @@
+* text=auto
+
+# Delphi sources: keep CRLF (IDE and compiler expect it)
+*.pas     text eol=crlf
+*.dpr     text eol=crlf
+*.dpk     text eol=crlf
+*.dproj   text eol=crlf
+*.groupproj text eol=crlf
+*.inc     text eol=crlf
+*.fmx     text eol=crlf
+*.rc      text eol=crlf
+*.manifest text eol=crlf
+*.hlsl    text eol=crlf
+*.ps1     text eol=crlf
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+*.md      text eol=lf
+*.csv     text eol=lf
+*.json    text eol=lf
+
+*.res     binary
+*.png     binary
+*.ico     binary
+*.dll     binary
+*.exe     binary
+*.style   binary
