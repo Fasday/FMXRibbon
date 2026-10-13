@@ -65,6 +65,10 @@ tools\            shot.ps1 (screenshot + window geometry + hit-test probe)
 
 ## The frame (`Source\Frame`)
 
+Full description, Windows behavior per mode, test results and limitations: `Docs\FRAME.md`. Later additions to
+the contract: `TFmrFrameBackdrop` (None, Mica, Acrylic, Tabbed; Dwm mode), `IFmrFrameCommands` (min/max/close/system menu
+for caption controls), `TFmrFrameState.DarkMode` / `Transparent`
+
 ### Contract (`FMR.Frame.Types`, fixed)
 
 - `TFmrFrameMode = (Dwm, FullNC, NCStrip)`.

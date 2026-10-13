@@ -71,6 +71,34 @@ type
     /// <summary>Extra top padding (dp) the caption content must leave when the window is maximized and part of it is
     /// outside the monitor (0 when the frame handles it itself).</summary>
     MaximizedTopOffset: Single;
+    /// <summary>The frame uses dark colors (DWM dark mode of the window border, default colors of caption
+    /// buttons).</summary>
+    DarkMode: Boolean;
+    /// <summary>The caption background is transparent: a system backdrop (Mica, Acrylic) shows through it.</summary>
+    Transparent: Boolean;
+  end;
+
+  /// <summary>System backdrop material of the window (Windows 11 22H2 and later; ignored elsewhere).</summary>
+  TFmrFrameBackdrop = (
+    /// <summary>No system material: the caption is painted with its color.</summary>
+    None,
+    /// <summary>Mica: tinted with the desktop wallpaper (main windows).</summary>
+    Mica,
+    /// <summary>Acrylic: blurred see-through material (transient windows).</summary>
+    Acrylic,
+    /// <summary>Mica Alt ("tabbed"): stronger wallpaper tint, used behind tab rows.</summary>
+    Tabbed);
+
+  /// <summary>Window commands that caption content (caption buttons, an application icon) asks the frame for. Implemented
+  /// by the frame component; the frame host passes it to its children.</summary>
+  IFmrFrameCommands = interface
+    ['{4D8E2A61-7C3B-4F05-9E1D-6B2A8C4F1E44}']
+    procedure Minimize;
+    procedure ToggleMaximize;
+    procedure CloseForm;
+    procedure ShowHelp;
+    /// <summary>Shows the system (window) menu at a screen point (dp, FMX screen coordinates).</summary>
+    procedure ShowSystemMenu(const AScreenPoint: TPointF);
   end;
 
   /// <summary>Sent (TMessageManager.DefaultManager) by a frame when the state of its window changes. Value: the

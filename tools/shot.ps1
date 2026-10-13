@@ -1,3 +1,5 @@
+﻿# Copy of tools\shot.ps1 for the NCProof demo: FindMain also accepts windows owned by the FMX application window
+# (TFMAppClass). Usage and output are the same as tools\shot.ps1.
 <#
 .SYNOPSIS
   Starts (or finds) a program window, optionally drives it with mouse/keyboard actions, takes a screenshot of the
@@ -13,6 +15,7 @@
     click:X,Y       left click            rclick:X,Y   right click        dclick:X,Y  double click
     down:X,Y / up:X,Y   left button down / up (drag: down, move, up)
     keys:TEXT       SendKeys syntax (e.g. keys:Hello{ENTER}, keys:%{F4})
+    ctrl:K          Ctrl+K with keybd_event (ctrl:A select all, ctrl:C copy, ctrl:V paste)
     wait:MS         sleeps
     shot:NAME       extra screenshot <Out without .png>_NAME.png
 
@@ -34,12 +37,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing, System.Windows.Forms
-if (-not ('ShotNative' -as [type])) {
+if (-not ('ShotNativeFmx' -as [type])) {
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
-public static class ShotNative {
+public static class ShotNativeFmx {
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X, Y; }
   public delegate bool EnumProc(IntPtr h, IntPtr l);
@@ -53,6 +56,7 @@ public static class ShotNative {
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint dx, uint dy, uint d, IntPtr e);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
   [DllImport("user32.dll")] public static extern IntPtr SendMessage(IntPtr h, uint m, IntPtr w, IntPtr l);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
@@ -60,11 +64,18 @@ public static class ShotNative {
   [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr h);
   [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int a, out RECT r, int s);
   [DllImport("user32.dll")] public static extern bool SetProcessDpiAwarenessContext(IntPtr v);
+  // FMX forms are owned by the hidden application window (class TFMAppClass): accept those too.
+  public static bool IsMainCandidate(IntPtr h) {
+    IntPtr owner = GetWindow(h, 4);
+    if (owner == IntPtr.Zero) return true;
+    StringBuilder sb = new StringBuilder(64); GetClassName(owner, sb, 64);
+    return sb.ToString() == "TFMAppClass";
+  }
   public static IntPtr FindMain(uint pid) {
     IntPtr found = IntPtr.Zero;
     EnumWindows((h, l) => {
       uint p; GetWindowThreadProcessId(h, out p);
-      if (p == pid && IsWindowVisible(h) && GetWindow(h, 4) == IntPtr.Zero) {
+      if (p == pid && IsWindowVisible(h) && IsMainCandidate(h)) {
         RECT r; GetWindowRect(h, out r);
         if (r.Right - r.Left > 100 && r.Bottom - r.Top > 60) { found = h; return false; }
       }
@@ -76,7 +87,7 @@ public static class ShotNative {
 '@
 }
 # Physical pixels everywhere (DPI-unaware callers would get virtualized coordinates)
-[void][ShotNative]::SetProcessDpiAwarenessContext([IntPtr](-4))
+[void][ShotNativeFmx]::SetProcessDpiAwarenessContext([IntPtr](-4))
 
 $proc = $null
 if ($ProcessId -ne 0) { $proc = Get-Process -Id $ProcessId }
@@ -90,18 +101,18 @@ $deadline = (Get-Date).AddMilliseconds([Math]::Max($Wait, 500) + 15000)
 while ($hwnd -eq [IntPtr]::Zero -and (Get-Date) -lt $deadline) {
   Start-Sleep -Milliseconds 200
   if ($proc.HasExited) { throw "Process exited with code $($proc.ExitCode)" }
-  $hwnd = [ShotNative]::FindMain([uint32]$proc.Id)
+  $hwnd = [ShotNativeFmx]::FindMain([uint32]$proc.Id)
 }
 if ($hwnd -eq [IntPtr]::Zero) { throw 'Main window not found' }
 Start-Sleep -Milliseconds $Wait
-[void][ShotNative]::SetForegroundWindow($hwnd)
+[void][ShotNativeFmx]::SetForegroundWindow($hwnd)
 Start-Sleep -Milliseconds 300
 
 function Get-Geometry {
-  $w = New-Object ShotNative+RECT; [void][ShotNative]::GetWindowRect($hwnd, [ref]$w)
-  $f = New-Object ShotNative+RECT; [void][ShotNative]::DwmGetWindowAttribute($hwnd, 9, [ref]$f, 16)
-  $c = New-Object ShotNative+RECT; [void][ShotNative]::GetClientRect($hwnd, [ref]$c)
-  $p = New-Object ShotNative+POINT; [void][ShotNative]::ClientToScreen($hwnd, [ref]$p)
+  $w = New-Object ShotNativeFmx+RECT; [void][ShotNativeFmx]::GetWindowRect($hwnd, [ref]$w)
+  $f = New-Object ShotNativeFmx+RECT; [void][ShotNativeFmx]::DwmGetWindowAttribute($hwnd, 9, [ref]$f, 16)
+  $c = New-Object ShotNativeFmx+RECT; [void][ShotNativeFmx]::GetClientRect($hwnd, [ref]$c)
+  $p = New-Object ShotNativeFmx+POINT; [void][ShotNativeFmx]::ClientToScreen($hwnd, [ref]$p)
   [pscustomobject]@{ Window = $w; Frame = $f; Client = $c; ClientOrigin = $p }
 }
 
@@ -131,16 +142,17 @@ if ($Actions) {
     $a = $a.Trim(); if (-not $a) { continue }
     $kind, $arg = $a.Split(':', 2)
     switch ($kind) {
-      'move'   { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 150 }
-      'click'  { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
-                 [ShotNative]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [ShotNative]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 200 }
-      'dclick' { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
-                 1..2 | ForEach-Object { [ShotNative]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [ShotNative]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 40 }
+      'move'   { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 150 }
+      'click'  { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
+                 [ShotNativeFmx]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [ShotNativeFmx]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 200 }
+      'dclick' { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
+                 1..2 | ForEach-Object { [ShotNativeFmx]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [ShotNativeFmx]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 40 }
                  Start-Sleep -Milliseconds 300 }
-      'rclick' { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
-                 [ShotNative]::mouse_event(8, 0, 0, 0, [IntPtr]::Zero); [ShotNative]::mouse_event(16, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }
-      'down'   { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80; [ShotNative]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 150 }
-      'up'     { $p = To-Screen $arg; [void][ShotNative]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80; [ShotNative]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 150 }
+      'rclick' { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
+                 [ShotNativeFmx]::mouse_event(8, 0, 0, 0, [IntPtr]::Zero); [ShotNativeFmx]::mouse_event(16, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 300 }
+      'down'   { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80; [ShotNativeFmx]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 150 }
+      'up'     { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80; [ShotNativeFmx]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 150 }
+      'ctrl'   { $vk = [byte][char]$arg.ToUpper(); [ShotNativeFmx]::keybd_event(0x11, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30; [ShotNativeFmx]::keybd_event($vk, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30; [ShotNativeFmx]::keybd_event($vk, 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 30; [ShotNativeFmx]::keybd_event(0x11, 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 200 }
       'keys'   { [System.Windows.Forms.SendKeys]::SendWait($arg); Start-Sleep -Milliseconds 200 }
       'wait'   { Start-Sleep -Milliseconds ([int]$arg) }
       'shot'   { Save-Shot ($outPath -replace '\.png$', "_$arg.png") }
@@ -154,14 +166,14 @@ Save-Shot $outPath
 $g = Get-Geometry
 $w = $g.Window; $c = $g.Client; $o = $g.ClientOrigin
 $sb = New-Object System.Text.StringBuilder 256
-[void][ShotNative]::GetWindowText($hwnd, $sb, 256)
+[void][ShotNativeFmx]::GetWindowText($hwnd, $sb, 256)
 Write-Host ("title        : {0}" -f $sb.ToString())
-Write-Host ("dpi          : {0}" -f [ShotNative]::GetDpiForWindow($hwnd))
+Write-Host ("dpi          : {0}" -f [ShotNativeFmx]::GetDpiForWindow($hwnd))
 Write-Host ("window rect  : ({0},{1})-({2},{3})  {4}x{5}" -f $w.Left, $w.Top, $w.Right, $w.Bottom, ($w.Right - $w.Left), ($w.Bottom - $w.Top))
 Write-Host ("frame bounds : ({0},{1})-({2},{3})" -f $g.Frame.Left, $g.Frame.Top, $g.Frame.Right, $g.Frame.Bottom)
 Write-Host ("client rect  : origin ({0},{1}) size {2}x{3}" -f $o.X, $o.Y, $c.Right, $c.Bottom)
 Write-Host ("non-client   : left {0}, top {1}, right {2}, bottom {3}" -f ($o.X - $w.Left), ($o.Y - $w.Top), ($w.Right - $o.X - $c.Right), ($w.Bottom - $o.Y - $c.Bottom))
-Write-Host ("style        : 0x{0:X8}  exstyle 0x{1:X8}" -f [ShotNative]::GetWindowLong($hwnd, -16), [ShotNative]::GetWindowLong($hwnd, -20))
+Write-Host ("style        : 0x{0:X8}  exstyle 0x{1:X8}" -f [ShotNativeFmx]::GetWindowLong($hwnd, -16), [ShotNativeFmx]::GetWindowLong($hwnd, -20))
 
 if ($Probe) {
   $names = @{ 0 = 'HTNOWHERE'; 1 = 'HTCLIENT'; 2 = 'HTCAPTION'; 3 = 'HTSYSMENU'; 8 = 'HTMINBUTTON'; 9 = 'HTMAXBUTTON'
@@ -171,7 +183,7 @@ if ($Probe) {
     $pt = $pt.Trim(); if (-not $pt) { continue }
     $p = To-Screen $pt
     $l = [IntPtr](($p[1] -shl 16) -bor ($p[0] -band 0xFFFF))
-    $ht = [int][ShotNative]::SendMessage($hwnd, 0x84, [IntPtr]::Zero, $l)
+    $ht = [int][ShotNativeFmx]::SendMessage($hwnd, 0x84, [IntPtr]::Zero, $l)
     $n = if ($names.ContainsKey($ht)) { $names[$ht] } else { "$ht" }
     Write-Host ("hit-test ({0}) : {1}" -f $pt, $n)
   }
