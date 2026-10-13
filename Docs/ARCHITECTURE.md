@@ -126,7 +126,7 @@ inside a panel) the ribbon keeps both rows inside itself.
 
 - `TFmrRibbon = class(TControl)` → children `TFmrRibbonTab = class(TFmxObject)` → children
   `TFmrRibbonGroup = class(TFmxObject)` with `ItemLinks: TFmrItemLinks`. Context tab groups:
-  `TFmrRibbonContextGroup` (collection of the ribbon), QAT: `TFmrRibbonQuickAccessToolbar` (persistent with links).
+  `TFmrRibbonContextGroup` (named children of the ribbon; tabs reference them by name), QAT: `TFmrRibbonQuickAccessToolbar` (persistent with links).
 - The structure classes talk to the ribbon through `IFmrRibbonStructureOwner` (structure changed, tab/group
   changed), so they are testable without the control.
 
