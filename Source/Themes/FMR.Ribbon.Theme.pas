@@ -19,8 +19,8 @@ unit FMR.Ribbon.Theme;
 interface
 
 uses
-  System.SysUtils, System.Classes, System.Types, System.UITypes, System.Generics.Collections, FMX.Types,
-  FMX.Graphics;
+  System.SysUtils, System.Classes, System.Types, System.UITypes, System.Generics.Collections, System.Messaging,
+  FMX.Types, FMX.Graphics;
 
 type
   /// <summary>Every color or fill a ribbon part is painted with.</summary>
@@ -241,6 +241,23 @@ type
     class function TokenFromStyleName(const AStyleName: string; out AToken: TFmrToken): Boolean;
   end;
 
+  /// <summary>Implemented by a control that owns a theme (the ribbon) so companion controls (backstage view, status
+  /// bar, popups, mini toolbar) paint with the same theme. The provider sends TFmrThemeChangedMessage when its theme
+  /// changes; the returned object stays valid until then.</summary>
+  IFmrThemeProvider = interface
+    ['{5B0E9C2D-7A13-4F6E-9D48-3C1A2B7E6F10}']
+    function GetFmrTheme: TFmrTheme;
+  end;
+
+  /// <summary>Sent through TMessageManager.DefaultManager by a theme provider after its theme changed.</summary>
+  TFmrThemeChangedMessage = class(System.Messaging.TMessage)
+  private
+    FProvider: TObject;
+  public
+    constructor Create(const AProvider: TObject);
+    property Provider: TObject read FProvider;
+  end;
+
 const
   FmrDefaultThemeName = 'Office365White';
   FmrFontStyleName = 'fmr_font';
@@ -330,6 +347,14 @@ begin
     Result := TAlphaColors.White
   else
     Result := TAlphaColor($FF1F1F1F);
+end;
+
+{ TFmrThemeChangedMessage }
+
+constructor TFmrThemeChangedMessage.Create(const AProvider: TObject);
+begin
+  inherited Create;
+  FProvider := AProvider;
 end;
 
 { TFmrFill }
