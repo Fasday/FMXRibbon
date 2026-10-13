@@ -1106,10 +1106,11 @@ begin
   Style := GetWindowLong(FWnd, GWL_STYLE);
   // FullNC: DWM would draw its caption over the strip. Dwm with a backdrop: the frame is extended over the whole
   // window, and DWM draws its caption buttons over the caption content of a window with WS_CAPTION.
-  WantRemoved := ((Style and WS_CAPTION) = WS_CAPTION) and
-    (((FMode = TFmrFrameMode.FullNC) and (FmrWinFullNCStrategy = TFmrWinFullNCStrategy.NoCaptionStyle)) or
-     ((FMode = TFmrFrameMode.Dwm) and (Frame.Backdrop <> TFmrFrameBackdrop.None)));
-  if WantRemoved and not FCaptionStyleRemoved then
+  // (Once removed, WS_CAPTION is no longer in Style: the decision must not depend on it, otherwise every later
+  // FrameChanged - CaptionHeight, colors, dark mode - would put the caption style back.)
+  WantRemoved := ((FMode = TFmrFrameMode.FullNC) and (FmrWinFullNCStrategy = TFmrWinFullNCStrategy.NoCaptionStyle)) or
+    ((FMode = TFmrFrameMode.Dwm) and (Frame.Backdrop <> TFmrFrameBackdrop.None));
+  if WantRemoved and not FCaptionStyleRemoved and ((Style and WS_CAPTION) = WS_CAPTION) then
   begin
     // A fixed size window (BorderStyle Single) gets a sizing frame for the DWM border and shadow; IsResizable keeps
     // it from being resized.
