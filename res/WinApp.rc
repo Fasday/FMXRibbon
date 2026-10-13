@@ -1,0 +1,4 @@
+// Shared Windows resources for all executables in this repo.
+// Compiled by build.ps1 into dcu\WinApp.res; include in a .dpr with {$R WinApp.res}.
+// 24 = RT_MANIFEST, 1 = CREATEPROCESS_MANIFEST_RESOURCE_ID
+1 24 "WinApp.manifest"

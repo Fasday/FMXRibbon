@@ -1,0 +1,25 @@
+# Delphi build output (the IDE; build.ps1: bin\ and dcu\)
+*.dcu
+*.exe
+*.dll
+*.map
+*.res
+*.rsm
+*.drc
+*.dsk
+*.identcache
+*.local
+*.delphilsp.json
+*.stat
+*.tvsconfig
+*.bpl
+*.dcp
+__history/
+__recovery/
+bin/
+dcu/
+Win32/
+Win64/
+
+# Screenshots made by tools\screenshot.ps1 while checking demos
+shots/
