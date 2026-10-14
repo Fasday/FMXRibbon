@@ -35,7 +35,7 @@ try {
     $demoArgs = "/theme=$t /frame=$Frame /height=480 /activelook /topmost"
     if ($Pos) { $demoArgs += " /pos=$Pos" }
     $raws = @()
-    for ($try = 1; $try -le 4; $try++) {
+    for ($try = 1; $try -le 6; $try++) {
       $raw = "shots\theme_raw_$t`_$([guid]::NewGuid().ToString('N').Substring(0, 6)).png"
       $raws += $raw
       & (Join-Path $PSScriptRoot 'drive.ps1') -Exe $Exe -Arguments $demoArgs -Out $raw -Wait 3000 -NoCursor | Out-Null
@@ -49,7 +49,16 @@ try {
           if (-not ($c.R -eq 255 -and $c.G -eq 255 -and $c.B -eq 255)) { if ($py -lt 85) { $strip++ } else { $inked++ } }
         }
       }
-      if (($inked -gt 200 -and $strip -gt 40) -or $try -eq 4) { break }
+      # FullNC: the caption row is painted on its own (WM_NCPAINT) and may still be blank when the window is partly
+      # off-screen; require glyphs/text in it (pixels that differ from its background)
+      $bg = $src.GetPixel(60, 40); $capInk = 0
+      for ($py = 28; $py -lt 56; $py += 2) {
+        for ($px = 60; $px -lt $src.Width - 40; $px += 3) {
+          $c = $src.GetPixel($px, $py)
+          if ([Math]::Abs($c.R - $bg.R) + [Math]::Abs($c.G - $bg.G) + [Math]::Abs($c.B - $bg.B) -gt 90) { $capInk++ }
+        }
+      }
+      if (($inked -gt 200 -and $strip -gt 40 -and $capInk -gt 60) -or $try -eq 6) { break }
       $src.Dispose()
     }
     try {
