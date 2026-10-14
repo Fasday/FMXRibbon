@@ -2152,7 +2152,9 @@ begin
   P := GetPainter;
   R := LocalRect;
   // The caption theme has the activation level applied: the active look is painted with the blended tokens.
-  if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost then
+  // Only themes made for a backdrop (Office 2024, Fluent) let Mica show through; the others keep their opaque
+  // caption (Office 365 Colorful paints it with the accent) also over a Mica window.
+  if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost or not P.Theme.Style.TransparentCaption then
     P.DrawCaption(ACanvas, R, True)
   else
     // Over a Mica/Acrylic backdrop: nothing, or the translucent caption of the theme (Office 2024 Dark Gray)
@@ -2257,7 +2259,9 @@ var
   Clip: TRectF;
 begin
   P := GetPainter;
-  if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost then
+  // Only themes made for a backdrop (Office 2024, Fluent) let Mica show through; the others keep their opaque
+  // caption (Office 365 Colorful paints it with the accent) also over a Mica window.
+  if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost or not P.Theme.Style.TransparentCaption then
     P.DrawTabRow(ACanvas, LocalRect, True)
   else
     P.Fill(ACanvas, LocalRect, TFmrToken.CaptionBackdropFill);
