@@ -51,7 +51,15 @@ type
     ColorAutomatic, ColorNoColor, ColorMoreColors, ColorThemeColors, ColorStandardColors, ColorRecentColors,
     FontThemeFonts, FontAllFonts, FontRecentFonts,
     { caption buttons }
-    CaptionMinimize, CaptionMaximize, CaptionRestore, CaptionClose, CaptionHelp);
+    CaptionMinimize, CaptionMaximize, CaptionRestore, CaptionClose, CaptionHelp,
+    { customization form (additions) }
+    CustAddRuleHint, CustSearchPrompt, CustTabsHeader, CustCategoriesHeader, CustResetQAT, CustImportError,
+    CustFileFilter, CustDesignedHint, CustNoCommands,
+    { ribbon display options, auto-hide, simplified switch }
+    RibbonAutoHideDesc, RibbonShowTabsDesc, RibbonShowTabsAndCommandsDesc, RibbonShowRibbon,
+    RibbonSwitchToSimplified, RibbonSwitchToClassic,
+    { accessibility names }
+    AccRibbon, AccRibbonTabs, AccLowerRibbon, AccQAT);
 
   TFmrStringTable = array[TFmrStringId] of string;
 
@@ -167,7 +175,29 @@ const
     'Maximize',
     'Restore Down',
     'Close',
-    'Help');
+    'Help',
+    { customization form (additions) }
+    'Commands can be added only to custom groups. Select a custom group or create one with New Group.',
+    'Search commands',
+    'Tabs',
+    'Categories',
+    'Reset only Quick Access Toolbar',
+    'The file could not be imported: %s',
+    'Customization files (*.json)|*.json|All files (*.*)|*.*',
+    'Built-in groups keep their commands: hide a group with its check box or add a custom group.',
+    'No commands',
+    { ribbon display options, auto-hide, simplified switch }
+    'Hide the Ribbon. Click at the top of the application to show it.',
+    'Show Ribbon tabs only. Click a tab to show the commands.',
+    'Show Ribbon tabs and commands all the time.',
+    'Show the Ribbon',
+    'Switch to Simplified Ribbon',
+    'Switch to Classic Ribbon',
+    { accessibility names }
+    'Ribbon',
+    'Ribbon Tabs',
+    'Lower Ribbon',
+    'Quick Access Toolbar');
 
   FmrStringsRU: TFmrStringTable = (
     { quick access toolbar }
@@ -277,7 +307,30 @@ const
     'Развернуть',
     'Свернуть в окно',
     'Закрыть',
-    'Справка');
+    'Справка',
+    { customization form (additions) }
+    'Команды можно добавлять только в настраиваемые группы. Выберите настраиваемую группу или создайте ее ' +
+      'кнопкой «Создать группу».',
+    'Поиск команд',
+    'Вкладки',
+    'Категории',
+    'Сброс только панели быстрого доступа',
+    'Не удалось импортировать файл: %s',
+    'Файлы настройки (*.json)|*.json|Все файлы (*.*)|*.*',
+    'Команды встроенных групп изменить нельзя: скройте группу флажком или добавьте настраиваемую группу.',
+    'Нет команд',
+    { ribbon display options, auto-hide, simplified switch }
+    'Скрыть ленту. Чтобы показать ее, щелкните в верхней части приложения.',
+    'Показывать только вкладки ленты. Чтобы показать команды, щелкните вкладку.',
+    'Всегда показывать вкладки и команды ленты.',
+    'Показать ленту',
+    'Перейти к упрощенной ленте',
+    'Перейти к классической ленте',
+    { accessibility names }
+    'Лента',
+    'Вкладки ленты',
+    'Нижняя лента',
+    'Панель быстрого доступа');
 
 /// <summary>Text of AId in the current language (an override set with FmrSetString wins).</summary>
 function FmrStr(const AId: TFmrStringId): string;

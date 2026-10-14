@@ -281,7 +281,7 @@ procedure FmrSplitLargeCaption(const APainter: TFmrRibbonPainter; const ACaption
 implementation
 
 uses
-  {$IFDEF MSWINDOWS}Winapi.Windows, {$ENDIF}FMX.Platform, FMX.Menus;
+  {$IFDEF MSWINDOWS}Winapi.Windows, {$ENDIF}FMX.Platform, FMX.Menus, FMR.Ribbon.BiDi;
 
 var
   GViewRegistry: TList<TPair<TFmrBarItemClass, TFmrItemViewClass>>;
@@ -1046,7 +1046,7 @@ begin
     Opacity := 1;
   if (G.EffectiveKind in [TFmrImageKind.Glyph, TFmrImageKind.Path]) or G.Recolor then
     Opacity := 1;
-  G.Draw(ACanvas, R, Opacity, Painter.GlyphTint(AState), Images);
+  FmrDrawImage(ACanvas, G, R, Opacity, Painter.GlyphTint(AState), Images);
   if Item is TFmrColorItem then
   begin
     Bar := RectF(R.Left, R.Bottom - R.Height * 0.2, R.Right, R.Bottom + 1);

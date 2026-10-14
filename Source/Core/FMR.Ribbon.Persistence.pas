@@ -70,7 +70,7 @@ type
 implementation
 
 uses
-  System.TypInfo, System.IOUtils;
+  System.TypInfo, System.IOUtils, System.Math;
 
 const
   KFormat = 'format';
@@ -97,6 +97,7 @@ const
   KButtonGroup = 'buttonGroup';
   KSimplified = 'simplified';
   KGlyphIndex = 'imageIndex';
+  KGlyphCode = 'glyphCode';
   KShowDialogLauncher = 'dialogLauncher';
 
 function EnumToStr(const AInfo: Pointer; const AValue: Integer): string;
@@ -316,6 +317,8 @@ begin
       Result.AddPair(KKeyTip, AGroup.KeyTip);
     if AGroup.Glyph.ImageIndex >= 0 then
       Result.AddPair(KGlyphIndex, TJSONNumber.Create(AGroup.Glyph.ImageIndex));
+    if AGroup.Glyph.GlyphCode <> 0 then
+      Result.AddPair(KGlyphCode, TJSONNumber.Create(Int64(AGroup.Glyph.GlyphCode)));
     if AGroup.ShowDialogLauncher then
       Result.AddPair(KShowDialogLauncher, TJSONBool.Create(True));
     Result.AddPair(KLinks, LinksToJSON(AGroup.ItemLinks));
@@ -612,6 +615,7 @@ begin
             SetNameIfFree(G, Name);
             G.KeyTip := GetStr(GroupJ, KKeyTip);
             G.Glyph.ImageIndex := GetInt(GroupJ, KGlyphIndex, -1);
+            G.Glyph.GlyphCode := Cardinal(Max(0, GetInt(GroupJ, KGlyphCode, 0)));
             G.ShowDialogLauncher := GetBool(GroupJ, KShowDialogLauncher, False);
             LinksFromJSON(G.ItemLinks, GetArray(GroupJ, KLinks), AResolver);
           end

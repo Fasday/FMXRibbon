@@ -71,7 +71,8 @@ type
 implementation
 
 uses
-  FMX.Edit, FMX.EditBox, FMX.ComboEdit, FMX.ListBox, FMX.SpinBox, FMX.StdCtrls, FMX.Forms;
+  FMX.Edit, FMX.EditBox, FMX.ComboEdit, FMX.ListBox, FMX.SpinBox, FMX.StdCtrls, FMX.Forms, FMR.Ribbon.EditorStyles,
+  FMR.Ribbon.BiDi;
 
 { TFmrEditorView.TNotifier }
 
@@ -213,7 +214,7 @@ begin
     end
     else if Item is TFmrEditItem then
     begin
-      E := TEdit.Create(nil);
+      E := TFmrRibbonEdit.Create(nil);
       E.OnChange := ControlChanged;
       FControl := E;
       FOwnsControl := True;
@@ -224,13 +225,13 @@ begin
         TFmrFontNameItem(Item).RefreshFonts;
       if TFmrComboItem(Item).Editable then
       begin
-        CE := TComboEdit.Create(nil);
+        CE := TFmrRibbonComboEdit.Create(nil);
         CE.OnChange := ControlChanged;
         FControl := CE;
       end
       else
       begin
-        CB := TComboBox.Create(nil);
+        CB := TFmrRibbonComboBox.Create(nil);
         CB.OnChange := ControlChanged;
         FControl := CB;
       end;
@@ -238,14 +239,14 @@ begin
     end
     else if Item is TFmrSpinItem then
     begin
-      SB := TSpinBox.Create(nil);
+      SB := TFmrRibbonSpinBox.Create(nil);
       SB.OnChange := ControlChanged;
       FControl := SB;
       FOwnsControl := True;
     end
     else if Item is TFmrTrackBarItem then
     begin
-      TB := TTrackBar.Create(nil);
+      TB := TFmrRibbonTrackBar.Create(nil);
       TB.OnChange := ControlChanged;
       FControl := TB;
       FOwnsControl := True;
@@ -351,9 +352,14 @@ begin
   EnsureControl;
   if FControl = nil then
     Exit;
+  if FOwnsControl and (Host <> nil) then
+    FmrThemeEditor(FControl, Painter.Theme);
   R := EditorRect;
   if FControl is TTrackBar then
     R := RectF(R.Left, R.CenterPoint.Y - 10, R.Right, R.CenterPoint.Y + 10);
+  // A right-to-left host flips its painting; the real control needs the mirrored position.
+  if (Host <> nil) and FmrIsMirrored(Host) and (Host.GetHostControl <> nil) then
+    R := FmrMirrorRect(R, Host.GetHostControl.Width);
   FControl.SetBounds(R.Left, R.Top, R.Width, R.Height);
   FControl.Visible := True;
   FPlaced := True;
@@ -422,7 +428,7 @@ begin
   begin
     GlyphR := RectF(0, 0, M.SmallGlyphSize, M.SmallGlyphSize);
     GlyphR.Offset(Round(X), Round(Bounds.CenterPoint.Y - M.SmallGlyphSize / 2));
-    Item.Glyph.Draw(ACanvas, GlyphR, 1, Painter.GlyphTint(State), Images);
+    FmrDrawImage(ACanvas, Item.Glyph, GlyphR, 1, Painter.GlyphTint(State), Images);
     X := GlyphR.Right + 4;
   end;
   Color := Painter.ButtonTextColor(State);

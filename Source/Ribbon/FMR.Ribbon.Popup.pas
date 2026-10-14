@@ -1563,9 +1563,9 @@ begin
     GlyphR := RectF(Round(GlyphR.Left), Round(GlyphR.Top), Round(GlyphR.Left) + GlyphR.Width,
       Round(GlyphR.Top) + GlyphR.Height);
     if Enabled then
-      G.Draw(ACanvas, GlyphR, 1, P.GlyphTint(TFmrPartState.Normal), FMenu.GetImages)
+      FmrDrawImage(ACanvas, G, GlyphR, 1, P.GlyphTint(TFmrPartState.Normal), FMenu.GetImages)
     else
-      G.Draw(ACanvas, GlyphR, 0.45, P.GlyphTint(TFmrPartState.Disabled), FMenu.GetImages);
+      FmrDrawImage(ACanvas, G, GlyphR, 0.45, P.GlyphTint(TFmrPartState.Disabled), FMenu.GetImages);
     if FItem is TFmrColorItem then
     begin
       if TFmrColorItem(FItem).Color = TAlphaColors.Null then

@@ -18,6 +18,9 @@ Demo: `Demos\RibbonBasic` (a Word-like ribbon built in code, see "Demo and test 
 | `FMR.Ribbon.ScreenTips` | `TFmrScreenTipContent`, `TFmrScreenTipController` (delay, placement, one tip at a time) |
 | `FMR.Ribbon.Fonts.Win` | Font family list (EnumFontFamiliesEx) for font name editors; empty on other platforms |
 | `FMR.Ribbon.Gallery`, `FMR.Ribbon.ColorGallery`, `FMR.Ribbon.AppMenu`, `FMR.Ribbon.MiniToolbar`, `FMR.Ribbon.RadialMenu` | In-ribbon and drop-down galleries, color gallery, Office 2007 application menu, mini toolbar, radial menu - see `Docs\GALLERIES.md` |
+| `FMR.Ribbon.Customize`, `FMR.Ribbon.CustomizeModel`, `FMR.Ribbon.CustomizeControls` | Run-time customization dialog ("Customize the Ribbon", "Quick Access Toolbar"), its editing session and themed controls - see `Docs\CUSTOMIZATION.md` |
+| `FMR.Ribbon.BiDi`, `FMR.Ribbon.EditorStyles` | Right-to-left helpers (canvas mirroring); editor controls styled from the theme - see `Docs\CUSTOMIZATION.md` |
+| `FMR.Ribbon.UIA.Win` | UI Automation provider (`FmrInstallRibbonAutomation`) - see `Docs\ACCESSIBILITY.md` |
 
 Additions to `Source\Themes\FMR.Ribbon.Painter.pas` (new methods only, existing signatures untouched): `TextEx`,
 `DrawShadow`, `DrawPopupBackground`, `DrawCheckBox`, `DrawSearchGlyph`, `DrawCustomizeGlyph`, `DrawChevron`,
@@ -94,7 +97,8 @@ area scrolls with scroll buttons.
 ### Simplified mode
 
 `DisplayMode = Simplified`: one line of small/with-text views per group, separated by separators, an overflow
-button ("...") with a menu of what does not fit. Switch from the display options menu or in code.
+button ("...") with a menu of what does not fit. Switch with the chevron at the right end of the body
+(`ShowDisplayModeButton`) or in code.
 
 ## Popups (`FMR.Ribbon.Popup`)
 
@@ -102,7 +106,8 @@ button ("...") with a menu of what does not fit. Switch from the display options
   shadow and rounded corners painted by `TFmrPopupFrame`). It holds one content control; content may implement
   `IFmrPopupContent` (size, keys, shown/closed notifications, own background).
 - `FmrPopups` (`TFmrPopupManager`, singleton; `FmrPopupsAssigned` after finalization) keeps the chain of open
-  popups: `Show(Popup, AnchorScreenRect, Placement, ParentPopup, ByKeyboard)` (Below / Right / AtPoint / Above,
+  popups: `Show(Popup, AnchorScreenRect, Placement, ParentPopup, ByKeyboard)` (Below / Right / AtPoint / Above /
+  BelowEnd,
   flipped and clamped to the work area), `Close` (closes descendants), `CloseAll`, `PopupOf(Object)`, `Top`, `IsOpen`.
   FMX closes popup forms on outside clicks and deactivation; the manager mirrors that in its chain.
 - Closed windows go to a graveyard and are freed later (0.2 s and no mouse button down), because FMX may still hold
@@ -194,7 +199,15 @@ button ("...") with a menu of what does not fit. Switch from the display options
   `TFmrThemeChangedMessage(Self)` after every theme rebuild (`FMR.Ribbon.ThemeLink` consumers: status bar,
   backstage). It also implements `IFmrThemeSource` for popup menus.
 - **Touch mode** (`TouchMode`): larger metrics from the theme.
-- **Right to left** (`RightToLeft`): groups are mirrored; captions and menus are not.
+- **Right to left** (`RightToLeft` or the form's `BiDiMode`): everything is mirrored - parts and popups flip
+  their canvas and mouse coordinates (logical geometry stays left to right); text and icons are drawn unmirrored;
+  editors, the search box and caption buttons get mirrored bounds (`Docs\CUSTOMIZATION.md`).
+- **Display options and auto-hide** (`ShowDisplayOptionsButton`, `ShowMode = AutoHide`): Office 2016 caption
+  button with Auto-hide Ribbon / Show Tabs / Show Tabs and Commands; auto-hide keeps only the caption row and shows
+  tabs and commands in an overlay popup (`ShowAutoHiddenRibbon`).
+- **Customization form** (`ShowCustomizationForm`, QAT "More Commands...", ribbon menu "Customize the Ribbon..."),
+  `DefaultLayout`/`ResetLayout`; **themed editors**; **UI Automation** (`AccessibilityNodes`,
+  `FMR.Ribbon.UIA.Win`, `Docs\ACCESSIBILITY.md`).
 - **Persistence and merging**: `SaveLayoutTo*`/`LoadLayoutFrom*`, `Merge`/`Unmerge`/`UnmergeAll` wrap the core
   structure services and re-lay out the ribbon.
 - **Design-time hooks**: `ActiveTab` is published and settable, `TabAtScreenPoint` lets a design package switch tabs
@@ -239,10 +252,9 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
 
 - Galleries, the color gallery ("More Colors...", live preview), the Office 2007 application menu, the mini toolbar,
   the radial menu and menu screen tips are done (`Docs\GALLERIES.md`, its own list of known issues).
-- `ShowMode = AutoHide` behaves like `TabsOnly` (no hiding of the whole ribbon on the caption).
+- Auto-hide, themed editors, full right to left, the customization form and UI Automation are done
+  (`Docs\CUSTOMIZATION.md`, `Docs\ACCESSIBILITY.md`, their own lists of known issues).
 - Font preview in the font combo.
-- Editor controls use the default FMX style (white in dark themes).
-- Right to left mirrors the groups only.
 - Alt+letter pressed together (without releasing Alt) does not jump to a tab; press and release Alt, then the letter.
 - In minimized mode the tab key tips are drawn inside the tab row (over the captions), not below it.
 - No animations (popups, minimized body, backstage slide is the backstage's own).

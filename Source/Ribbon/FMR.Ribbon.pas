@@ -31,7 +31,7 @@ uses
   FMR.Ribbon.Types, FMR.Bars.Images, FMR.Bars, FMR.Bars.Items, FMR.Ribbon.Structure, FMR.Ribbon.Layout,
   FMR.Ribbon.KeyTips, FMR.Ribbon.Persistence, FMR.Ribbon.Merge, FMR.Ribbon.Strings, FMR.Ribbon.Theme,
   FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Painter, FMR.Ribbon.Views, FMR.Ribbon.Popup, FMR.Ribbon.Editors,
-  FMR.Ribbon.ScreenTips, FMR.Frame.Types, FMR.Frame.Host, FMR.Frame;
+  FMR.Ribbon.ScreenTips, FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Ribbon.BiDi;
 
 type
   TFmrRibbon = class;
@@ -83,7 +83,39 @@ type
 
   /// <summary>Kinds of the ribbon's own buttons.</summary>
   TFmrSysButtonKind = (CollapseRibbon, Help, QATCustomize, QATOverflow, ScrollLeft, ScrollRight, TabScrollLeft,
-    TabScrollRight, SimplifiedOverflow, DisplayMode);
+    TabScrollRight, SimplifiedOverflow, DisplayMode, DisplayOptions, AutoHideShow);
+
+  /// <summary>Page of the customization form (TFmrRibbon.ShowCustomizationForm).</summary>
+  TFmrCustomizationPage = (Ribbon, QuickAccessToolbar);
+
+  /// <summary>Role of an element exposed to accessibility clients (UI Automation).</summary>
+  TFmrAccRole = (QuickAccessToolbar, TabList, Tab, ApplicationButton, LowerRibbon, Group, Button, SplitButton,
+    DropDownButton, CheckBox, Editor, CollapsedGroup, SystemButton, ComboBox, Spinner, Slider);
+
+  /// <summary>One node of TFmrRibbon.AccessibilityNodes.</summary>
+  TFmrAccNode = record
+    Role: TFmrAccRole;
+    Name: string;
+    /// <summary>Stable identifier: the component name of the item, tab or group; a fixed name for the ribbon's own
+    /// buttons and containers.</summary>
+    AutomationId: string;
+    HelpText: string;
+    AccessKey: string;
+    /// <summary>Index of the parent node; -1 for top-level nodes (children of the ribbon).</summary>
+    Parent: Integer;
+    /// <summary>Screen rectangle in dp.</summary>
+    Bounds: TRectF;
+    /// <summary>The element (nil for containers: toolbar, tab list, lower ribbon, groups).</summary>
+    Element: TObject;
+    /// <summary>Tab or group of the node, if any.</summary>
+    Data: TObject;
+    Enabled: Boolean;
+    Selected: Boolean;
+    Checked: Boolean;
+    /// <summary>Text or number of editors (Editor, ComboBox, Spinner, Slider).</summary>
+    Value: string;
+    ReadOnly: Boolean;
+  end;
 
   /// <summary>Glyph button of the ribbon itself (collapse, help, QAT customize, scroll buttons...).</summary>
   TFmrSysButtonElement = class(TFmrElement)
@@ -168,12 +200,16 @@ type
 
   /// <summary>Base of the ribbon's parts: hosts elements, tracks the mouse, shows screen tips and key tips.
   /// </summary>
-  TFmrRibbonPart = class(TControl, IFmrElementHost)
+  TFmrRibbonPart = class(TControl, IFmrElementHost, IFmrMirroredHost)
   private
     [Weak] FRibbon: TFmrRibbon;
     FTracker: TFmrElementTracker;
     FTipOverlay: TControl;
     procedure TrackerHotChanged(Sender: TObject);
+    { right to left: element bounds are logical, the canvas and the mouse are flipped }
+    function IsMirrored: Boolean;
+    function Logical(const X, Y: Single): TPointF;
+    function PhysicalRect(const R: TRectF): TRectF;
     /// <summary>Key tip badges of the elements of this part (painted by an overlay above editor controls).
     /// </summary>
     procedure PaintKeyTips(const ACanvas: TCanvas);
@@ -328,13 +364,15 @@ type
       Tip: string;
     end;
 
-    TRibbonPopupContext = class(TFmrPopupContext)
+    TRibbonPopupContext = class(TFmrPopupContext, IFmrMirroredHost)
     private
       [Weak] FRibbon: TFmrRibbon;
       FSearchResults: Boolean;
     protected
       procedure ItemExecuting(const AItem: TFmrBarItem); override;
       function ItemContextPopup(const AItem: TFmrBarItem; const AScreenPoint: TPointF): Boolean; override;
+      { IFmrMirroredHost: popups of a right-to-left ribbon open to the left and mirror their menus }
+      function IsMirrored: Boolean;
     end;
   private
     FBarManager: TFmrBarManager;
@@ -434,6 +472,14 @@ type
     FKeyTips: TList<TKeyTipEntryRec>;
     FKeyTipMatcher: TFmrKeyTipMatcher;
     FKeyFocus: TFmrElement;
+    { customization, display options, auto-hide, right to left }
+    FDefaultLayout: string;
+    FShowDisplayOptionsButton: Boolean;
+    FShowDisplayModeButton: Boolean;
+    FAutoHidePopup: TFmrPopupForm;
+    FAutoHideClosedTick: Cardinal;
+    FLastRTL: Boolean;
+    FAccVersion: Integer;
     procedure SetBarManager(const Value: TFmrBarManager);
     procedure SetQAT(const Value: TFmrRibbonQuickAccessToolbar);
     procedure SetAppButton(const Value: TFmrRibbonApplicationButton);
@@ -534,7 +580,8 @@ type
     procedure ShowSimplifiedOverflowMenu(const AElement: TFmrElement; const AByKeyboard: Boolean);
     procedure ShowRibbonContextMenu(const AItem: TFmrBarItem; const AScreenPoint: TPointF);
     procedure ShowPopupForElement(const AContent: TControl; const AElement: TFmrElement; const AHost: TFmrRibbonPart;
-      const AByKeyboard: Boolean; const AOwned: TObject = nil);
+      const AByKeyboard: Boolean; const AOwned: TObject = nil;
+      const APlacement: TFmrPopupPlacement = TFmrPopupPlacement.Below);
     procedure ApplicationButtonPressed(const AByKeyboard: Boolean);
     procedure InvokeApplicationMenu(const AAnchor: TRectF; const AByKeyboard: Boolean);
     function ApplicationMenuCovers: Boolean;
@@ -558,6 +605,15 @@ type
     procedure MoveKeyFocus(const ADirection: TFmrArrowDirection);
     procedure SetKeyFocus(const AElement: TFmrElement);
     function KeyTipElements(const ALevel: TFmrKeyTipLevel): TArray<TFmrElement>;
+    { customization, display options, auto-hide }
+    procedure SetShowDisplayOptionsButton(const Value: Boolean);
+    procedure SetShowDisplayModeButton(const Value: Boolean);
+    procedure CaptureDefaultLayout;
+    function AutoHideActive: Boolean;
+    procedure ShowAutoHideRibbon(const AByKeyboard: Boolean);
+    procedure ShowDisplayOptionsMenu(const AElement: TFmrElement; const AByKeyboard: Boolean);
+    procedure AddDisplayModeButton(const ABounds: TRectF);
+    procedure QueueCustomizationForm(const APage: TFmrCustomizationPage);
   protected
     { IFmrRibbonStructureOwner }
     function GetStructureObject: TFmxObject;
@@ -635,6 +691,35 @@ type
     function ApplicationButtonScreenRect: TRectF;
     /// <summary>Text dump of the parts and elements with their bounds (diagnostics, tests).</summary>
     function DebugDump: string;
+    { customization }
+    /// <summary>Opens the customization form ("Customize the Ribbon" / "Quick Access Toolbar" pages); True when
+    /// the user pressed OK.</summary>
+    function ShowCustomizationForm(const APage: TFmrCustomizationPage = TFmrCustomizationPage.Ribbon): Boolean;
+    /// <summary>Loads DefaultLayout (reset of every customization).</summary>
+    procedure ResetLayout;
+    /// <summary>The layout of the ribbon as designed: captured before the first LoadLayoutFrom* call, at Loaded,
+    /// or on the first idle; the reset commands of the customization form return to it. Set it yourself when the
+    /// ribbon is built or loaded in another way.</summary>
+    property DefaultLayout: string read FDefaultLayout write FDefaultLayout;
+    { right to left, auto-hide }
+    /// <summary>RightToLeft, or the BiDiMode of the form is bdRightToLeft.</summary>
+    function EffectiveRightToLeft: Boolean;
+    /// <summary>ShowMode = AutoHide: shows the tabs and the commands over the form until the user clicks outside.
+    /// </summary>
+    procedure ShowAutoHiddenRibbon;
+    function AutoHiddenRibbonShown: Boolean;
+    { accessibility }
+    /// <summary>Snapshot of the elements for accessibility clients (FMR.Ribbon.UIA.Win): quick access toolbar,
+    /// tabs, groups and their commands with screen bounds (dp).</summary>
+    function AccessibilityNodes: TArray<TFmrAccNode>;
+    /// <summary>Runs the default action of an element of AccessibilityNodes (click, select a tab, open a drop-down);
+    /// False when the element is gone.</summary>
+    function AccessibilityInvoke(const AElement: TObject): Boolean;
+    /// <summary>Sets the text (edit, combo) or the number (spin, track bar) of an editor element of
+    /// AccessibilityNodes; False when the element is gone, read-only or the value is not a number.</summary>
+    function AccessibilitySetValue(const AElement: TObject; const AValue: string): Boolean;
+    /// <summary>Changes whenever the elements are rebuilt or rearranged.</summary>
+    property AccessibilityVersion: Integer read FAccVersion;
     property Painter: TFmrRibbonPainter read FPainter;
     property ThemeObject: TFmrTheme read FTheme;
     property CaptionBar: TFmrRibbonCaptionBar read FCaptionBar;
@@ -672,6 +757,13 @@ type
     property RightToLeft: Boolean read FRightToLeft write SetRightToLeft default False;
     property ShowCaption: Boolean read FShowCaption write SetShowCaption default True;
     property ShowCollapseButton: Boolean read FShowCollapseButton write SetShowCollapseButton default True;
+    /// <summary>Office 2016 "Ribbon Display Options" button in the caption row (Auto-hide Ribbon, Show Tabs, Show
+    /// Tabs and Commands).</summary>
+    property ShowDisplayOptionsButton: Boolean read FShowDisplayOptionsButton write SetShowDisplayOptionsButton
+      default False;
+    /// <summary>Office 365 chevron at the right end of the body that switches between the classic and the
+    /// simplified ribbon.</summary>
+    property ShowDisplayModeButton: Boolean read FShowDisplayModeButton write SetShowDisplayModeButton default False;
     property ShowHelpButton: Boolean read FShowHelpButton write SetShowHelpButton default False;
     property ShowKeyTips: Boolean read FShowKeyTips write SetShowKeyTips default True;
     property ShowMode: TFmrRibbonShowMode read FShowMode write SetShowMode default TFmrRibbonShowMode.TabsAndCommands;
@@ -698,7 +790,9 @@ implementation
 
 uses
   System.Character, System.StrUtils, System.Math.Vectors, System.Rtti, System.TypInfo, FMX.Styles, FMX.Menus,
-  FMR.Ribbon.Fonts.Win;
+  FMR.Ribbon.Fonts.Win, FMR.Ribbon.Customize,
+  // Linked for their registrations: galleries and the color gallery work in every application with a ribbon.
+  FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery;
 
 const
   DefaultContextColors: array[0..3] of TAlphaColor = ($FFE8A33D, $FF5B9B4A, $FFB05CC6, $FF3D9FD6);
@@ -802,7 +896,7 @@ end;
 function TFmrSysButtonElement.OpensOnPress(const APart: TFmrElementPart): Boolean;
 begin
   Result := FKind in [TFmrSysButtonKind.QATCustomize, TFmrSysButtonKind.QATOverflow,
-    TFmrSysButtonKind.SimplifiedOverflow];
+    TFmrSysButtonKind.SimplifiedOverflow, TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow];
 end;
 
 procedure TFmrSysButtonElement.Execute(const APart: TFmrElementPart);
@@ -828,6 +922,25 @@ begin
       P.DrawScrollButton(ACanvas, R, TFmrArrowDirection.Left, S);
     TFmrSysButtonKind.ScrollRight, TFmrSysButtonKind.TabScrollRight:
       P.DrawScrollButton(ACanvas, R, TFmrArrowDirection.Right, S);
+    TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow:
+      begin
+        // Caption-style buttons next to the window buttons (Office 2016).
+        if FRibbon.FDroppedElement = Self then
+          S := TFmrPartState.Pressed;
+        P.DrawCaptionStyleButton(ACanvas, R, S);
+        Col := P.Theme.Colors[TFmrToken.CaptionButtonGlyph];
+        if not FRibbon.FrameActive and (S = TFmrPartState.Normal) then
+          Col := P.Theme.Colors[TFmrToken.CaptionTextInactive];
+        if FKind = TFmrSysButtonKind.DisplayOptions then
+          P.DrawDisplayOptionsGlyph(ACanvas, R, Col)
+        else
+          P.DrawCaptionGlyph(ACanvas, R, TFmrCaptionGlyph.More, Col);
+      end;
+    TFmrSysButtonKind.DisplayMode:
+      begin
+        P.DrawButton(ACanvas, R, S);
+        P.DrawSwitchChevron(ACanvas, R, FRibbon.FDisplayMode = TFmrRibbonDisplayMode.Classic, Col);
+      end;
   else
     begin
       P.DrawButton(ACanvas, R, S);
@@ -843,7 +956,7 @@ begin
           P.DrawCustomizeGlyph(ACanvas, R, Col);
         TFmrSysButtonKind.QATOverflow:
           P.DrawChevron(ACanvas, R, Col);
-        TFmrSysButtonKind.SimplifiedOverflow, TFmrSysButtonKind.DisplayMode:
+        TFmrSysButtonKind.SimplifiedOverflow:
           P.DrawCaptionGlyph(ACanvas, R, TFmrCaptionGlyph.More, Col);
       end;
     end;
@@ -870,6 +983,15 @@ begin
       AInfo.Header := FmrStr(TFmrStringId.RibbonScrollLeft);
     TFmrSysButtonKind.ScrollRight, TFmrSysButtonKind.TabScrollRight:
       AInfo.Header := FmrStr(TFmrStringId.RibbonScrollRight);
+    TFmrSysButtonKind.DisplayOptions:
+      AInfo.Header := FmrStr(TFmrStringId.RibbonDisplayOptions);
+    TFmrSysButtonKind.AutoHideShow:
+      AInfo.Header := FmrStr(TFmrStringId.RibbonShowRibbon);
+    TFmrSysButtonKind.DisplayMode:
+      if FRibbon.FDisplayMode = TFmrRibbonDisplayMode.Classic then
+        AInfo.Header := FmrStr(TFmrStringId.RibbonSwitchToSimplified)
+      else
+        AInfo.Header := FmrStr(TFmrStringId.RibbonSwitchToClassic);
   end;
   if FKind = TFmrSysButtonKind.CollapseRibbon then
     AInfo.Shortcut := FmrShortCutText(FmrShortCut(vkF1, [ssCtrl]));
@@ -882,6 +1004,9 @@ begin
     TFmrSysButtonKind.QATCustomize: Result := 'Customize';
     TFmrSysButtonKind.SimplifiedOverflow, TFmrSysButtonKind.QATOverflow: Result := 'More';
     TFmrSysButtonKind.CollapseRibbon: Result := 'Collapse';
+    TFmrSysButtonKind.DisplayMode: Result := 'Switch';
+    TFmrSysButtonKind.DisplayOptions: Result := 'Display';
+    TFmrSysButtonKind.AutoHideShow: Result := 'Ribbon';
   else
     Result := '';
   end;
@@ -904,7 +1029,7 @@ begin
   Color := 0;
   if FTab.ContextGroup <> nil then
     Color := FRibbon.ContextColor(FTab.ContextGroup);
-  MinimizedLook := FRibbon.IsCollapsed and (FRibbon.FMinimizedPopup = nil);
+  MinimizedLook := FRibbon.IsCollapsed and (FRibbon.FMinimizedPopup = nil) and (FRibbon.FAutoHidePopup = nil);
   Painter.DrawTab(ACanvas, Bounds, FmrStripAccel(FTab.DisplayCaption), (HotPart <> TFmrElementPart.None) or Focused,
     FTab = FRibbon.FActiveTab, FRibbon.AbsoluteEnabled, MinimizedLook, Color);
   if Focused then
@@ -1014,7 +1139,7 @@ begin
   begin
     if P.Theme.Style.GroupFrame = TFmrGroupFrame.Boxed then
       GR.Inflate(-6, -6);
-    G.Draw(ACanvas, GR, 1, P.GlyphTint(TFmrPartState.Normal), Images);
+    FmrDrawImage(ACanvas, G, GR, 1, P.GlyphTint(TFmrPartState.Normal), Images);
   end;
   TextColor := P.ButtonTextColor(TFmrPartState.Normal);
   ArrowColor := P.Theme.Colors[TFmrToken.ButtonArrow];
@@ -1139,7 +1264,7 @@ var
 begin
   if (FRibbon = nil) or FRibbon.FDestroying then
     Exit;
-  R := AElement.Bounds;
+  R := PhysicalRect(AElement.Bounds);
   R.Inflate(2, 2);
   InvalidateRect(R);
   if (AElement = FRibbon.FAppElement) and (FRibbon.FPainter.Theme.Style.AppButton = TFmrAppButtonShape.Orb) and
@@ -1157,7 +1282,7 @@ begin
   FRibbon.FScreenTips.Cancel;
   if FRibbon.KeyTipsVisible then
     FRibbon.HideKeyTips;
-  if (FRibbon.FGroupPopup <> nil) or (FRibbon.FMinimizedPopup <> nil) then
+  if (FRibbon.FGroupPopup <> nil) or (FRibbon.FMinimizedPopup <> nil) or (FRibbon.FAutoHidePopup <> nil) then
     FRibbon.ClosePopups;
 end;
 
@@ -1178,10 +1303,33 @@ end;
 function TFmrRibbonPart.ScreenTipAnchor(const AElement: TFmrElement): TRectF;
 var
   TL, BR: TPointF;
+  R: TRectF;
 begin
-  TL := LocalToScreen(AElement.Bounds.TopLeft);
-  BR := LocalToScreen(AElement.Bounds.BottomRight);
+  R := PhysicalRect(AElement.Bounds);
+  TL := LocalToScreen(R.TopLeft);
+  BR := LocalToScreen(R.BottomRight);
   Result := RectF(TL.X, TL.Y, BR.X, BR.Y);
+end;
+
+function TFmrRibbonPart.IsMirrored: Boolean;
+begin
+  Result := (FRibbon <> nil) and not FRibbon.FDestroying and FRibbon.EffectiveRightToLeft;
+end;
+
+function TFmrRibbonPart.Logical(const X, Y: Single): TPointF;
+begin
+  if IsMirrored then
+    Result := PointF(Width - X, Y)
+  else
+    Result := PointF(X, Y);
+end;
+
+function TFmrRibbonPart.PhysicalRect(const R: TRectF): TRectF;
+begin
+  if IsMirrored then
+    Result := FmrMirrorRect(R, Width)
+  else
+    Result := R;
 end;
 
 function TFmrRibbonPart.KeepClickWhenClosingPopups(const P: TPointF): Boolean;
@@ -1233,6 +1381,8 @@ begin
   State := Canvas.SaveState;
   try
     Canvas.IntersectClipRect(LocalRect);
+    if IsMirrored then
+      FmrMirrorCanvas(Canvas, Width);
     PaintPart(Canvas);
   finally
     Canvas.RestoreState(State);
@@ -1272,7 +1422,13 @@ begin
     Sz := GetPainter.KeyTipSize(K.Tip);
     if Disp <> HostCtl then
     begin
-      P := ScreenToLocal(HostCtl.LocalToScreen(PointF(K.Element.Bounds.CenterPoint.X, 0)));
+      // Logical X in the host -> physical -> screen -> physical here -> logical here.
+      P := PointF(K.Element.Bounds.CenterPoint.X, 0);
+      if (HostCtl is TFmrRibbonPart) and TFmrRibbonPart(HostCtl).IsMirrored then
+        P.X := HostCtl.Width - P.X;
+      P := ScreenToLocal(HostCtl.LocalToScreen(P));
+      if IsMirrored then
+        P.X := Width - P.X;
       A := PointF(P.X, Sz.Height / 2 + 1);
     end
     else
@@ -1314,9 +1470,16 @@ begin
     Canvas.Offset := TPointF.Zero;
     Canvas.SetMatrix(M);
   end;
+  if FPart.IsMirrored then
+  begin
+    M := Canvas.Matrix;
+    FmrMirrorCanvas(Canvas, Width);
+  end;
   try
     FPart.PaintKeyTips(Canvas);
   finally
+    if FPart.IsMirrored then
+      Canvas.SetMatrix(M);
     if not SavedOffset.IsZero then
       Canvas.Offset := SavedOffset;
   end;
@@ -1354,7 +1517,7 @@ begin
   if (FRibbon = nil) or (csDesigning in ComponentState) then
     Exit;
   FRibbon.EnsureAll;
-  FTracker.MouseMove(PointF(X, Y));
+  FTracker.MouseMove(Logical(X, Y));
 end;
 
 procedure TFmrRibbonPart.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
@@ -1369,7 +1532,7 @@ begin
   FRibbon.EnsureAll;
   FRibbon.FScreenTips.Cancel;
   FRibbon.FAltArmed := False;
-  P := PointF(X, Y);
+  P := Logical(X, Y);
   if FRibbon.KeyTipsVisible then
     FRibbon.HideKeyTips;
   if FmrPopups.IsOpen and (FmrPopups.PopupOf(Self) = nil) then
@@ -1388,7 +1551,7 @@ begin
     Item := nil;
     if E is TFmrItemView then
       Item := TFmrItemView(E).Item;
-    FRibbon.ShowRibbonContextMenu(Item, LocalToScreen(P));
+    FRibbon.ShowRibbonContextMenu(Item, LocalToScreen(PointF(X, Y)));
     Exit;
   end;
   FTracker.MouseDown(Button, P);
@@ -1399,7 +1562,7 @@ begin
   inherited;
   if (FRibbon = nil) or (csDesigning in ComponentState) then
     Exit;
-  FTracker.MouseUp(Button, PointF(X, Y));
+  FTracker.MouseUp(Button, Logical(X, Y));
 end;
 
 procedure TFmrRibbonPart.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
@@ -1633,10 +1796,13 @@ begin
 end;
 
 function TFmrRibbonCaptionBar.FrameHitTest(const ALocalPoint: TPointF): TFmrHitArea;
+var
+  LP: TPointF;
 begin
-  if FindElement(ALocalPoint) <> nil then
+  LP := Logical(ALocalPoint.X, ALocalPoint.Y);
+  if FindElement(LP) <> nil then
     Result := TFmrHitArea.Client
-  else if FRibbon.FShowSearchBox and FSearchRect.Contains(ALocalPoint) then
+  else if FRibbon.FShowSearchBox and FSearchRect.Contains(LP) then
     Result := TFmrHitArea.Client
   else
     Result := TFmrHitArea.Caption;
@@ -1677,6 +1843,11 @@ procedure TFmrRibbonCaptionBar.MouseDown(Button: TMouseButton; Shift: TShiftStat
 begin
   // Double click on the empty caption maximizes (the frame does it in the non-client modes).
   inherited;
+  // Auto-hide without a frame: a click at the top of the window shows the ribbon (Office).
+  if (Button = TMouseButton.mbLeft) and (FRibbon <> nil) and FRibbon.AutoHideActive and not FRibbon.FBarsInHost and
+    (FRibbon.FAutoHidePopup = nil) and not FmrPopups.IsOpen and (FindElement(Logical(X, Y)) = nil) and
+    (TThread.GetTickCount - FRibbon.FAutoHideClosedTick > 300) and not (csDesigning in ComponentState) then
+    FRibbon.ShowAutoHideRibbon(False);
 end;
 
 procedure TFmrRibbonCaptionBar.PaintPart(const ACanvas: TCanvas);
@@ -1730,7 +1901,7 @@ end;
 
 function TFmrRibbonTabBar.FrameHitTest(const ALocalPoint: TPointF): TFmrHitArea;
 begin
-  if FindElement(ALocalPoint) <> nil then
+  if FindElement(Logical(ALocalPoint.X, ALocalPoint.Y)) <> nil then
     Result := TFmrHitArea.Client
   else
     Result := TFmrHitArea.Caption;
@@ -1822,12 +1993,12 @@ var
 begin
   if (Button = TMouseButton.mbLeft) and (ssDouble in Shift) and not (csDesigning in ComponentState) then
   begin
-    E := FindElement(PointF(X, Y));
+    E := FindElement(Logical(X, Y));
     if E is TFmrTabElement then
     begin
       FRibbon.ClosePopups;
       FRibbon.Minimized := not FRibbon.IsCollapsed;
-      if FRibbon.ShowMode = TFmrRibbonShowMode.TabsOnly then
+      if FRibbon.ShowMode <> TFmrRibbonShowMode.TabsAndCommands then
         FRibbon.ShowMode := TFmrRibbonShowMode.TabsAndCommands;
       FTracker.SuppressUntilUp;
       Exit;
@@ -1958,11 +2129,12 @@ end;
 function TFmrRibbonBody.ScreenTipAnchor(const AElement: TFmrElement): TRectF;
 var
   TL, BR: TPointF;
-  Card: TRectF;
+  Card, R: TRectF;
 begin
   Card := FRibbon.BodyCardRect;
-  TL := LocalToScreen(PointF(AElement.Bounds.Left, Card.Bottom));
-  BR := LocalToScreen(PointF(AElement.Bounds.Right, Card.Bottom));
+  R := PhysicalRect(AElement.Bounds);
+  TL := LocalToScreen(PointF(R.Left, Card.Bottom));
+  BR := LocalToScreen(PointF(R.Right, Card.Bottom));
   Result := RectF(TL.X, TL.Y - 1, BR.X, BR.Y);
 end;
 
@@ -2221,6 +2393,11 @@ begin
   Result := FRibbon <> nil;
   if Result then
     FRibbon.ShowRibbonContextMenu(AItem, AScreenPoint);
+end;
+
+function TFmrRibbon.TRibbonPopupContext.IsMirrored: Boolean;
+begin
+  Result := (FRibbon <> nil) and FRibbon.EffectiveRightToLeft;
 end;
 
 { TFmrRibbon }
@@ -2536,6 +2713,9 @@ var
 begin
   if FDestroying or (FCaptionBar = nil) or (FTabBar = nil) then
     Exit;
+  // The auto-hide overlay holds the tab bar: give it back first.
+  if FAutoHidePopup <> nil then
+    ClosePopups;
   InHost := (FFrame <> nil) and (FFrame.Host <> nil) and not (csDestroying in FFrame.ComponentState) and
     not (csDestroying in FFrame.Host.ComponentState) and (Parent <> nil);
   if InHost then
@@ -2572,9 +2752,11 @@ end;
 
 function TFmrRibbon.CaptionBarVisible: Boolean;
 begin
-  Result := FShowCaption;
+  // Auto-hide keeps the caption row: it holds the button that shows the ribbon.
+  Result := FShowCaption or AutoHideActive;
   if Result and FBarsInHost and (FFrame <> nil) and FFrame.Hooked and (FFrame.Mode = TFmrFrameMode.NCStrip) then
-    Result := FQAT.Visible and (FQAT.Position = TFmrQATPosition.AboveRibbon) and (FQAT.ItemLinks.VisibleCount > 0);
+    Result := AutoHideActive or (FQAT.Visible and (FQAT.Position = TFmrQATPosition.AboveRibbon) and
+      (FQAT.ItemLinks.VisibleCount > 0));
 end;
 
 function TFmrRibbon.BodyVisible: Boolean;
@@ -2620,8 +2802,9 @@ begin
   if FDestroying or (FCaptionBar = nil) or (FPainter = nil) then
     Exit;
   CapVisible := CaptionBarVisible;
-  // A backstage view covers the client area; the frame keeps only the caption row.
-  TabVisible := not (FAppMenuCovering and FBarsInHost and CapVisible);
+  // A backstage view covers the client area; the frame keeps only the caption row. Auto-hide hides the tab row too
+  // (the overlay shows it).
+  TabVisible := not (FAppMenuCovering and FBarsInHost and CapVisible) and not AutoHideActive;
   CapH := CaptionBarHeight;
   TabH := TabBarHeight;
   BH := BodyHeight;
@@ -2634,7 +2817,8 @@ begin
   FTabBar.Height := TabH;
   if FBarsInHost then
   begin
-    FTabBar.Visible := TabVisible;
+    if FAutoHidePopup = nil then
+      FTabBar.Visible := TabVisible;
     H := 0;
     if TabVisible then
       H := TabH;
@@ -2652,9 +2836,15 @@ begin
       FCaptionBar.SetBounds(0, Y, W, CapH);
       Y := Y + CapH;
     end;
-    FTabBar.Visible := True;
-    FTabBar.SetBounds(0, Y, W, TabH);
-    Y := Y + TabH;
+    if FAutoHidePopup = nil then
+    begin
+      FTabBar.Visible := TabVisible;
+      if TabVisible then
+      begin
+        FTabBar.SetBounds(0, Y, W, TabH);
+        Y := Y + TabH;
+      end;
+    end;
   end;
   if FBody.Parent = Self then
   begin
@@ -2713,7 +2903,7 @@ begin
     Exit;
   UpdateHeights;
   InvalidateArrange;
-  if (FMinimizedPopup <> nil) or (FGroupPopup <> nil) or (FDropPopup <> nil) then
+  if (FMinimizedPopup <> nil) or (FGroupPopup <> nil) or (FDropPopup <> nil) or (FAutoHidePopup <> nil) then
     ClosePopups;
 end;
 
@@ -2735,6 +2925,8 @@ begin
   BuildTheme;
   UpdateFrameAttachment;
   InvalidateStructure;
+  // A ribbon streamed from a form: its designed layout is complete now.
+  CaptureDefaultLayout;
   UpdateHeights;
 end;
 
@@ -2911,6 +3103,8 @@ begin
   begin
     ClosePopups;
     FShowMode := Value;
+    // The caption row gets or loses the auto-hide button.
+    InvalidateStructure;
     UpdateHeights;
     InvalidateArrange;
     InvalidateParts;
@@ -3037,7 +3231,8 @@ begin
   if FRightToLeft <> Value then
   begin
     FRightToLeft := Value;
-    InvalidateLayout;
+    ClosePopups;
+    InvalidateStructure;
   end;
 end;
 
@@ -3326,6 +3521,7 @@ begin
   end;
   FArrangedWidth := Width;
   FArrangeValid := True;
+  Inc(FAccVersion);
   if FPainting then
     FNeedRepaint := True;
 end;
@@ -3567,6 +3763,11 @@ begin
     end;
     NewSysButton(FCaptionSysElements, FCaptionBar, TFmrSysButtonKind.QATOverflow).Visible := False;
     NewSysButton(FQATBarSysElements, FQATBar, TFmrSysButtonKind.QATOverflow).Visible := False;
+    // Caption-style buttons: "..." of the auto-hidden ribbon and the display options (Office 2016).
+    if AutoHideActive then
+      NewSysButton(FCaptionSysElements, FCaptionBar, TFmrSysButtonKind.AutoHideShow);
+    if FShowDisplayOptionsButton and not (csDesigning in ComponentState) then
+      NewSysButton(FCaptionSysElements, FCaptionBar, TFmrSysButtonKind.DisplayOptions);
     // Search box: a real edit over the box painted by the caption bar.
     if FShowSearchBox and (FCaptionBar.FSearchEdit = nil) and not (csDesigning in ComponentState) then
     begin
@@ -3727,6 +3928,9 @@ begin
   else
     Result := RectF(C.Left + PadH, C.Top + M.BodyPaddingV, C.Right - PadH,
       C.Top + M.BodyPaddingV + M.GroupPaddingTop + M.ContentHeight + M.GroupCaptionHeight);
+  // Room for the classic/simplified switch at the right end of the body.
+  if FShowDisplayModeButton then
+    Result.Right := Result.Right - 26;
 end;
 
 function TFmrRibbon.IsOrb: Boolean;
@@ -4001,6 +4205,9 @@ var
   I: Integer;
   Title: string;
   Segs: TList<TRectF>;
+  SysKind: TFmrSysButtonKind;
+  SysE: TFmrSysButtonElement;
+  SysW: Single;
 begin
   M := FPainter.Metrics;
   W := FCaptionBar.Width;
@@ -4009,13 +4216,30 @@ begin
   X := 6;
   if IsOrb then
     X := OrbRect(0).Right + 6;
-  // Caption buttons from the right: close, maximize, minimize (created in that order).
+  // Caption buttons from the right: close, maximize, minimize (created in that order). They are real controls: in
+  // a right-to-left ribbon they get mirrored bounds (on the left, like Windows).
   RightX := W;
   for Btn in FCaptionBar.FButtons do
   begin
     RightX := RightX - CaptionButtonWidth;
-    Btn.SetBounds(RightX, Top, CaptionButtonWidth, M.CaptionHeight);
+    if EffectiveRightToLeft then
+      Btn.SetBounds(W - RightX - CaptionButtonWidth, Top, CaptionButtonWidth, M.CaptionHeight)
+    else
+      Btn.SetBounds(RightX, Top, CaptionButtonWidth, M.CaptionHeight);
   end;
+  // Display options, then the "..." of the auto-hidden ribbon, left of the window buttons.
+  for SysKind in [TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow] do
+    for SysE in FCaptionSysElements do
+      if SysE.Kind = SysKind then
+      begin
+        if FCaptionBar.FButtons.Count > 0 then
+          SysW := CaptionButtonWidth
+        else
+          SysW := Round(M.CaptionHeight + 8);
+        RightX := RightX - SysW;
+        SysE.Bounds := RectF(RightX, Top, RightX + SysW, CH);
+        SysE.Visible := True;
+      end;
   // quick access toolbar above the ribbon
   if FQAT.Visible and (FQAT.Position = TFmrQATPosition.AboveRibbon) then
   begin
@@ -4029,7 +4253,7 @@ begin
   // contextual tab group headers above their tabs
   Headers := TList<TPair<TFmrRibbonContextGroup, TRectF>>.Create;
   try
-    if FShowTabGroups then
+    if FShowTabGroups and FTabBar.Visible and (FAutoHidePopup = nil) then
       for CG in TFmrRibbonStructure.ContextGroups(Self) do
       begin
         if not CG.Visible then
@@ -4081,7 +4305,10 @@ begin
     FCaptionBar.FSearchRect := RectF(SX, Top + 4, SX + SW, CH - 4);
     if FCaptionBar.FSearchEdit <> nil then
     begin
-      FCaptionBar.FSearchEdit.SetBounds(SX + 24, Top + 4, SW - 28, M.CaptionHeight - 8);
+      if EffectiveRightToLeft then
+        FCaptionBar.FSearchEdit.SetBounds(W - (SX + 24) - (SW - 28), Top + 4, SW - 28, M.CaptionHeight - 8)
+      else
+        FCaptionBar.FSearchEdit.SetBounds(SX + 24, Top + 4, SW - 28, M.CaptionHeight - 8);
       FCaptionBar.FSearchEdit.Visible := SW > 60;
     end;
     RightX := SX - 8;
@@ -4172,6 +4399,8 @@ begin
     ArrangeBodySimplified(GroupAreaRect)
   else
     ArrangeBodyClassic(GroupAreaRect);
+  if FShowDisplayModeButton and not (csDesigning in ComponentState) then
+    AddDisplayModeButton(GroupAreaRect);
   if FKeyTipLevel = TFmrKeyTipLevel.Tab then
     BuildKeyTips(TFmrKeyTipLevel.Tab);
 end;
@@ -4196,8 +4425,7 @@ var
 begin
   M := FPainter.Metrics;
   R := FCalc.Calculate(AContent.Width);
-  if FRightToLeft then
-    FmrMirrorLayout(R);
+  // Right to left: the layout stays left to right here; the body flips its canvas and the mouse (FMR.Ribbon.BiDi).
   FLayoutResult := R;
   if R.Fits then
     FScrollOffset := 0
@@ -4411,6 +4639,19 @@ begin
     FNeedRepaint := False;
     InvalidateParts;
   end;
+  if not (csDesigning in ComponentState) then
+  begin
+    // A ribbon built in code: its designed layout is the one of the first idle (before any customization).
+    if (FDefaultLayout = '') and FStructureValid and (FUpdateCount = 0) then
+      CaptureDefaultLayout;
+    // The BiDiMode of the form has no change notification.
+    if EffectiveRightToLeft <> FLastRTL then
+    begin
+      FLastRTL := EffectiveRightToLeft;
+      ClosePopups;
+      InvalidateStructure;
+    end;
+  end;
   if FAppMenuTracking or FAppMenuCovering or (FApplicationMenu is TControl) then
     UpdateApplicationMenuState;
   if not (csDesigning in ComponentState) then
@@ -4498,9 +4739,13 @@ end;
 function TFmrRibbon.ElementScreenRect(const AElement: TFmrElement; const AHost: TControl): TRectF;
 var
   TL, BR: TPointF;
+  R: TRectF;
 begin
-  TL := AHost.LocalToScreen(AElement.Bounds.TopLeft);
-  BR := AHost.LocalToScreen(AElement.Bounds.BottomRight);
+  R := AElement.Bounds;
+  if (AHost is TFmrRibbonPart) and TFmrRibbonPart(AHost).IsMirrored then
+    R := FmrMirrorRect(R, AHost.Width);
+  TL := AHost.LocalToScreen(R.TopLeft);
+  BR := AHost.LocalToScreen(R.BottomRight);
   Result := RectF(TL.X, TL.Y, BR.X, BR.Y);
 end;
 
@@ -4530,7 +4775,8 @@ begin
 end;
 
 procedure TFmrRibbon.ShowPopupForElement(const AContent: TControl; const AElement: TFmrElement;
-  const AHost: TFmrRibbonPart; const AByKeyboard: Boolean; const AOwned: TObject);
+  const AHost: TFmrRibbonPart; const AByKeyboard: Boolean; const AOwned: TObject;
+  const APlacement: TFmrPopupPlacement);
 var
   Ctx: IFmrPopupContext;
   Popup: TFmrPopupForm;
@@ -4561,9 +4807,9 @@ begin
     end;
   FScreenTips.Cancel;
   if AElement <> nil then
-    FmrPopups.Show(Popup, ElementScreenRect(AElement, AHost), TFmrPopupPlacement.Below, ParentPopup, AByKeyboard)
+    FmrPopups.Show(Popup, ElementScreenRect(AElement, AHost), APlacement, ParentPopup, AByKeyboard)
   else
-    FmrPopups.Show(Popup, AHost.AbsoluteRect, TFmrPopupPlacement.Below, ParentPopup, AByKeyboard);
+    FmrPopups.Show(Popup, AHost.AbsoluteRect, APlacement, ParentPopup, AByKeyboard);
 end;
 
 procedure TFmrRibbon.ShowDropDown(const AElement: TFmrElement; const AHost: TFmrRibbonPart;
@@ -4610,6 +4856,12 @@ begin
     SetActiveTab(AElement.FTab);
     Exit;
   end;
+  // The auto-hide overlay shows the tabs and the body together: a tab only switches.
+  if FAutoHidePopup <> nil then
+  begin
+    SetActiveTab(AElement.FTab);
+    Exit;
+  end;
   if IsCollapsed then
   begin
     if (FMinimizedPopup <> nil) and (AElement.FTab = FActiveTab) then
@@ -4633,7 +4885,7 @@ var
   Anchor: TRectF;
   TL, BR: TPointF;
 begin
-  if (FBody = nil) or (FMinimizedPopup <> nil) then
+  if (FBody = nil) or (FMinimizedPopup <> nil) or (FAutoHidePopup <> nil) then
     Exit;
   EnsureAll;
   Ctx := NewPopupContext;
@@ -4809,10 +5061,18 @@ begin
     TFmrSysButtonKind.CollapseRibbon:
       begin
         ClosePopups;
-        if FShowMode = TFmrRibbonShowMode.TabsOnly then
+        if FShowMode <> TFmrRibbonShowMode.TabsAndCommands then
+        begin
           ShowMode := TFmrRibbonShowMode.TabsAndCommands;
-        Minimized := not FMinimized;
+          Minimized := False;
+        end
+        else
+          Minimized := not FMinimized;
       end;
+    TFmrSysButtonKind.DisplayOptions:
+      ShowDisplayOptionsMenu(AElement, AByKeyboard);
+    TFmrSysButtonKind.AutoHideShow:
+      ShowAutoHideRibbon(AByKeyboard);
     TFmrSysButtonKind.Help:
       if Assigned(FOnHelpButtonClick) then
         FOnHelpButtonClick(Self);
@@ -4870,8 +5130,10 @@ begin
     procedure
     begin
       if Assigned(FOnCustomizeQAT) then
-        FOnCustomizeQAT(Self);
-    end, False, True, Assigned(FOnCustomizeQAT));
+        FOnCustomizeQAT(Self)
+      else
+        QueueCustomizationForm(TFmrCustomizationPage.QuickAccessToolbar);
+    end, False, True);
   if FQAT.Position = TFmrQATPosition.AboveRibbon then
     Temp.AddCommand(FmrStr(TFmrStringId.QATShowBelow),
       procedure
@@ -4938,13 +5200,20 @@ begin
   Temp := TFmrTempMenu.Create;
   LastGroup := nil;
   for L in FSimplifiedOverflow do
-    if (L <> nil) and (L.Item <> nil) and not (L.Item is TFmrCustomEditItem) and not (L.Item is TFmrControlItem) then
+    if (L <> nil) and (L.Item <> nil) and L.IsVisible and not (L.Item is TFmrCustomEditItem) and
+      not (L.Item is TFmrControlItem) and not ((L.Item is TFmrSeparatorItem) and (L.Item.Caption = '')) then
     begin
       G := L.LinksOwner;
       Temp.AddLink(L.Item, (LastGroup <> nil) and (G <> LastGroup));
       LastGroup := G;
     end;
-  Content := TFmrMenuControl.CreateMenu(NewPopupContext, Temp.Links);
+  if Temp.Links.VisibleCount = 0 then
+  begin
+    Temp.Free;
+    Exit;
+  end;
+  // Plain rows: the overflow menu lists commands, not the large gallery-like rows of drop-down menus.
+  Content := TFmrMenuControl.CreateMenu(NewPopupContext, Temp.Links, TFmrMenuItemStyle.Normal);
   Content.OwnedObject := Temp;
   ShowPopupForElement(Content, AElement, FBody, AByKeyboard);
 end;
@@ -4984,8 +5253,10 @@ begin
     procedure
     begin
       if Assigned(FOnCustomizeQAT) then
-        FOnCustomizeQAT(Self);
-    end, False, True, Assigned(FOnCustomizeQAT));
+        FOnCustomizeQAT(Self)
+      else
+        QueueCustomizationForm(TFmrCustomizationPage.QuickAccessToolbar);
+    end, False, True);
   if FQAT.Position = TFmrQATPosition.AboveRibbon then
     Temp.AddCommand(FmrStr(TFmrStringId.QATShowBelowLong),
       procedure
@@ -4998,6 +5269,11 @@ begin
       begin
         FQAT.Position := TFmrQATPosition.AboveRibbon;
       end);
+  Temp.AddCommand(FmrStr(TFmrStringId.RibbonCustomize),
+    procedure
+    begin
+      QueueCustomizationForm(TFmrCustomizationPage.Ribbon);
+    end, False, True);
   if IsCollapsed then
     Temp.AddCommand(FmrStr(TFmrStringId.RibbonExpand),
       procedure
@@ -5014,6 +5290,7 @@ begin
   Content := TFmrMenuControl.CreateMenu(NewPopupContext, Temp.Links, TFmrMenuItemStyle.Normal);
   Content.OwnedObject := Temp;
   Popup := TFmrPopupForm.CreatePopup(Content.Context, Content);
+  FScreenTips.Cancel;
   FmrPopups.Show(Popup, RectF(AScreenPoint.X, AScreenPoint.Y, AScreenPoint.X, AScreenPoint.Y),
     TFmrPopupPlacement.AtPoint);
 end;
@@ -5192,7 +5469,7 @@ begin
       else if (Key = vkF1) and (Shift = [ssCtrl]) then
       begin
         ClosePopups;
-        if FShowMode = TFmrRibbonShowMode.TabsOnly then
+        if FShowMode <> TFmrRibbonShowMode.TabsAndCommands then
           ShowMode := TFmrRibbonShowMode.TabsAndCommands
         else
           Minimized := not FMinimized;
@@ -5228,6 +5505,9 @@ end;
 procedure TFmrRibbon.EnterKeyTips(const ALevel: TFmrKeyTipLevel);
 begin
   EnsureAll;
+  // Auto-hide: Alt shows the ribbon first, so the tabs have somewhere to show their tips.
+  if AutoHideActive and (FAutoHidePopup = nil) and (ALevel = TFmrKeyTipLevel.Top) then
+    ShowAutoHideRibbon(True);
   FScreenTips.Cancel;
   if not FmrPopups.HasKeyHandler(Self) then
     FmrPopups.AddKeyHandler(OwnerForm, Self);
@@ -5652,6 +5932,7 @@ end;
 procedure TFmrRibbon.LoadLayoutFromString(const AText: string);
 begin
   ClosePopups;
+  CaptureDefaultLayout;
   TFmrRibbonLayoutStorage.LoadFromString(Self, AText);
   InvalidateStructure;
   UpdateHeights;
@@ -5660,6 +5941,7 @@ end;
 procedure TFmrRibbon.LoadLayoutFromStream(const AStream: TStream);
 begin
   ClosePopups;
+  CaptureDefaultLayout;
   TFmrRibbonLayoutStorage.LoadFromStream(Self, AStream);
   InvalidateStructure;
   UpdateHeights;
@@ -5668,6 +5950,7 @@ end;
 procedure TFmrRibbon.LoadLayoutFromFile(const AFileName: string);
 begin
   ClosePopups;
+  CaptureDefaultLayout;
   TFmrRibbonLayoutStorage.LoadFromFile(Self, AFileName);
   InvalidateStructure;
   UpdateHeights;
@@ -5707,6 +5990,7 @@ begin
     Exit;
   EnsureAll;
   P := FTabBar.ScreenToLocal(AScreenPoint);
+  P := FTabBar.Logical(P.X, P.Y);
   for T in FTabElements do
     if T.Visible and T.Bounds.Contains(P) then
       Exit(T.FTab);
@@ -5745,6 +6029,7 @@ var
 var
   V: TFmrItemView;
   E: TFmrElement;
+  I: Integer;
 begin
   EnsureAll;
   SB := TStringBuilder.Create;
@@ -5769,10 +6054,644 @@ begin
       Elem('view ' + V.Link.Caption, V);
     for E in FBodyElements do
       Elem('body ' + E.ClassName, E);
+    for I := 0 to High(FSimplifiedOverflow) do
+      if FSimplifiedOverflow[I] <> nil then
+        SB.AppendLine('  overflow ' + FSimplifiedOverflow[I].Caption);
     Result := SB.ToString;
   finally
     SB.Free;
   end;
+end;
+
+{ customization, display options, auto-hide, accessibility }
+
+type
+  /// Content of the auto-hide overlay: the tab bar above the body, both borrowed from the ribbon while it is open.
+  TFmrAutoHideContent = class(TControl, IFmrPopupContent)
+  private
+    [Weak] FRibbon: TFmrRibbon;
+  protected
+    procedure Resize; override;
+    function GetPopupSize: TSizeF;
+    function PopupKeyDown(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
+    procedure PopupShown(const AByKeyboard: Boolean);
+    procedure PopupClosed;
+    function PaintsOwnBackground: Boolean;
+  end;
+
+procedure TFmrAutoHideContent.Resize;
+var
+  TabH: Single;
+begin
+  inherited;
+  if (FRibbon = nil) or FRibbon.FDestroying then
+    Exit;
+  TabH := FRibbon.TabBarHeight;
+  if (FRibbon.FTabBar <> nil) and (FRibbon.FTabBar.Parent = Self) then
+    FRibbon.FTabBar.SetBounds(0, 0, Width, TabH);
+  if (FRibbon.FBody <> nil) and (FRibbon.FBody.Parent = Self) then
+    FRibbon.FBody.SetBounds(0, TabH, Width, Max(0, Height - TabH));
+end;
+
+function TFmrAutoHideContent.GetPopupSize: TSizeF;
+var
+  W: Single;
+begin
+  if (FRibbon.FCaptionBar <> nil) and (FRibbon.FCaptionBar.Width > 0) then
+    W := FRibbon.FCaptionBar.Width
+  else
+    W := FRibbon.Width;
+  Result := TSizeF.Create(W, FRibbon.TabBarHeight + FRibbon.BodyHeight + 2);
+end;
+
+function TFmrAutoHideContent.PaintsOwnBackground: Boolean;
+begin
+  Result := True;
+end;
+
+procedure TFmrAutoHideContent.PopupClosed;
+begin
+end;
+
+function TFmrAutoHideContent.PopupKeyDown(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
+begin
+  Result := False;
+end;
+
+procedure TFmrAutoHideContent.PopupShown(const AByKeyboard: Boolean);
+begin
+end;
+
+function TFmrRibbon.EffectiveRightToLeft: Boolean;
+var
+  F: TCommonCustomForm;
+begin
+  Result := FRightToLeft;
+  if not Result and not (csDesigning in ComponentState) then
+  begin
+    F := OwnerForm;
+    Result := (F <> nil) and (F.BiDiMode = TBiDiMode.bdRightToLeft);
+  end;
+end;
+
+function TFmrRibbon.AutoHideActive: Boolean;
+begin
+  Result := (FShowMode = TFmrRibbonShowMode.AutoHide) and not (csDesigning in ComponentState);
+end;
+
+procedure TFmrRibbon.SetShowDisplayOptionsButton(const Value: Boolean);
+begin
+  if FShowDisplayOptionsButton <> Value then
+  begin
+    FShowDisplayOptionsButton := Value;
+    InvalidateStructure;
+  end;
+end;
+
+procedure TFmrRibbon.SetShowDisplayModeButton(const Value: Boolean);
+begin
+  if FShowDisplayModeButton <> Value then
+  begin
+    FShowDisplayModeButton := Value;
+    InvalidateStructure;
+  end;
+end;
+
+procedure TFmrRibbon.CaptureDefaultLayout;
+begin
+  if (FDefaultLayout <> '') or FDestroying or ([csDesigning, csLoading, csDestroying] * ComponentState <> []) then
+    Exit;
+  try
+    FDefaultLayout := SaveLayoutToString(False);
+  except
+    FDefaultLayout := '';
+  end;
+end;
+
+function TFmrRibbon.ShowCustomizationForm(const APage: TFmrCustomizationPage): Boolean;
+begin
+  Result := False;
+  if FDestroying or (csDesigning in ComponentState) then
+    Exit;
+  ClosePopups;
+  if FKeyTipLevel <> TFmrKeyTipLevel.None then
+    HideKeyTips;
+  EnsureAll;
+  CaptureDefaultLayout;
+  Result := TFmrRibbonCustomizeForm.Execute(Self, APage);
+  if Result and not FDestroying then
+  begin
+    InvalidateStructure;
+    UpdateHeights;
+  end;
+end;
+
+procedure TFmrRibbon.QueueCustomizationForm(const APage: TFmrCustomizationPage);
+begin
+  // Menus call this from their click: the modal form runs after the menu has gone.
+  TThread.ForceQueue(nil,
+    procedure
+    begin
+      if not FDestroying then
+        ShowCustomizationForm(APage);
+    end);
+end;
+
+procedure TFmrRibbon.ResetLayout;
+begin
+  if FDefaultLayout = '' then
+    Exit;
+  ClosePopups;
+  TFmrRibbonLayoutStorage.LoadFromString(Self, FDefaultLayout);
+  InvalidateStructure;
+  UpdateHeights;
+end;
+
+procedure TFmrRibbon.ShowAutoHiddenRibbon;
+begin
+  ShowAutoHideRibbon(False);
+end;
+
+function TFmrRibbon.AutoHiddenRibbonShown: Boolean;
+begin
+  Result := FAutoHidePopup <> nil;
+end;
+
+procedure TFmrRibbon.ShowAutoHideRibbon(const AByKeyboard: Boolean);
+var
+  Content: TFmrAutoHideContent;
+  Popup: TFmrPopupForm;
+  TL, BR: TPointF;
+begin
+  if (FAutoHidePopup <> nil) or not AutoHideActive or FDestroying or (FBody = nil) or (FTabBar = nil) or
+    (FCaptionBar = nil) then
+    Exit;
+  ClosePopups;
+  EnsureAll;
+  Content := TFmrAutoHideContent.Create(nil);
+  Content.FRibbon := Self;
+  FTabBar.Align := TAlignLayout.None;
+  FTabBar.Parent := Content;
+  FTabBar.Visible := True;
+  FBody.Parent := Content;
+  FBody.Visible := True;
+  Popup := TFmrPopupForm.CreatePopup(NewPopupContext, Content);
+  Popup.ShadowSize := 6;
+  FAutoHidePopup := Popup;
+  Popup.OnClosed :=
+    procedure
+    begin
+      if FAutoHidePopup = Popup then
+        FAutoHidePopup := nil;
+      FAutoHideClosedTick := TThread.GetTickCount;
+      // The bars go home: the tab bar into the frame host (below the caption bar) or the ribbon, the body into the
+      // ribbon; the content control is freed with the popup.
+      if (FTabBar <> nil) and not (csDestroying in FTabBar.ComponentState) then
+      begin
+        if FBarsInHost and (FFrame <> nil) and (FFrame.Host <> nil) and
+          not (csDestroying in FFrame.Host.ComponentState) then
+        begin
+          FTabBar.Parent := FFrame.Host;
+          FTabBar.Position.Y := FCaptionBar.Height + 1;
+          FTabBar.Align := TAlignLayout.Top;
+        end
+        else
+          FTabBar.Parent := Self;
+      end;
+      if (FBody <> nil) and not (csDestroying in FBody.ComponentState) then
+        FBody.Parent := Self;
+      if FDestroying then
+        Exit;
+      if FKeyTipLevel <> TFmrKeyTipLevel.None then
+        HideKeyTips;
+      UpdateHeights;
+      InvalidateArrange;
+      InvalidateParts;
+    end;
+  TL := FCaptionBar.LocalToScreen(PointF(0, 0));
+  BR := FCaptionBar.LocalToScreen(PointF(FCaptionBar.Width, FCaptionBar.Height));
+  FmrPopups.Show(Popup, RectF(TL.X - 1, TL.Y, BR.X, BR.Y), TFmrPopupPlacement.Below, nil, AByKeyboard);
+  InvalidateArrange;
+  EnsureAll;
+  FTabBar.Repaint;
+  FBody.Repaint;
+end;
+
+procedure TFmrRibbon.ShowDisplayOptionsMenu(const AElement: TFmrElement; const AByKeyboard: Boolean);
+const
+  PathFrame = 'M2,4 L22,4 L22,20 L2,20 Z M3.5,5.5 L3.5,18.5 L20.5,18.5 L20.5,5.5 Z ';
+  PathAutoHide = PathFrame + 'M12,7.5 L16.5,12 L13,12 L13,16.5 L11,16.5 L11,12 L7.5,12 Z';
+  PathTabs = PathFrame + 'M5,7 L8.5,7 L8.5,9 L5,9 Z M10,7 L13.5,7 L13.5,9 L10,9 Z M15,7 L18.5,7 L18.5,9 L15,9 Z';
+  PathTabsCommands = PathFrame + 'M5,7 L8.5,7 L8.5,9 L5,9 Z M10,7 L13.5,7 L13.5,9 L10,9 Z M15,7 L18.5,7 L18.5,9 ' +
+    'L15,9 Z M5,10.5 L19,10.5 L19,14 L5,14 Z';
+var
+  Temp: TFmrTempMenu;
+  Content: TFmrMenuControl;
+  Host: TFmrRibbonPart;
+
+  procedure Add(const ACaption, ADescription: TFmrStringId; const APath: string; const AMode: TFmrRibbonShowMode);
+  var
+    C: TFmrCommandItem;
+    Checked: Boolean;
+  begin
+    Checked := (FShowMode = AMode) and ((AMode <> TFmrRibbonShowMode.TabsAndCommands) or not FMinimized);
+    C := Temp.AddCommand(FmrStr(ACaption),
+      procedure
+      begin
+        ShowMode := AMode;
+        if AMode = TFmrRibbonShowMode.TabsAndCommands then
+          Minimized := False;
+      end, Checked);
+    C.Description := FmrStr(ADescription);
+    C.LargeGlyph.PathData := APath;
+    C.LargeGlyph.PathViewBox := 24;
+    C.Glyph.PathData := APath;
+    C.Glyph.PathViewBox := 24;
+  end;
+
+begin
+  Temp := TFmrTempMenu.Create;
+  Add(TFmrStringId.RibbonAutoHide, TFmrStringId.RibbonAutoHideDesc, PathAutoHide, TFmrRibbonShowMode.AutoHide);
+  Add(TFmrStringId.RibbonShowTabs, TFmrStringId.RibbonShowTabsDesc, PathTabs, TFmrRibbonShowMode.TabsOnly);
+  Add(TFmrStringId.RibbonShowTabsAndCommands, TFmrStringId.RibbonShowTabsAndCommandsDesc, PathTabsCommands,
+    TFmrRibbonShowMode.TabsAndCommands);
+  Content := TFmrMenuControl.CreateMenu(NewPopupContext, Temp.Links, TFmrMenuItemStyle.Large, 300);
+  Content.OwnedObject := Temp;
+  Host := FCaptionBar;
+  if (AElement <> nil) and (AElement.Host <> nil) and (AElement.Host.GetHostControl is TFmrRibbonPart) then
+    Host := TFmrRibbonPart(AElement.Host.GetHostControl);
+  ShowPopupForElement(Content, AElement, Host, AByKeyboard, nil, TFmrPopupPlacement.BelowEnd);
+end;
+
+procedure TFmrRibbon.AddDisplayModeButton(const ABounds: TRectF);
+var
+  E: TFmrSysButtonElement;
+  S: Single;
+begin
+  S := 22;
+  E := TFmrSysButtonElement.Create(FBody);
+  E.FRibbon := Self;
+  E.FKind := TFmrSysButtonKind.DisplayMode;
+  if FDisplayMode = TFmrRibbonDisplayMode.Simplified then
+    E.Bounds := RectF(ABounds.Right + 3, Round(ABounds.CenterPoint.Y - S / 2), ABounds.Right + 3 + S,
+      Round(ABounds.CenterPoint.Y - S / 2) + S)
+  else
+    E.Bounds := RectF(ABounds.Right + 3, ABounds.Bottom - S - 1, ABounds.Right + 3 + S, ABounds.Bottom - 1);
+  FBodyElements.Add(E);
+end;
+
+function TFmrRibbon.AccessibilityNodes: TArray<TFmrAccNode>;
+var
+  L: TList<TFmrAccNode>;
+  QATIndex, TabsIndex, BodyIndex, GroupIndex, I: Integer;
+  V: TFmrItemView;
+  E: TFmrElement;
+  T: TFmrTabElement;
+  S: TFmrSysButtonElement;
+  Box: TFmrGroupBox;
+  Groups: TDictionary<TObject, Integer>;
+  Info: TFmrScreenTipInfo;
+  Owner: TPersistent;
+
+  function ControlRect(const C: TControl): TRectF;
+  var
+    TL, BR: TPointF;
+  begin
+    TL := C.LocalToScreen(PointF(0, 0));
+    BR := C.LocalToScreen(PointF(C.Width, C.Height));
+    Result := RectF(TL.X, TL.Y, BR.X, BR.Y);
+  end;
+
+  function HostRect(const AElement: TFmrElement; const ABounds: TRectF): TRectF;
+  var
+    C: TControl;
+    R: TRectF;
+    TL, BR: TPointF;
+  begin
+    Result := TRectF.Empty;
+    if (AElement.Host = nil) or (AElement.Host.GetHostControl = nil) then
+      Exit;
+    C := AElement.Host.GetHostControl;
+    R := ABounds;
+    if (C is TFmrRibbonPart) and TFmrRibbonPart(C).IsMirrored then
+      R := FmrMirrorRect(R, C.Width);
+    TL := C.LocalToScreen(R.TopLeft);
+    BR := C.LocalToScreen(R.BottomRight);
+    Result := RectF(TL.X, TL.Y, BR.X, BR.Y);
+  end;
+
+  function BodyRect(const ABounds: TRectF): TRectF;
+  var
+    R: TRectF;
+    TL, BR: TPointF;
+  begin
+    R := ABounds;
+    if FBody.IsMirrored then
+      R := FmrMirrorRect(R, FBody.Width);
+    TL := FBody.LocalToScreen(R.TopLeft);
+    BR := FBody.LocalToScreen(R.BottomRight);
+    Result := RectF(TL.X, TL.Y, BR.X, BR.Y);
+  end;
+
+  function Add(const ARole: TFmrAccRole; const AName: string; const AParent: Integer; const ABounds: TRectF;
+    const AElement, AData: TObject): Integer;
+  var
+    N: TFmrAccNode;
+    Item: TFmrBarItem;
+  begin
+    N := System.Default(TFmrAccNode);
+    N.Role := ARole;
+    N.Name := AName;
+    N.Parent := AParent;
+    N.Bounds := ABounds;
+    N.Element := AElement;
+    N.Data := AData;
+    N.Enabled := True;
+    if (AElement is TFmrItemView) and (TFmrItemView(AElement).Item <> nil) then
+      N.AutomationId := TFmrItemView(AElement).Item.Name
+    else if AElement is TFmrSysButtonElement then
+      N.AutomationId := GetEnumName(TypeInfo(TFmrSysButtonKind), Ord(TFmrSysButtonElement(AElement).Kind))
+    else if AElement is TFmrLauncherElement then
+      N.AutomationId := TFmrLauncherElement(AElement).FGroup.Name + '.Launcher'
+    else if AElement = FAppElement then
+      N.AutomationId := 'ApplicationButton'
+    else if AData is TComponent then
+      N.AutomationId := TComponent(AData).Name;
+    if (AElement = nil) and (ARole in [TFmrAccRole.QuickAccessToolbar, TFmrAccRole.TabList,
+      TFmrAccRole.LowerRibbon]) then
+      N.AutomationId := GetEnumName(TypeInfo(TFmrAccRole), Ord(ARole));
+    if (AElement is TFmrEditorView) and (TFmrItemView(AElement).Item is TFmrCustomEditItem) then
+    begin
+      Item := TFmrItemView(AElement).Item;
+      N.ReadOnly := TFmrCustomEditItem(Item).ReadOnly;
+      if Item is TFmrEditItem then
+        N.Value := TFmrEditItem(Item).Text
+      else if Item is TFmrComboItem then
+        N.Value := TFmrComboItem(Item).Text
+      else if Item is TFmrSpinItem then
+        N.Value := FloatToStr(TFmrSpinItem(Item).Value)
+      else if Item is TFmrTrackBarItem then
+        N.Value := FloatToStr(TFmrTrackBarItem(Item).Value);
+    end;
+    if AElement is TFmrElement then
+    begin
+      N.Enabled := TFmrElement(AElement).IsEnabled;
+      N.Checked := TFmrElement(AElement).IsChecked;
+      N.AccessKey := TFmrElement(AElement).KeyTip;
+      if N.AccessKey = '' then
+        N.AccessKey := TFmrElement(AElement).ExplicitKeyTip;
+      if TFmrElement(AElement).GetScreenTip(Info) then
+      begin
+        N.HelpText := Info.Description;
+        if N.Name = '' then
+          N.Name := Info.Header;
+      end;
+    end;
+    Result := L.Add(N);
+  end;
+
+  function ViewRole(const AView: TFmrItemView): TFmrAccRole;
+  begin
+    if (AView is TFmrEditorView) and (AView.Item is TFmrComboItem) then
+      Result := TFmrAccRole.ComboBox
+    else if (AView is TFmrEditorView) and (AView.Item is TFmrSpinItem) then
+      Result := TFmrAccRole.Spinner
+    else if (AView is TFmrEditorView) and (AView.Item is TFmrTrackBarItem) then
+      Result := TFmrAccRole.Slider
+    else if AView is TFmrEditorView then
+      Result := TFmrAccRole.Editor
+    else if AView.Item is TFmrCheckItem then
+      Result := TFmrAccRole.CheckBox
+    else if (AView.Item is TFmrButtonItem) and (TFmrButtonItem(AView.Item).ButtonStyle = TFmrButtonStyle.Split) then
+      Result := TFmrAccRole.SplitButton
+    else if FmrItemHasDropDown(AView.Item) then
+      Result := TFmrAccRole.DropDownButton
+    else
+      Result := TFmrAccRole.Button;
+  end;
+
+  procedure AddSys(const AList: TObjectList<TFmrSysButtonElement>; const AParent: Integer);
+  var
+    X: TFmrSysButtonElement;
+  begin
+    for X in AList do
+      if X.Visible then
+        Add(TFmrAccRole.SystemButton, '', AParent, HostRect(X, X.Bounds), X, nil);
+  end;
+
+begin
+  Result := nil;
+  if FDestroying or (csDesigning in ComponentState) then
+    Exit;
+  EnsureAll;
+  L := TList<TFmrAccNode>.Create;
+  Groups := TDictionary<TObject, Integer>.Create;
+  try
+    { quick access toolbar }
+    QATIndex := -1;
+    for V in FQATViews do
+      if V.Visible and (V.Host <> nil) then
+      begin
+        if QATIndex < 0 then
+          QATIndex := Add(TFmrAccRole.QuickAccessToolbar, FmrStr(TFmrStringId.AccQAT), -1,
+            ControlRect(V.Host.GetHostControl), nil, FQAT);
+        Add(ViewRole(V), FmrStripAccel(V.Link.Caption), QATIndex, HostRect(V, V.Bounds), V, nil);
+      end;
+    if QATIndex >= 0 then
+    begin
+      for S in FCaptionSysElements do
+        if S.Visible and (S.Kind in [TFmrSysButtonKind.QATCustomize, TFmrSysButtonKind.QATOverflow]) then
+          Add(TFmrAccRole.SystemButton, '', QATIndex, HostRect(S, S.Bounds), S, nil);
+      for S in FQATBarSysElements do
+        if S.Visible then
+          Add(TFmrAccRole.SystemButton, '', QATIndex, HostRect(S, S.Bounds), S, nil);
+    end;
+    if (FCaptionBar <> nil) and (FCaptionBar.FSearchEdit <> nil) and FCaptionBar.FSearchEdit.ParentedVisible then
+    begin
+      I := Add(TFmrAccRole.Editor, FmrStr(TFmrStringId.SearchPromptLong), -1, ControlRect(FCaptionBar.FSearchEdit),
+        FCaptionBar.FSearchEdit, nil);
+      L.List[I].AutomationId := 'SearchBox';
+      L.List[I].Value := FCaptionBar.FSearchEdit.Text;
+    end;
+    for S in FCaptionSysElements do
+      if S.Visible and (S.Kind in [TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow]) then
+        Add(TFmrAccRole.SystemButton, '', -1, HostRect(S, S.Bounds), S, nil);
+
+    { tabs }
+    if (FTabBar <> nil) and FTabBar.ParentedVisible then
+    begin
+      TabsIndex := Add(TFmrAccRole.TabList, FmrStr(TFmrStringId.AccRibbonTabs), -1, ControlRect(FTabBar), nil, nil);
+      if (FAppElement <> nil) and FAppElement.Visible then
+        Add(TFmrAccRole.ApplicationButton, FmrStripAccel(FAppButton.DisplayCaption), TabsIndex,
+          HostRect(FAppElement, FAppElement.Bounds), FAppElement, nil);
+      for T in FTabElements do
+        if T.Visible then
+        begin
+          I := Add(TFmrAccRole.Tab, FmrStripAccel(T.FTab.DisplayCaption), TabsIndex, HostRect(T, T.Bounds), T,
+            T.FTab);
+          L.List[I].Selected := T.FTab = FActiveTab;
+        end;
+      AddSys(FTabSysElements, TabsIndex);
+    end;
+
+    { the commands of the active tab }
+    if (FBody <> nil) and FBody.ParentedVisible and (FActiveTab <> nil) then
+    begin
+      BodyIndex := Add(TFmrAccRole.LowerRibbon, FmrStr(TFmrStringId.AccLowerRibbon), -1, ControlRect(FBody), nil,
+        FActiveTab);
+      for Box in FGroupBoxes do
+      begin
+        if Box.Collapsed then
+        begin
+          for E in FBodyElements do
+            if (E is TFmrCollapsedGroupElement) and (TFmrCollapsedGroupElement(E).FGroup = Box.Group) then
+              Add(TFmrAccRole.CollapsedGroup, FmrStripAccel(Box.Group.DisplayCaption), BodyIndex,
+                HostRect(E, E.Bounds), E, Box.Group);
+          Continue;
+        end;
+        GroupIndex := Add(TFmrAccRole.Group, FmrStripAccel(Box.Group.DisplayCaption), BodyIndex,
+          BodyRect(Box.Rect), nil, Box.Group);
+        Groups.AddOrSetValue(Box.Group, GroupIndex);
+      end;
+      for V in FBodyViews do
+      begin
+        if not V.Visible or (V is TFmrSeparatorView) or (V.Host = nil) or (V.Host.GetHostControl <> FBody) then
+          Continue;
+        Owner := V.Link.LinksOwner;
+        if not Groups.TryGetValue(Owner, GroupIndex) then
+        begin
+          // Simplified ribbon: no group boxes; a group node per group of the line.
+          if Owner is TFmrRibbonGroup then
+            GroupIndex := Add(TFmrAccRole.Group, FmrStripAccel(TFmrRibbonGroup(Owner).DisplayCaption), BodyIndex,
+              TRectF.Empty, nil, Owner)
+          else
+            GroupIndex := BodyIndex;
+          Groups.AddOrSetValue(Owner, GroupIndex);
+        end;
+        Add(ViewRole(V), FmrStripAccel(V.Link.Caption), GroupIndex, HostRect(V, V.Bounds), V, nil);
+      end;
+      for E in FBodyElements do
+        if E.Visible then
+        begin
+          if E is TFmrLauncherElement then
+          begin
+            if Groups.TryGetValue(TFmrLauncherElement(E).FGroup, GroupIndex) then
+              Add(TFmrAccRole.Button, '', GroupIndex, HostRect(E, E.Bounds), E, nil);
+          end
+          else if E is TFmrSysButtonElement then
+            Add(TFmrAccRole.SystemButton, '', BodyIndex, HostRect(E, E.Bounds), E, nil);
+        end;
+      // Groups of the simplified line: the union of their children (screen rectangles).
+      for I := 0 to L.Count - 1 do
+        if (L[I].Parent >= 0) and (L[L[I].Parent].Role = TFmrAccRole.Group) and not L[I].Bounds.IsEmpty and
+          (FDisplayMode = TFmrRibbonDisplayMode.Simplified) then
+        begin
+          if L[L[I].Parent].Bounds.IsEmpty then
+            L.List[L[I].Parent].Bounds := L[I].Bounds
+          else
+            L.List[L[I].Parent].Bounds := TRectF.Union(L[L[I].Parent].Bounds, L[I].Bounds);
+        end;
+    end;
+    Result := L.ToArray;
+  finally
+    Groups.Free;
+    L.Free;
+  end;
+end;
+
+function TFmrRibbon.AccessibilityInvoke(const AElement: TObject): Boolean;
+var
+  V: TFmrItemView;
+  HostPart: TFmrRibbonPart;
+  Alive: Boolean;
+begin
+  Result := False;
+  if (AElement = nil) or FDestroying then
+    Exit;
+  Alive := (AElement = FAppElement) or FTabElements.Contains(TFmrTabElement(AElement)) or
+    FViews.Contains(TFmrItemView(AElement)) or FBodyElements.Contains(TFmrElement(AElement));
+  if not Alive then
+    Alive := FTabSysElements.Contains(TFmrSysButtonElement(AElement)) or
+      FCaptionSysElements.Contains(TFmrSysButtonElement(AElement)) or
+      FQATBarSysElements.Contains(TFmrSysButtonElement(AElement));
+  if not Alive and (FCaptionBar <> nil) and (FCaptionBar.FSearchEdit <> nil) and
+    (AElement = FCaptionBar.FSearchEdit) then
+  begin
+    FCaptionBar.FSearchEdit.SetFocus;
+    Exit(True);
+  end;
+  if not Alive then
+    Exit;
+  Result := True;
+  if AElement is TFmrTabElement then
+  begin
+    if IsCollapsed and (FAutoHidePopup = nil) then
+      TabElementPressed(TFmrTabElement(AElement), True)
+    else
+      SetActiveTab(TFmrTabElement(AElement).FTab);
+  end
+  else if AElement = FAppElement then
+    ApplicationButtonPressed(True)
+  else if AElement is TFmrCollapsedGroupElement then
+    ShowGroupPopup(TFmrCollapsedGroupElement(AElement), True)
+  else if AElement is TFmrItemView then
+  begin
+    V := TFmrItemView(AElement);
+    HostPart := nil;
+    if (V.Host <> nil) and (V.Host.GetHostControl is TFmrRibbonPart) then
+      HostPart := TFmrRibbonPart(V.Host.GetHostControl);
+    if V is TFmrEditorView then
+      V.FocusControl
+    else if FmrItemHasDropDown(V.Item) and (HostPart <> nil) and not ((V.Item is TFmrButtonItem) and
+      (TFmrButtonItem(V.Item).ButtonStyle = TFmrButtonStyle.Split)) then
+      ShowDropDown(V, HostPart, True)
+    else if V.IsEnabled then
+      V.Execute(TFmrElementPart.Main);
+  end
+  else if AElement is TFmrSysButtonElement then
+    SysButtonExecute(TFmrSysButtonElement(AElement), True)
+  else if AElement is TFmrElement then
+    TFmrElement(AElement).Execute(TFmrElementPart.Main);
+end;
+
+function TFmrRibbon.AccessibilitySetValue(const AElement: TObject; const AValue: string): Boolean;
+var
+  Item: TFmrBarItem;
+  D: Double;
+begin
+  Result := False;
+  if (AElement <> nil) and not FDestroying and (FCaptionBar <> nil) and (FCaptionBar.FSearchEdit <> nil) and
+    (AElement = FCaptionBar.FSearchEdit) then
+  begin
+    SetSearchText(AValue);
+    Exit(True);
+  end;
+  if (AElement = nil) or FDestroying or not FViews.Contains(TFmrItemView(AElement)) or
+    not (AElement is TFmrEditorView) then
+    Exit;
+  Item := TFmrItemView(AElement).Item;
+  if not (Item is TFmrCustomEditItem) or TFmrCustomEditItem(Item).ReadOnly or not Item.Enabled then
+    Exit;
+  Result := True;
+  if Item is TFmrEditItem then
+    TFmrEditItem(Item).Text := AValue
+  else if Item is TFmrComboItem then
+  begin
+    if not TFmrComboItem(Item).Editable and (TFmrComboItem(Item).Items.IndexOf(AValue) < 0) then
+      Exit(False);
+    TFmrComboItem(Item).Text := AValue;
+  end
+  else if TryStrToFloat(AValue, D) or TryStrToFloat(AValue, D, TFormatSettings.Invariant) then
+  begin
+    if Item is TFmrSpinItem then
+      TFmrSpinItem(Item).Value := D
+    else if Item is TFmrTrackBarItem then
+      TFmrTrackBarItem(Item).Value := D
+    else
+      Result := False;
+  end
+  else
+    Result := False;
 end;
 
 initialization
