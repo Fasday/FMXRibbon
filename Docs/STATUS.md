@@ -30,13 +30,13 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux6
 | Application menu, backstage view, status bar, mini toolbar, radial menu | done | screenshots |
 | Customization dialog (ribbon + QAT), JSON layout, import/export/reset | done | 14 model tests, screenshots |
 | Ribbon merge | done | 11 unit tests, Showcase merge page |
-| 21 themes (the names of the first release as aliases), accent colors, StyleBook token overrides | done | ThemeSheet renders, screenshots, alias tests |
+| 21 themes, accent colors, StyleBook token overrides | done | ThemeSheet renders, screenshots, theme name tests |
 | Localization EN/RU | done | tests, Notes in Russian |
 | UI Automation provider (tabs, groups, buttons, editors with Value) | done (basic) | `Demos\Customize\uia-test.ps1` |
 | Packages (runtime + design, Win32/Win64), registration, property and component editors, items and structure editors, image picker, templates | done | compiled with 0 warnings, `LoadPackage` test, DesignPreview screenshots |
 | In-form design (tab click, selection, drag & drop, insertion marks, drop from items editor) | done | `DesignPreview /realtest`: 45/45 checks with the real ribbon in design state |
 | Demos: NCProof, RibbonBasic, Notes, Showcase, Extras, Customize | done | screenshots, leak check on close |
-| Tests | 175 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; theme name aliases; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
+| Tests | 175 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; theme names; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
 | Linux64 with FMXWayland (2026-10-14) | every runtime unit and the runtime package compile with `dcclinux64`; RibbonBasic and Showcase run; themes, reduction, galleries and menus as `xdg_popup`, key tips, fontconfig font list, theme font fallback, Segoe icon codes from the bundled "FMR Icons" (a Fluent UI System Icons subset); the integrated title bar with FMXWayland's frame service (`IFMXWaylandWindowFrame`) | headless Weston 14 screenshots and frame dumps (`tools\linux-run.ps1`, `Docs\LINUX.md`) |
 | Stress and destroy paths (QA round, 2026-10-14) | 25 scenarios pass on Win64/Win32, Debug/Release: 50 theme switches, frame modes with maximize/restore, 50 popup and key tip cycles, display modes, ribbon or manager freed first, manager set to nil, items/groups/tabs deleted while hot, pressed or shown in open menus, form closed with each kind of popup open, frame/application menu/backstage/mini toolbar/radial menu freed while open, unknown theme, StyleBook set/freed, focus after menus and deactivation; GDI, USER and heap do not grow; no leak report | `tools\Stress\FmrStress.dpr` |
 

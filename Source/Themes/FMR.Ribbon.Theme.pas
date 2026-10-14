@@ -246,7 +246,6 @@ type
     class var FRegistry: TList<TPair<string, TFmrThemeBuilder>>;
     class var FDisplayNames: TDictionary<string, string>;
     class var FDefaultAccents: TDictionary<string, TAlphaColor>;
-    class var FAliases: TDictionary<string, string>;
     class function FindRegistered(const AName: string; out AIndex: Integer): Boolean; static;
     function GetFill(const AToken: TFmrToken): TFmrFill; inline;
     procedure SetFill(const AToken: TFmrToken; const AValue: TFmrFill);
@@ -280,21 +279,15 @@ type
     /// <summary>Registers a theme by name. ADefaultAccent is used when the ribbon does not set an accent.</summary>
     class procedure RegisterTheme(const AName, ADisplayName: string; const ADefaultAccent: TAlphaColor;
       const ABuilder: TFmrThemeBuilder);
-    /// <summary>Registers another (older) name of a theme: CreateTheme, ThemeExists, ThemeDisplayName,
-    /// DefaultAccent and ResolveThemeName accept AOldName (case-insensitive) and use ANewName. ThemeNames does not
-    /// list aliases.</summary>
-    class procedure RegisterThemeAlias(const AOldName, ANewName: string);
-    /// <summary>The registered name of a theme: an alias gives the name it stands for, a registered name its
-    /// registered spelling; other names are returned unchanged.</summary>
+    /// <summary>The registered spelling of a theme name (names are case-insensitive); other names are returned
+    /// unchanged.</summary>
     class function ResolveThemeName(const AName: string): string;
-    /// <summary>True when AName is an alias registered with RegisterThemeAlias.</summary>
-    class function IsThemeAlias(const AName: string): Boolean;
-    /// <summary>Registered theme names (without aliases), in registration order.</summary>
+    /// <summary>Registered theme names, in registration order.</summary>
     class function ThemeNames: TArray<string>;
     class function ThemeDisplayName(const AName: string): string;
     class function ThemeExists(const AName: string): Boolean;
     class function DefaultAccent(const AName: string): TAlphaColor;
-    /// <summary>Builds a registered theme (aliases resolved); AAccent = 0 takes the theme's default accent. Unknown
+    /// <summary>Builds a registered theme; AAccent = 0 takes the theme's default accent. Unknown
     /// names give the default theme. The caller owns the result.</summary>
     class function CreateTheme(const AName: string; const AAccent: TAlphaColor = 0): TFmrTheme;
     class function TokenStyleName(const AToken: TFmrToken): string;
@@ -334,16 +327,6 @@ const
   FmrAccentSky = TAlphaColor($FF0067C0);
   /// <summary>Default accent of the Modern2024 themes.</summary>
   FmrAccentCobalt = TAlphaColor($FF185ABD);
-
-  { old names of the accent colors }
-  FmrAccentWord = FmrAccentBlue deprecated 'Use FmrAccentBlue';
-  FmrAccentWord2024 = FmrAccentCobalt deprecated 'Use FmrAccentCobalt';
-  FmrAccentExcel = FmrAccentGreen deprecated 'Use FmrAccentGreen';
-  FmrAccentPowerPoint = FmrAccentOrange deprecated 'Use FmrAccentOrange';
-  FmrAccentOutlook = FmrAccentAzure deprecated 'Use FmrAccentAzure';
-  FmrAccentOneNote = FmrAccentPurple deprecated 'Use FmrAccentPurple';
-  FmrAccentAccess = FmrAccentCrimson deprecated 'Use FmrAccentCrimson';
-  FmrAccentFluent = FmrAccentSky deprecated 'Use FmrAccentSky';
 
 { color helpers }
 
@@ -616,7 +599,6 @@ begin
   FRegistry := TList<TPair<string, TFmrThemeBuilder>>.Create;
   FDisplayNames := TDictionary<string, string>.Create;
   FDefaultAccents := TDictionary<string, TAlphaColor>.Create;
-  FAliases := TDictionary<string, string>.Create;
 end;
 
 class destructor TFmrTheme.Destroy;
@@ -624,7 +606,6 @@ begin
   FRegistry.Free;
   FDisplayNames.Free;
   FDefaultAccents.Free;
-  FAliases.Free;
 end;
 
 constructor TFmrTheme.Create(const AName: string);
@@ -842,33 +823,14 @@ begin
   Result := False;
 end;
 
-class procedure TFmrTheme.RegisterThemeAlias(const AOldName, ANewName: string);
-begin
-  if (AOldName.Trim = '') or SameText(AOldName, ANewName) then
-    Exit;
-  FAliases.AddOrSetValue(AOldName.ToLower, ANewName);
-end;
-
-class function TFmrTheme.IsThemeAlias(const AName: string): Boolean;
-begin
-  Result := FAliases.ContainsKey(AName.ToLower);
-end;
-
 class function TFmrTheme.ResolveThemeName(const AName: string): string;
 var
-  I, Hops: Integer;
-  Target: string;
+  I: Integer;
 begin
-  Result := AName;
-  // A registered name wins over an alias of the same spelling; an alias may name another alias.
-  Hops := 0;
-  while not FindRegistered(Result, I) and FAliases.TryGetValue(Result.ToLower, Target) and (Hops < 8) do
-  begin
-    Result := Target;
-    Inc(Hops);
-  end;
-  if FindRegistered(Result, I) then
-    Result := FRegistry[I].Key;
+  if FindRegistered(AName, I) then
+    Result := FRegistry[I].Key
+  else
+    Result := AName;
 end;
 
 class function TFmrTheme.ThemeNames: TArray<string>;

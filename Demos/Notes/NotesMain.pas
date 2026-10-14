@@ -2385,7 +2385,7 @@ begin
     FSystemLight := SystemUsesLightTheme;
   end
   else if TFmrTheme.ThemeExists(AChoice) then
-    // an old theme name (alias) is kept as the name it stands for
+    // a theme name is kept in its registered spelling
     FThemeChoice := TFmrTheme.ResolveThemeName(AChoice)
   else
     Exit;

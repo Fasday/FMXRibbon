@@ -40,7 +40,6 @@ class in use.)
 Screenshots for documentation are taken with `tools\drive.ps1` (posted mouse messages, keys, `PrintWindow`
 capture, independent of other windows on the desktop), for example
 `.\tools\drive.ps1 -Exe bin\Win64\Debug\Showcase.exe -Arguments "/page=1 /theme=ModernBlack" -Out shots\x.png`.
-Theme names of the first release (`Office365Black`…) are accepted too: they are aliases of the new names.
 
 | Demo | What it shows |
 |---|---|

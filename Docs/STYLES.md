@@ -4,10 +4,6 @@ The ribbon paints every part with canvas primitives (no style objects per contro
 tokens (colors and fills), metrics (sizes in dp) and switches that select the drawing variant (tab shape,
 application button, group frame).
 
-> The theme names describe a visual style only. FMR Ribbon is not affiliated with or endorsed by Microsoft;
-> Microsoft, Office, Microsoft 365, Windows and Fluent are trademarks of the Microsoft group of companies. The
-> palettes and metrics are FMR's own.
-
 ## Built-in themes
 
 | Name (`TFmrRibbon.Theme`) | Family | Look |
@@ -24,31 +20,13 @@ Display names (`TFmrTheme.ThemeDisplayName`): "Modern White", "Banner Colorful",
 "Glass Black", "Soft Dark", "Modern 2024 Dark Gray"… `TFmrThemeStyle.Family` is a `TFmrThemeFamily`: `Glass`,
 `Classic`, `Flat`, `Banner`, `Modern`, `Soft`, `Modern2024`.
 
-**Old names.** The theme names of the first release are registered as aliases
-(`TFmrTheme.RegisterThemeAlias(Old, New)`, in `FMR.Ribbon.Themes.Builtin`) and keep working:
-
-| Old name (deprecated) | New name |
-|---|---|
-| `Office2007Blue`, `Office2007Silver`, `Office2007Black` | `GlassBlue`, `GlassSilver`, `GlassBlack` |
-| `Office2010Blue`, `Office2010Silver`, `Office2010Black` | `ClassicBlue`, `ClassicSilver`, `ClassicBlack` |
-| `Office2013White`, `Office2013LightGray`, `Office2013DarkGray` | `FlatWhite`, `FlatLightGray`, `FlatDarkGray` |
-| `Office2016Colorful`, `Office2016White`, `Office2016DarkGray` | `BannerColorful`, `BannerWhite`, `BannerDarkGray` |
-| `Office365Colorful`, `Office365White`, `Office365DarkGray`, `Office365Black` | `ModernColorful`, `ModernWhite`, `ModernDarkGray`, `ModernBlack` |
-| `Office2024Light`, `Office2024DarkGray`, `Office2024Dark` | `Modern2024Light`, `Modern2024DarkGray`, `Modern2024Dark` |
-| `FluentLight`, `FluentDark` | `SoftLight`, `SoftDark` |
-
-`CreateTheme`, `ThemeExists`, `ThemeDisplayName` and `DefaultAccent` accept an alias (case-insensitive) and use the
-theme it stands for; `ResolveThemeName` returns the registered name; `ThemeNames` lists no aliases. The `Theme`
-properties (ribbon, backstage view, status bar, popup menu, mini toolbar, radial menu) store the new name, so a form
-saved again (or a property set in code to an old name) gets the new one.
+Theme names are case-insensitive; the `Theme` properties store the registered spelling (`TFmrTheme.ResolveThemeName`).
 
 Every theme is built from an accent color (`TFmrRibbon.AccentColor`; 0 = the theme's default): Colorful captions,
 active tab indicators, File tab, selection in galleries. Constants: `FmrAccentBlue` (#2B579A, the default of most
 themes), `FmrAccentGreen` (#107C41), `FmrAccentOrange` (#C43E1C), `FmrAccentAzure` (#0072C6), `FmrAccentPurple`
 (#80397B), `FmrAccentCrimson` (#A4373A), `FmrAccentSky` (#0067C0, the default of the Soft themes), `FmrAccentCobalt`
-(#185ABD, the default of the Modern 2024 themes). The names of the first release (`FmrAccentWord`,
-`FmrAccentWord2024`, `FmrAccentExcel`, `FmrAccentPowerPoint`, `FmrAccentOutlook`, `FmrAccentOneNote`,
-`FmrAccentAccess`, `FmrAccentFluent`) remain as deprecated constants with the same values.
+(#185ABD, the default of the Modern 2024 themes).
 
 The Modern 2024 themes take the accent as a brand color (the older shades #2B579A, #217346 and #B7472A give
 `FmrAccentCobalt`, `FmrAccentGreen` and `FmrAccentOrange`): in Light the "Share" button is the accent and the active

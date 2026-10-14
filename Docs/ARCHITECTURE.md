@@ -1,4 +1,4 @@
-﻿# FMR Ribbon — architecture and decisions
+# FMR Ribbon — architecture and decisions
 
 This file is the contract between the parts of the library. Read it before changing code; when a decision changes,
 change it here first.
@@ -13,7 +13,7 @@ change it here first.
 | License | MIT |
 | Model | **Items + Links**: items live in a bar manager, groups/QAT/menus hold links to them |
 | Items | Lightweight: items and links are not controls; the ribbon lays them out and paints them. Editor/control items (`TEdit`, `TComboBox`, any `TControl`) are real FMX controls placed by the ribbon |
-| Themes | Vector painting in code + **color/brush/font tokens** read from a StyleBook (`TColorObject`, `TBrushObject`, `TFontObject`). Built-in themes are built in code (`FMR.Ribbon.Themes.Builtin`), families `Modern` (Colorful, White, Dark Gray, Black; in the style of Microsoft 365, 2019–2023), `Modern2024` (Light, Dark Gray, Dark; Microsoft 365, 2024), `Banner` (Office 2016 style, colored captions), `Flat` (Office 2013 style), `Classic` (Office 2010 style: Blue, Silver, Black), `Glass` (Office 2007 style: Blue, Silver, Black), `Soft` (Windows 11 style: Light, Dark); the names of the first release are aliases (`TFmrTheme.RegisterThemeAlias`). The app's StyleBook can override any token |
+| Themes | Vector painting in code + **color/brush/font tokens** read from a StyleBook (`TColorObject`, `TBrushObject`, `TFontObject`). Built-in themes are built in code (`FMR.Ribbon.Themes.Builtin`), families `Modern` (Colorful, White, Dark Gray, Black; in the style of Microsoft 365, 2019–2023), `Modern2024` (Light, Dark Gray, Dark; Microsoft 365, 2024), `Banner` (Office 2016 style, colored captions), `Flat` (Office 2013 style), `Classic` (Office 2010 style: Blue, Silver, Black), `Glass` (Office 2007 style: Blue, Silver, Black), `Soft` (Windows 11 style: Light, Dark). The app's StyleBook can override any token |
 | Icons | `TFmrImageSource`: FMX `TImageList` index, SVG (Skia), glyph from an icon font (Segoe Fluent Icons…), `TPathData`. Segoe codes are drawn from "FMR Icons" (`Assets\Fonts\FmrIcons.ttf`, a subset of Microsoft's Fluent UI System Icons, MIT) where the Segoe font is missing (`FMR.Ribbon.IconFont.inc`, `tools\IconFont`) |
 | Fonts | `FMR.Ribbon.Fonts`: installed families (platform listers `FMR.Ribbon.Fonts.Win`/`.Linux`), `FmrResolveFontFamily` (first installed of a list), `FmrUIFontFamily` (theme font: Segoe UI on Windows, Noto Sans/Cantarell/… elsewhere), private fonts for the Skia canvas |
 | Frame | `TFmrFormFrame` component (drop on any form) and the optional ancestor `TFmrForm`; modes `Dwm`, `FullNC` (**default**), `NCStrip`. In `FullNC` the caption row **and the tab row** are in the real non-client area |

@@ -3604,7 +3604,7 @@ procedure TFmrRibbon.SetThemeName(const Value: string);
 var
   S: string;
 begin
-  // An old theme name (alias) is stored as the name it stands for, so a saved form gets the new name.
+  // The name is stored in its registered spelling (theme names are case-insensitive).
   S := TFmrTheme.ResolveThemeName(Value);
   if FThemeName <> S then
   begin
