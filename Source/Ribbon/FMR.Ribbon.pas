@@ -493,6 +493,7 @@ type
     FDeactivateId: TMessageSubscriptionId;
     FLanguageId: TMessageSubscriptionId;
     FFrameStateId: TMessageSubscriptionId;
+    FBeforeDestroyHandleId: TMessageSubscriptionId;
     FLastHooked: Boolean;
     FLastMode: TFmrFrameMode;
     FAltArmed: Boolean;
@@ -626,6 +627,8 @@ type
     procedure DeactivateHandler(const Sender: TObject; const M: TMessage);
     procedure LanguageHandler(const Sender: TObject; const M: TMessage);
     procedure FrameStateHandler(const Sender: TObject; const M: TMessage);
+    procedure BeforeDestroyHandleHandler(const Sender: TObject; const M: TMessage);
+    procedure CloseDropDownLists;
     { actions }
     procedure TabElementPressed(const AElement: TFmrTabElement; const AByKeyboard: Boolean);
     procedure ShowMinimizedPopup(const AByKeyboard: Boolean);
@@ -2796,6 +2799,8 @@ begin
     FMenuLoopId := TMessageManager.DefaultManager.SubscribeToMessage(TStartMenuLoopMessage, MenuLoopHandler);
     FDeactivateId := TMessageManager.DefaultManager.SubscribeToMessage(TFormDeactivateMessage, DeactivateHandler);
     FActivateId := TMessageManager.DefaultManager.SubscribeToMessage(TFormActivateMessage, ActivateHandler);
+    FBeforeDestroyHandleId := TMessageManager.DefaultManager.SubscribeToMessage(TBeforeDestroyFormHandle,
+      BeforeDestroyHandleHandler);
   end
   else
   begin
@@ -2808,6 +2813,33 @@ begin
   end;
   FDesignTarget := TFmrDesignDropTarget.Empty;
   UpdateHeights;
+end;
+
+procedure TFmrRibbon.CloseDropDownLists;
+var
+  I: Integer;
+begin
+  // The editor controls of the ribbon (body, caption and tab rows in the frame host) and of its open popups
+  FmrCloseDropDowns(Self);
+  if FCaptionBar <> nil then
+    FmrCloseDropDowns(FCaptionBar);
+  if FTabBar <> nil then
+    FmrCloseDropDowns(FTabBar);
+  if Screen <> nil then
+    for I := Screen.PopupFormCount - 1 downto 0 do
+      if I < Screen.PopupFormCount then
+        FmrCloseDropDowns(Screen.PopupForms[I]);
+end;
+
+procedure TFmrRibbon.BeforeDestroyHandleHandler(const Sender: TObject; const M: TMessage);
+begin
+  // The form is being freed (or its window recreated): FMX crashes when the window of a form goes away while a
+  // drop-down list of one of its combo boxes is open, so close them all first - the application's own too.
+  if (M is TBeforeDestroyFormHandle) and (OwnerForm <> nil) and (TBeforeDestroyFormHandle(M).Value = OwnerForm) then
+  begin
+    FmrCloseDropDowns(OwnerForm);
+    CloseDropDownLists;
+  end;
 end;
 
 procedure TFmrRibbon.BeforeDestruction;
@@ -2834,6 +2866,11 @@ begin
   if FFrameStateId <> 0 then
     TMessageManager.DefaultManager.Unsubscribe(TFmrFrameStateMessage, FFrameStateId);
   FFrameStateId := 0;
+  if FBeforeDestroyHandleId <> 0 then
+    TMessageManager.DefaultManager.Unsubscribe(TBeforeDestroyFormHandle, FBeforeDestroyHandleId);
+  FBeforeDestroyHandleId := 0;
+  if not (csDesigning in ComponentState) then
+    CloseDropDownLists;
   FIdleId := 0;
   FStyleId := 0;
   FLanguageId := 0;

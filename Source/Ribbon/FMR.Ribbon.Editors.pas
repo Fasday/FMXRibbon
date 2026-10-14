@@ -68,11 +68,34 @@ type
     property Control: TControl read FControl;
   end;
 
+/// <summary>Closes the open drop-down lists of the combo boxes (TComboBox, TComboEdit and descendants) under
+/// ARoot. FMX crashes (FMXWayland on Linux; on Windows the program hangs at exit) when a form is freed while a
+/// drop-down list of one of its controls is open; closing it first avoids that. The ribbon calls it for its owner
+/// form before the form's window is destroyed and for itself when it is destroyed.</summary>
+procedure FmrCloseDropDowns(const ARoot: TFmxObject);
+
 implementation
 
 uses
   FMX.Edit, FMX.EditBox, FMX.ComboEdit, FMX.ListBox, FMX.SpinBox, FMX.StdCtrls, FMX.Forms, FMR.Ribbon.EditorStyles,
   FMR.Ribbon.BiDi, FMR.Ribbon.Popup;
+
+procedure FmrCloseDropDowns(const ARoot: TFmxObject);
+var
+  I: Integer;
+begin
+  // No csDestroying test: a form being freed marks itself and its components destroying (TComponent.Destroying)
+  // before its window goes away, while its controls are still alive.
+  if ARoot = nil then
+    Exit;
+  if (ARoot is TCustomComboEdit) and TCustomComboEdit(ARoot).DroppedDown then
+    TCustomComboEdit(ARoot).CloseDropDown
+  else if (ARoot is TCustomComboBox) and TCustomComboBox(ARoot).DroppedDown then
+    // DropDown toggles: it closes an open list
+    TCustomComboBox(ARoot).DropDown;
+  for I := 0 to ARoot.ChildrenCount - 1 do
+    FmrCloseDropDowns(ARoot.Children[I]);
+end;
 
 { TFmrEditorView.TNotifier }
 

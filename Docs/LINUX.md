@@ -193,6 +193,14 @@ manager kept an interface of a popup's content while its closed-handler ran.
   without grab, no IME, no drag and drop, no native main menu.
 - `TFmrFontNameItem.ShowFontPreview` is not drawn (on Windows neither: the list shows names in the theme font).
 - Office 2010/2013 themes and the Fluent themes were not looked at on Linux (no reason to differ).
+- FMX itself crashes on Linux when a form is freed from code while a drop-down list of one of its combo boxes is
+  open (access violation in `TPlatformLinux.GetClientSize` while the window goes away; reproduced with a plain
+  `TComboBox`/`TComboEdit`, no ribbon involved). A form with a `TFmrRibbon` is protected: the ribbon closes every open
+  drop-down list of its form (the application's combo boxes too) when FMX announces that the form's window is
+  destroyed (`TBeforeDestroyFormHandle`), and those of its own editors when it is destroyed itself
+  (`FmrCloseDropDowns` in `FMR.Ribbon.Editors`; checked on headless Weston: the ribbon's font box and an application
+  `TComboEdit` open while the form is freed). Forms without a ribbon can call `FmrCloseDropDowns(Form)` before
+  freeing.
 - Observed in FMXWayland (not changed, it is read-only here): an `xdg_popup` created before its parent toplevel got
   its first configure (a demo timer that fired before the window was shown) left both windows invisible in Weston,
   although both were configured and painted. The demo now opens its popups after the first paint.
