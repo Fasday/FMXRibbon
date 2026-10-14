@@ -21,6 +21,12 @@ type
   /// non-client area above the client area has negative Y).</summary>
   TFmrFrameHostInvalidateEvent = procedure(const ARect: TRectF) of object;
 
+  /// <summary>A mouse button went down on the caption content where the window manager should act (AArea: Caption,
+  /// SysMenu, Nowhere). Set by platform frames that move the window themselves (FMR.Frame.Wayland); Windows does it
+  /// in WM_NCHITTEST and leaves it nil. AHandled: the frame took the press (the control does nothing more).</summary>
+  TFmrFrameMouseDownEvent = procedure(const AArea: TFmrHitArea; const AButton: TMouseButton; const AShift: TShiftState;
+    const AScreenPoint: TPointF; var AHandled: Boolean) of object;
+
   /// <summary>Container of the caption content of a form (title, caption buttons, the ribbon's caption row and tab
   /// row). Created and placed by <c>TFmrFormFrame</c>.</summary>
   /// <remarks>
@@ -50,6 +56,7 @@ type
     FDisableUpdating: Integer;
     FDirtyRect: TRectF;
     FOnInvalidate: TFmrFrameHostInvalidateEvent;
+    FOnFrameMouseDown: TFmrFrameMouseDownEvent;
     FFillColor: TAlphaColor;
     FInactiveFillColor: TAlphaColor;
     FState: TFmrFrameState;
@@ -91,6 +98,7 @@ type
     procedure DoAddObject(const AObject: TFmxObject); override;
     procedure Paint; override;
     procedure PaintChildren; override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
     function GetDefaultSize: TSizeF; override;
     function GetChildrenMatrix(var Matrix: TMatrix; var Simple: Boolean): Boolean; override;
     function DoGetUpdateRect: TRectF; override;
@@ -112,6 +120,11 @@ type
     /// Asks the deepest control under the point and its parents (<c>IFmrFrameHitTest</c>); default: the host itself
     /// or a control with HitTest = False is Caption, any other control is Client.</summary>
     function FrameHitTest(const AScreenPoint: TPointF): TFmrHitArea;
+    /// <summary>For caption content that handles the mouse itself (the ribbon's caption row and tab row): passes a
+    /// press at (AX, AY) of AControl to <see cref="OnFrameMouseDown"/> when the hit test says Caption or SysMenu
+    /// there. Returns True when the frame took it. Always False without a handler (Windows).</summary>
+    function HandleFrameMouseDown(const AControl: TControl; const AButton: TMouseButton; const AShift: TShiftState;
+      const AX, AY: Single): Boolean;
     /// <summary>The first caption button of the host of the given kind (MinButton, MaxButton, CloseButton,
     /// HelpButton) or nil.</summary>
     function FindFrameButton(const AKind: TFmrHitArea): IFmrFrameButton;
@@ -135,6 +148,9 @@ type
     /// <summary>Union of the rectangles invalidated since the last <see cref="PaintBuffer"/> (scene coordinates).</summary>
     property DirtyRect: TRectF read FDirtyRect;
     property OnInvalidate: TFmrFrameHostInvalidateEvent read FOnInvalidate write FOnInvalidate;
+    /// <summary>Presses on the caption where the window should move (platform frames without a window manager hit
+    /// test: FMR.Frame.Wayland). The frame also sets HitTest so presses on the empty host reach it.</summary>
+    property OnFrameMouseDown: TFmrFrameMouseDownEvent read FOnFrameMouseDown write FOnFrameMouseDown;
     /// <summary>Window commands for the caption content (set by the frame).</summary>
     property Commands: IFmrFrameCommands read FCommands write FCommands;
     /// <summary>The last state passed to <see cref="UpdateState"/>.</summary>
@@ -187,6 +203,7 @@ begin
   TMessageManager.DefaultManager.Unsubscribe(TStyleChangedMessage, FStyleChangedId);
   TMessageManager.DefaultManager.Unsubscribe(TAfterCreateFormHandle, FFormCreatedId);
   FOnInvalidate := nil;
+  FOnFrameMouseDown := nil;
   FCommands := nil;
   inherited;
   // Children are gone; the buffer can go now (children ask the scene canvas while being destroyed).
@@ -551,6 +568,27 @@ begin
     Current := Current.Parent;
   end;
   Result := TFmrHitArea.Client;
+end;
+
+procedure TFmrFrameHost.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+  inherited;
+  HandleFrameMouseDown(Self, Button, Shift, X, Y);
+end;
+
+function TFmrFrameHost.HandleFrameMouseDown(const AControl: TControl; const AButton: TMouseButton;
+  const AShift: TShiftState; const AX, AY: Single): Boolean;
+var
+  P: TPointF;
+  Area: TFmrHitArea;
+begin
+  Result := False;
+  if not Assigned(FOnFrameMouseDown) or (AControl = nil) or (csDesigning in ComponentState) then
+    Exit;
+  P := AControl.LocalToScreen(TPointF.Create(AX, AY));
+  Area := FrameHitTest(P);
+  if Area in [TFmrHitArea.Caption, TFmrHitArea.SysMenu] then
+    FOnFrameMouseDown(Area, AButton, AShift, P, Result);
 end;
 
 function TFmrFrameHost.FindFrameButton(const AKind: TFmrHitArea): IFmrFrameButton;

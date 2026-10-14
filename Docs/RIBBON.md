@@ -16,7 +16,7 @@ Demo: `Demos\RibbonBasic` (a Word-like ribbon built in code, see "Demo and test 
 | `FMR.Ribbon.Editors` | `TFmrEditorView`: real FMX controls for editor items (`TEdit`, `TComboBox`, `TComboEdit`, `TSpinBox`, `TTrackBar`) and for `TFmrControlItem` (any control), two-way value sync |
 | `FMR.Ribbon.Popup` | `TFmrPopupForm`, `TFmrPopupManager` (`FmrPopups`), key sink and `IFmrKeyHandler`, `IFmrPopupContext`/`TFmrPopupContext`, `IFmrPopupContent`, menus (`TFmrMenuControl`, `TFmrMenuRow`), `TFmrColorPaletteControl`, `TFmrPopupMenu` component, `TFmrCommandItem`, `TFmrTempMenu`, drop-down registry (`FmrRegisterDropDown`, `FmrCreateDropDownContent`), `IFmrThemeSource` |
 | `FMR.Ribbon.ScreenTips` | `TFmrScreenTipContent`, `TFmrScreenTipController` (delay, placement, one tip at a time) |
-| `FMR.Ribbon.Fonts.Win` | Font family list (EnumFontFamiliesEx) for font name editors; empty on other platforms |
+| `FMR.Ribbon.Fonts.Win`, `FMR.Ribbon.Fonts.Linux` | Font family list for font name editors and `FMR.Ribbon.Fonts` (Windows: EnumFontFamiliesEx; Linux: fontconfig); each is empty on the other platforms |
 | `FMR.Ribbon.Gallery`, `FMR.Ribbon.ColorGallery`, `FMR.Ribbon.AppMenu`, `FMR.Ribbon.MiniToolbar`, `FMR.Ribbon.RadialMenu` | In-ribbon and drop-down galleries, color gallery, Office 2007 application menu, mini toolbar, radial menu - see `Docs\GALLERIES.md` |
 | `FMR.Ribbon.Customize`, `FMR.Ribbon.CustomizeModel`, `FMR.Ribbon.CustomizeControls` | Run-time customization dialog ("Customize the Ribbon", "Quick Access Toolbar"), its editing session and themed controls - see `Docs\CUSTOMIZATION.md` |
 | `FMR.Ribbon.BiDi`, `FMR.Ribbon.EditorStyles` | Right-to-left helpers (canvas mirroring); editor controls styled from the theme - see `Docs\CUSTOMIZATION.md` |
@@ -166,6 +166,13 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   tokens.
 - `NCStrip`: Windows keeps its own caption; the caption bar is shown only when the QAT is above the ribbon and has
   items (no title, no window buttons in it); otherwise only the tab row is in the strip.
+- A frame that is **not attached at run time** on a window with a border (Linux under FMXWayland's title bar without
+  `IFMXWaylandWindowFrame`, a disabled frame) is treated the same way (`CaptionUnderNativeTitleBar`): the host is at
+  the top of the client area under the system title bar, so no second title and no window buttons; `ShowCaption`
+  keeps its streamed default. At design time the title stays (the host shows the caption content in the designer).
+- Platforms that move the window themselves (`FMR.Frame.Wayland`): presses on caption space of the caption and tab
+  rows go to `TFmrFrameHost.HandleFrameMouseDown` first (move, window menu, double-click maximize); on Windows it
+  returns False at once (`WM_NCHITTEST` handles them before FMX sees them).
 - No frame: the caption row inside the ribbon holds the QAT and the search box; it shows a title only when the form
   has no native title bar (`BorderStyle = None`) or `CaptionText` is set. `ShowCaption = False` removes the row.
 - **Canvas offset**: the host paints the non-client strip with relative matrices (`Docs\FRAME.md`), so the parts

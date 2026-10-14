@@ -23,3 +23,8 @@ Win64/
 
 # Screenshots made by tools\screenshot.ps1 while checking demos
 shots/
+
+# Linux build output (dcclinux64)
+*.a
+*.so
+*.o

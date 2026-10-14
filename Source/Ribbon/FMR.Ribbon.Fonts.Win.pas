@@ -9,8 +9,9 @@
 
 unit FMR.Ribbon.Fonts.Win;
 
-/// Sets TFmrFontNameItem.FontListProvider to the font families of Windows (EnumFontFamiliesEx, every character set,
-/// vertical '@' fonts skipped). Neither FMX nor Skia enumerates font families, so the ribbon needs a platform unit.
+/// Sets TFmrFontNameItem.FontListProvider and FMR.Ribbon.Fonts.FmrFontFamilyLister to the font families of Windows
+/// (EnumFontFamiliesEx, every character set, vertical '@' fonts skipped). Neither FMX nor Skia enumerates font
+/// families, so the ribbon needs a platform unit (Linux: FMR.Ribbon.Fonts.Linux).
 /// The unit compiles to nothing on other platforms.
 
 interface
@@ -19,7 +20,7 @@ implementation
 
 {$IFDEF MSWINDOWS}
 uses
-  System.SysUtils, System.Classes, Winapi.Windows, FMR.Bars.Items;
+  System.SysUtils, System.Classes, Winapi.Windows, FMR.Ribbon.Fonts, FMR.Bars.Items;
 
 function EnumFamilyProc(const LogFont: TLogFont; const TextMetric: TTextMetric; FontType: DWORD;
   Data: LPARAM): Integer; stdcall;
@@ -48,6 +49,12 @@ begin
 end;
 
 initialization
+  if not Assigned(FmrFontFamilyLister) then
+    FmrFontFamilyLister :=
+      procedure(AList: TStrings)
+      begin
+        WindowsFontList(AList);
+      end;
   if not Assigned(TFmrFontNameItem.FontListProvider) then
     TFmrFontNameItem.FontListProvider :=
       procedure(AList: TStrings)

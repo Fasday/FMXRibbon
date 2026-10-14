@@ -11,8 +11,10 @@ unit RibbonBasicMain;
 ///   /topmost (stay on top while tools\shot.ps1 drives it)  /dump=<file> (write TFmrRibbon.DebugDump)
 ///   /backstage (the File tab opens a TFmrRibbonBackstageView of FMR.Ribbon.Backstage instead of a menu)
 ///   /appmenu (the Office 2007 application menu in any theme; Office 2007 themes always get it)
-///   /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial (opens the popup
-///   about a second after start, for screenshots)
+///   /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname (opens the
+///   popup about a second after the window is painted, for screenshots; fontname also shows the number of font
+///   families in the status bar)
+///   Linux (FMXWayland): /waylandframe=preview (RibbonBasicWayland: a stand-in IFMXWaylandWindowFrame)
 /// Galleries (FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery): Home > Styles (in-ribbon, owner drawn, live preview),
 /// Home > Font Color / Text Highlight Color, Insert > Cover Page (drop-down gallery with filter and grip), Insert >
 /// Shapes (menu with an inline gallery). Right click on the document: mini toolbar + context menu; selecting text
@@ -22,7 +24,7 @@ interface
 
 uses
   System.SysUtils, System.Classes, System.Types, System.UITypes, FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics,
-  FMX.Memo, FMX.StdCtrls, FMX.Layouts, FMR.Ribbon.Types, FMR.Bars.Images, FMR.Bars, FMR.Bars.Items,
+  FMX.Memo, FMX.StdCtrls, FMX.Layouts, FMX.ComboEdit, FMR.Ribbon.Types, FMR.Bars.Images, FMR.Bars, FMR.Bars.Items,
   FMR.Ribbon.Structure, FMR.Ribbon.Views, FMR.Ribbon.Popup, FMR.Ribbon, FMR.Ribbon.Backstage, FMR.Frame.Types,
   FMR.Frame, FMR.Ribbon.Theme, FMR.Ribbon.Painter, FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery,
   FMR.Ribbon.AppMenu, FMR.Ribbon.MiniToolbar, FMR.Ribbon.RadialMenu;
@@ -60,6 +62,7 @@ type
     FAppliedStyle: Integer;
     FAppliedColor: TAlphaColor;
     FOpen: string;
+    FPainted: Boolean;
     FAppMenu07: TFmrRibbonApplicationMenu;
     FForceAppMenu: Boolean;
     FMiniToolbar: TFmrRibbonMiniToolbar;
@@ -88,6 +91,7 @@ type
     procedure FontColorPreview(Sender: TObject; const AColor: TAlphaColor; const AActive: Boolean);
     procedure FontColorClick(Sender: TObject);
     procedure OpenPopup(const AWhat: string);
+    procedure OpenFontList;
     procedure DropDownOf(const AItem: TFmrBarItem; const ATab: TFmrRibbonTab);
     function Glyph(const AItem: TFmrBarItem; const ACode: Cardinal): TFmrBarItem;
     function PathGlyph(const AItem: TFmrBarItem; const APath: string): TFmrBarItem;
@@ -106,6 +110,7 @@ type
     procedure RibbonSearch(Sender: TObject; const AText: string);
     procedure TabChanged(Sender: TObject);
     procedure TimerTick(Sender: TObject);
+    procedure FormPainted(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure SetStatus(const AText: string);
   public
     constructor Create(AOwner: TComponent); override;
@@ -232,6 +237,12 @@ begin
   FTimer.Interval := 900;
   FTimer.OnTimer := TimerTick;
   FTimer.Enabled := FOptKeyTips or (FDumpFile <> '') or (FOpen <> '');
+  OnPaint := FormPainted;
+end;
+
+procedure TRibbonBasicForm.FormPainted(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
+begin
+  FPainted := True;
 end;
 
 function TRibbonBasicForm.Glyph(const AItem: TFmrBarItem; const ACode: Cardinal): TFmrBarItem;
@@ -844,6 +855,9 @@ end;
 
 procedure TRibbonBasicForm.TimerTick(Sender: TObject);
 begin
+  // A slow start (Linux Debug build) may reach the timer before the window is on the screen: popups need it shown.
+  if not FPainted then
+    Exit;
   FTimer.Enabled := False;
   if FOptKeyTips then
     FRibbon.ShowKeyTipsNow;
@@ -1385,7 +1399,42 @@ begin
   else if AWhat = 'cover' then
     DropDownOf(FCover, FRibbon.Tabs(1))
   else if AWhat = 'shapes' then
-    DropDownOf(FShapesButton, FRibbon.Tabs(1));
+    DropDownOf(FShapesButton, FRibbon.Tabs(1))
+  else if AWhat = 'fontname' then
+    OpenFontList;
+end;
+
+procedure TRibbonBasicForm.OpenFontList;
+
+  function FindCombo(const AParent: TFmxObject): TComboEdit;
+  var
+    I: Integer;
+  begin
+    for I := 0 to AParent.ChildrenCount - 1 do
+    begin
+      if AParent.Children[I] is TComboEdit then
+        Exit(TComboEdit(AParent.Children[I]));
+      Result := FindCombo(AParent.Children[I]);
+      if Result <> nil then
+        Exit;
+    end;
+    Result := nil;
+  end;
+
+var
+  Fonts: TFmrFontNameItem;
+  Combo: TComboEdit;
+begin
+  // The font name editor of Home > Font (its list comes from TFmrFontNameItem.FontListProvider: FMR.Ribbon.Fonts.Win
+  // or FMR.Ribbon.Fonts.Linux).
+  FRibbon.ActiveTab := FRibbon.Tabs(0);
+  FRibbon.UpdateLayout;
+  Fonts := TFmrFontNameItem(FManager.ItemByName('cbFontName'));
+  SetStatus(Format('Font families: %d; UI font of the theme: %s', [Fonts.Items.Count,
+    FRibbon.Painter.Metrics.FontFamily]));
+  Combo := FindCombo(FRibbon);
+  if Combo <> nil then
+    Combo.DropDown;
 end;
 
 end.

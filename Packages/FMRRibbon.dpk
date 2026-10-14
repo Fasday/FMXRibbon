@@ -30,8 +30,11 @@ package FMRRibbon;
 {$IMPLICITBUILD OFF}
 
 // Runtime package: every unit of Source\Core, Source\Themes, Source\Frame, Source\Extras, Source\Ribbon and
-// Source\Templates. Windows only for now (FMR.Frame.Win, FMR.Ribbon.Fonts.Win).
-// When a unit is added to one of these folders, add it here and to FMRRibbon.dproj.
+// Source\Templates. One unit list for every platform: the platform units compile to nothing elsewhere
+// (FMR.Frame.Win, FMR.Ribbon.Fonts.Win, FMR.Ribbon.UIA.Win on Windows; FMR.Ribbon.Fonts.Linux on Linux;
+// FMR.Frame.Wayland registers itself on Linux only). Win32, Win64 and Linux64 (tools\build-packages.ps1).
+// When a unit is added to one of these folders, add it here and to FMRRibbon.dproj (build-packages.ps1
+// -UpdateProjects).
 
 requires
   rtl,
@@ -43,6 +46,7 @@ contains
   { Core }
   FMR.Ribbon.Types in '..\Source\Core\FMR.Ribbon.Types.pas',
   FMR.Ribbon.Strings in '..\Source\Core\FMR.Ribbon.Strings.pas',
+  FMR.Ribbon.Fonts in '..\Source\Core\FMR.Ribbon.Fonts.pas',
   FMR.Bars.Images in '..\Source\Core\FMR.Bars.Images.pas',
   FMR.Bars in '..\Source\Core\FMR.Bars.pas',
   FMR.Bars.Items in '..\Source\Core\FMR.Bars.Items.pas',
@@ -60,6 +64,7 @@ contains
   FMR.Frame.Host in '..\Source\Frame\FMR.Frame.Host.pas',
   FMR.Frame in '..\Source\Frame\FMR.Frame.pas',
   FMR.Frame.Win in '..\Source\Frame\FMR.Frame.Win.pas',
+  FMR.Frame.Wayland in '..\Source\Frame\FMR.Frame.Wayland.pas',
   FMR.Frame.Buttons in '..\Source\Frame\FMR.Frame.Buttons.pas',
   FMR.Frame.Form in '..\Source\Frame\FMR.Frame.Form.pas',
   { Extras }
@@ -84,6 +89,7 @@ contains
   FMR.Ribbon.MiniToolbar in '..\Source\Ribbon\FMR.Ribbon.MiniToolbar.pas',
   FMR.Ribbon.RadialMenu in '..\Source\Ribbon\FMR.Ribbon.RadialMenu.pas',
   FMR.Ribbon.Fonts.Win in '..\Source\Ribbon\FMR.Ribbon.Fonts.Win.pas',
+  FMR.Ribbon.Fonts.Linux in '..\Source\Ribbon\FMR.Ribbon.Fonts.Linux.pas',
   FMR.Ribbon.UIA.Win in '..\Source\Ribbon\FMR.Ribbon.UIA.Win.pas',
   FMR.Ribbon in '..\Source\Ribbon\FMR.Ribbon.pas',
   { Templates and design-time contracts usable at run time }

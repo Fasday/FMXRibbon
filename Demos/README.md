@@ -12,6 +12,20 @@ All demos are FireMonkey programs for Windows (Win64 and Win32). Build them from
 
 Debug builds set `ReportMemoryLeaksOnShutdown`: closing a demo that leaked shows the RTL leak report.
 
+**Linux64** (FMXWayland, `Docs\LINUX.md`): RibbonBasic and Showcase build with `-Platform Linux64` (their `.dpr` set
+`GlobalUseSkia` under `{$IFDEF LINUX}`) and run on a headless Weston with `tools\linux-run.ps1`:
+
+```powershell
+.\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark','/activelook' -Shots 6,8
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/waylandframe=preview' -CsdOff -Shots 6
+```
+
+RibbonBasic on Linux also knows `/waylandframe=preview` (a stand-in `IFMXWaylandWindowFrame` service that previews
+the integrated title bar; run with `FMXWAYLAND_CSD=0`) and `/open=fontname` (opens the font list, the status bar shows
+the number of families and the theme font). WordLike, Extras and Customize are not ported yet; NCProof is about the
+Windows non-client area.
+
 **FastCanvas** (optional GPU canvas, `f:\Projects\FmxFastCanvas_GitHub`, see its README): the demos that support it
 call `InstallFastCanvas` before `Application.Initialize` when they are built with the `FMR_FASTCANVAS` define:
 
@@ -146,8 +160,8 @@ search box; the in-ribbon styles gallery, Cover Page (drop-down gallery with fil
 inline gallery), font color / highlight galleries, the Office 2007 application menu, the mini toolbar (selection,
 right click) and the radial menu. Switches: `/theme= /frame=fullnc|dwm|ncstrip|none /minimized /simplified /width=
 /height= /qatbelow /tabletools /keytips /touch /nosearch /tab=N /backstage /appmenu
-/open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial /dump=<file>` (see
-`Docs\RIBBON.md` and `Docs\GALLERIES.md`).
+/open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname /dump=<file>`
+(Linux: `/waylandframe=preview`; see `Docs\RIBBON.md` and `Docs\GALLERIES.md`).
 
 ## Extras
 

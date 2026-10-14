@@ -33,7 +33,10 @@
 - **Темы:** Office 2024 (Light, Dark Gray, Dark: вид Microsoft 365, снятый с Word, с эффектом неактивного окна
   в строке заголовка), Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver,
   Black), Windows 11 Light/Dark; любой акцентный цвет; переопределение любого токена через StyleBook (`Docs\STYLES.md`).
-- **Иконки:** `TImageList`, SVG (Skia), глифы иконочных шрифтов (Segoe Fluent Icons), `TPathData`.
+- **Иконки:** `TImageList`, SVG (Skia), глифы иконочных шрифтов (Segoe Fluent Icons; где его нет, те же иконки
+  берутся из встроенного шрифта «FMR Fluent Icons» на основе Fluent UI System Icons от Microsoft, MIT), `TPathData`.
+- **Linux** (FMXWayland — нативный Wayland-бэкенд FMX): все runtime-модули компилируются под Linux64, RibbonBasic и
+  Showcase работают (`Docs\LINUX.md`).
 - **Дизайнер IDE:** пакеты, редакторы элементов и структуры, выбор иконки, шаблоны (Word, Excel, простой), темы из
   контекстного меню; щелчок по вкладке, выделение элементов и drag&drop на форме (`Docs\DESIGNTIME.md`).
 - **Локализация** EN/RU (`FmrSetLanguage('ru')`), **UI Automation** (экранные дикторы, автотесты),
@@ -62,15 +65,33 @@
 
 ## Требования
 
-- Delphi 13 (RAD Studio 37.0) или новее, FireMonkey; Win64 и Win32.
+- Delphi 13 (RAD Studio 37.0) или новее, FireMonkey; Win64 и Win32; Linux64 с FMXWayland.
 - Windows 10/11 для интеграции с рамкой окна; ядро ленты кроссплатформенное (на других платформах заголовок и
   вкладки рисуются внутри ленты).
+
+## Linux
+
+![RibbonBasic в Linux](Docs/images/linux/ribbonbasic-office2024light.png)
+
+FMR Ribbon работает в Linux на FMXWayland (нативная Wayland-платформа FMX без libfmux; канвас Skia):
+
+```powershell
+.\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64      # -FmxWayland <папка> -Sdk <Linux SDK>
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark' -Shots 6
+```
+
+Программа ставит `GlobalUseSkia := True` и поставляется с `libsk4d.so` и `fonts/FmrFluentIcons.ttf` (build.ps1
+кладёт их рядом). Темы берут установленный UI-шрифт (Noto Sans, Cantarell, DejaVu Sans…), коды Segoe-иконок рисуются
+из встроенного шрифта, список шрифтов — из fontconfig. Лента стоит под заголовком окна FMXWayland (без второго
+заголовка); чтобы строка заголовка и вкладки ленты жили в заголовке окна, FMXWayland нужен небольшой сервис платформы,
+которого пока нет, — контракт `IFMXWaylandWindowFrame` и остальное описаны в `Docs\LINUX.md`.
 
 ## Установка
 
 ```
 tools\build-packages.ps1            # FMRRibbon (runtime) и dclFMRRibbon (design) для Win32 и Win64
 tools\build-packages.ps1 -Install   # зарегистрировать design-пакет в IDE
+tools\build-packages.ps1 -Platform Linux64   # runtime-пакет для Linux64 (программы на FMXWayland линкуются статически)
 ```
 
 или откройте `Packages\FMRRibbon.groupproj` в IDE, соберите оба пакета и установите `dclFMRRibbon`. В путь поиска
@@ -137,6 +158,7 @@ end;
 | `Docs\STYLES.md` | темы и токены StyleBook |
 | `Docs\DESIGNTIME.md` | пакеты, установка, редакторы IDE |
 | `Docs\ACCESSIBILITY.md` | UI Automation |
+| `Docs\LINUX.md` | Linux с FMXWayland: сборка, запуск, что работает, контракт рамки окна |
 | `Docs\STATUS.md` | что готово, что проверено, известные ограничения |
 
 ## Тесты
@@ -157,4 +179,5 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 ## Лицензия
 
-MIT, см. [LICENSE](LICENSE).
+MIT, см. [LICENSE](LICENSE). Сторонние компоненты (Fluent UI System Icons в `Assets\Fonts`):
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

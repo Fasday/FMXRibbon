@@ -8,7 +8,7 @@ designer; see "Phase B" for what only the IDE can confirm).
 
 | File | Content |
 |---|---|
-| `Packages\FMRRibbon.dpk` / `.dproj` | Runtime package (`{$RUNONLY}`, `{$LIBSUFFIX AUTO}` → `FMRRibbon370.bpl`): every unit of `Source\Core`, `Source\Themes`, `Source\Frame`, `Source\Extras`, `Source\Ribbon`, `Source\Templates`. Requires `rtl`, `fmx`, `Skia.Package.RTL`, `Skia.Package.FMX` (`FMR.Bars.Images` renders SVG with Skia). Windows only (Win32, Win64): `FMR.Frame.Win`, `FMR.Ribbon.Fonts.Win`, `FMR.Ribbon.UIA.Win` |
+| `Packages\FMRRibbon.dpk` / `.dproj` | Runtime package (`{$RUNONLY}`, `{$LIBSUFFIX AUTO}` → `FMRRibbon370.bpl`): every unit of `Source\Core`, `Source\Themes`, `Source\Frame`, `Source\Extras`, `Source\Ribbon`, `Source\Templates`. Requires `rtl`, `fmx`, `Skia.Package.RTL`, `Skia.Package.FMX` (`FMR.Bars.Images` renders SVG with Skia). Win32, Win64 and Linux64 with one unit list: the platform units (`FMR.Frame.Win`, `FMR.Ribbon.Fonts.Win`, `FMR.Ribbon.UIA.Win`; `FMR.Ribbon.Fonts.Linux`) compile to nothing elsewhere. The Linux64 package (`bplFMRRibbon370.so`) links against Embarcadero's `fmx` package: programs on FMXWayland link FMR statically (`Docs\LINUX.md`) |
 | `Packages\dclFMRRibbon.dpk` / `.dproj` | Design package (`{$DESIGNONLY}` → `dclFMRRibbon370.bpl`): `Source\Design\*`. Requires `rtl`, `vcl`, `vclimg`, `designide`, `fmx`, `FMRRibbon`. Component icons: `{$R '..\Source\Design\FMR.Ribbon.Reg.dcr'}` |
 | `Packages\FMRRibbon.groupproj` | Both projects (the design package depends on the runtime package) |
 | `Packages\Icons\*.png`, `FMR.Ribbon.Reg.rc` | Palette icons, 16/24/32 px PNG (`RCDATA <CLASS>16_PNG / <CLASS>_PNG / <CLASS>32_PNG`), drawn by the build script |
@@ -27,6 +27,7 @@ missing in the IDE).
 .\tools\build-packages.ps1 -UpdateProjects         # regenerate the .dproj files, then build
 .\tools\build-packages.ps1 -Icons                  # redraw the icon PNGs and rebuild the .dcr
 .\tools\build-packages.ps1 -Exclude FMR.Ribbon.X   # leave out a work-in-progress unit nothing uses
+.\tools\build-packages.ps1 -Platform Linux64       # runtime package only (dcclinux64, Linux SDK: -Sdk)
 ```
 
 Output: BPL in `bin\packages\<Platform>\` (`FMRRibbon370.bpl`, `dclFMRRibbon370.bpl`), DCP in `dcu\packages\<Platform>\`,

@@ -15,6 +15,7 @@
 *.bat     text eol=crlf
 *.cmd     text eol=crlf
 
+*.sh      text eol=lf
 *.md      text eol=lf
 *.csv     text eol=lf
 *.json    text eol=lf
@@ -25,3 +26,6 @@
 *.dll     binary
 *.exe     binary
 *.style   binary
+*.ttf     binary
+*.otf     binary
+*.woff2   binary

@@ -34,7 +34,10 @@ Office 2007 application menu, quick access toolbar, key tips, screen tips, user 
 - **Themes:** Office 2024 (Light, Dark Gray, Dark: the Microsoft 365 look measured on Word, with the focus effect
   of the caption row), Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver,
   Black), Windows 11 Light/Dark; any accent color; any token can be overridden by a StyleBook (`Docs\STYLES.md`).
-- **Icons:** `TImageList`, SVG (Skia), icon-font glyphs (Segoe Fluent Icons), `TPathData`.
+- **Icons:** `TImageList`, SVG (Skia), icon-font glyphs (Segoe Fluent Icons; where it is missing the same icons
+  come from the bundled "FMR Fluent Icons", made of Microsoft's MIT-licensed Fluent UI System Icons), `TPathData`.
+- **Linux** (FMXWayland, a native Wayland backend of FMX): every runtime unit compiles for Linux64, RibbonBasic and
+  Showcase run (`Docs\LINUX.md`).
 - **IDE designer:** packages, items and structure editors, image picker, templates (Word, Excel, simple), themes from
   the context menu; tab switching, item selection and drag & drop on the form (`Docs\DESIGNTIME.md`).
 - **Localization** EN/RU (`FmrSetLanguage('ru')`), **UI Automation** provider, works with the stock FMX canvas and
@@ -63,15 +66,33 @@ The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in the
 
 ## Requirements
 
-- Delphi 13 (RAD Studio 37.0) or newer, FireMonkey; Win64 and Win32.
+- Delphi 13 (RAD Studio 37.0) or newer, FireMonkey; Win64 and Win32; Linux64 with FMXWayland.
 - Windows 10/11 for the window-frame integration; the ribbon core is cross-platform (elsewhere the caption and tab
   rows are drawn inside the ribbon).
+
+## Linux
+
+![RibbonBasic on Linux](Docs/images/linux/ribbonbasic-office2024light.png)
+
+FMR Ribbon runs on Linux on FMXWayland (a native Wayland platform for FMX without libfmux; Skia canvas):
+
+```powershell
+.\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64      # -FmxWayland <folder> -Sdk <Linux SDK>
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark' -Shots 6
+```
+
+The program sets `GlobalUseSkia := True` and ships `libsk4d.so` and `fonts/FmrFluentIcons.ttf` (build.ps1 copies
+them). Themes fall back to an installed UI font (Noto Sans, Cantarell, DejaVu Sans…), Segoe icon codes are drawn from
+the bundled icon font, the font list comes from fontconfig. The ribbon sits under FMXWayland's title bar (no second
+title); putting its caption and tab rows into the title bar needs a small platform service that FMXWayland does not
+have yet — the contract, `IFMXWaylandWindowFrame`, and the rest are in `Docs\LINUX.md`.
 
 ## Installation
 
 ```
 tools\build-packages.ps1            # FMRRibbon (runtime) and dclFMRRibbon (design) for Win32 and Win64
 tools\build-packages.ps1 -Install   # register the design package in the IDE
+tools\build-packages.ps1 -Platform Linux64   # the runtime package for Linux64 (FMXWayland programs link statically)
 ```
 
 or open `Packages\FMRRibbon.groupproj` in the IDE, build both packages and install `dclFMRRibbon`. Add the
@@ -139,6 +160,7 @@ switches are listed in `Demos\README.md`.
 | `Docs\STYLES.md` | themes and StyleBook tokens |
 | `Docs\DESIGNTIME.md` | packages, installation, IDE editors |
 | `Docs\ACCESSIBILITY.md` | UI Automation |
+| `Docs\LINUX.md` | Linux with FMXWayland: build, run, what works, the window frame contract |
 | `Docs\STATUS.md` | what is done, what was verified, known limitations |
 
 ## Tests
@@ -158,4 +180,5 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Third-party notices (the Fluent UI System Icons in `Assets\Fonts`):
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -8,13 +8,14 @@ change it here first.
 | Topic | Decision |
 |---|---|
 | Name | FMR Ribbon. Units `FMR.*`, classes `TFmr*`, interfaces `IFmr*` |
-| Delphi | 13 (RAD Studio 37.0) and newer; Win64 first, Win32 must compile |
-| Platforms | Core (bars, ribbon, layout, themes, popups) on every FMX platform; frame/NC integration Windows only (`*.Win.pas`, `{$IFDEF MSWINDOWS}`); on other platforms the ribbon shows its caption row inside itself |
+| Delphi | 13 (RAD Studio 37.0) and newer; Win64 first, Win32 must compile; Linux64 (FMXWayland) must compile and run |
+| Platforms | Core (bars, ribbon, layout, themes, popups) on every FMX platform; frame/NC integration Windows only (`*.Win.pas`, `{$IFDEF MSWINDOWS}`); Linux: `FMR.Frame.Wayland` attaches when the platform offers `IFMXWaylandWindowFrame` (`Docs\LINUX.md`), otherwise (and on other platforms) the frame host is an ordinary control and the ribbon leaves the title to the system title bar. Platform units compile to nothing elsewhere, so one unit list serves every platform |
 | License | MIT |
 | Model | DevExpress-style **Items + Links**: items live in a bar manager, groups/QAT/menus hold links to them |
 | Items | Lightweight: items and links are not controls; the ribbon lays them out and paints them. Editor/control items (`TEdit`, `TComboBox`, any `TControl`) are real FMX controls placed by the ribbon |
 | Themes | Vector painting in code + **color/brush/font tokens** read from a StyleBook (`TColorObject`, `TBrushObject`, `TFontObject`). Built-in themes are embedded `.style` resources: Office 365/2019 (Colorful, White, Dark Gray, Black), Office 2016 (colored captions), Office 2013, Office 2010 (Blue, Silver, Black), Office 2007 (Blue, Silver, Black), Windows 11 Fluent (Light, Dark). The app's StyleBook can override any token |
-| Icons | `TFmrImageSource`: FMX `TImageList` index, SVG (Skia), glyph from an icon font (Segoe Fluent Icons…), `TPathData` |
+| Icons | `TFmrImageSource`: FMX `TImageList` index, SVG (Skia), glyph from an icon font (Segoe Fluent Icons…), `TPathData`. Segoe codes are drawn from "FMR Fluent Icons" (`Assets\Fonts`, Fluent UI System Icons subset, MIT) where the Segoe font is missing (`FMR.Ribbon.IconFont.inc`, `tools\IconFont`) |
+| Fonts | `FMR.Ribbon.Fonts`: installed families (platform listers `FMR.Ribbon.Fonts.Win`/`.Linux`), `FmrResolveFontFamily` (first installed of a list), `FmrUIFontFamily` (theme font: Segoe UI on Windows, Noto Sans/Cantarell/… elsewhere), private fonts for the Skia canvas |
 | Frame | `TFmrFormFrame` component (drop on any form) and the optional ancestor `TFmrForm`; modes `Dwm`, `FullNC` (**default**), `NCStrip`. In `FullNC` the caption row **and the tab row** are in the real non-client area |
 | Strings | All UI strings in `FMR.Ribbon.Strings` (English) with a Russian table; `FmrSetLanguage('ru')` |
 | Tests | DUnitX (`Tests\`), logic only (layout, items/links, merge, persistence, key tips) |
@@ -23,30 +24,36 @@ change it here first.
 ## Source layout
 
 ```
-Source\Frame\      FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Frame.Win, FMR.Frame.Buttons, FMR.Frame.Form
-                   window frame and non-client host (Docs\FRAME.md)
+Source\Frame\      FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Frame.Win, FMR.Frame.Wayland, FMR.Frame.Buttons,
+                   FMR.Frame.Form
+                   window frame and non-client host (Docs\FRAME.md; Linux: Docs\LINUX.md)
 Source\Core\       FMR.Bars, FMR.Bars.Items, FMR.Bars.Images, FMR.Ribbon.Types, FMR.Ribbon.Structure,
-                   FMR.Ribbon.Layout, FMR.Ribbon.Persistence, FMR.Ribbon.Merge, FMR.Ribbon.KeyTips, FMR.Ribbon.Strings
+                   FMR.Ribbon.Layout, FMR.Ribbon.Persistence, FMR.Ribbon.Merge, FMR.Ribbon.KeyTips, FMR.Ribbon.Strings,
+                   FMR.Ribbon.Fonts (+ FMR.Ribbon.IconFont.inc, generated)
                    non-visual model and pure logic (Docs\CORE.md)
 Source\Themes\     FMR.Ribbon.Theme, FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Painter (Docs\STYLES.md)
 Source\Ribbon\     FMR.Ribbon (TFmrRibbon), Views, Popup, Editors, EditorStyles, ScreenTips, Gallery, ColorGallery,
-                   AppMenu, MiniToolbar, RadialMenu, Customize*, BiDi, Fonts.Win, UIA.Win
+                   AppMenu, MiniToolbar, RadialMenu, Customize*, BiDi, Fonts.Win, Fonts.Linux, UIA.Win
                    (Docs\RIBBON.md, GALLERIES.md, CUSTOMIZATION.md, ACCESSIBILITY.md)
 Source\Extras\     FMR.Ribbon.Backstage(.Controls), FMR.Ribbon.StatusBar, FMR.Ribbon.ThemeLink (Docs\EXTRAS.md)
 Source\Templates\  FMR.Ribbon.Templates (run-time templates), FMR.Ribbon.DesignSupport (design-hook interfaces)
 Source\Design\     design-time only (dclFMRRibbon): registration, editors, editor windows (Docs\DESIGNTIME.md)
-Packages\          FMRRibbon.dpk (runtime), dclFMRRibbon.dpk (design), FMRRibbon.groupproj
+Packages\          FMRRibbon.dpk (runtime; Win32, Win64, Linux64), dclFMRRibbon.dpk (design), FMRRibbon.groupproj
+Assets\Fonts\      FmrFluentIcons.ttf (Fluent UI System Icons subset, THIRD_PARTY_NOTICES.md)
 Tests\             FmrRibbonTests.dpr (DUnitX console runner) + test units
 Demos\             NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize (Demos\README.md)
 tools\             build-packages.ps1, shot.ps1 / drive.ps1 / capture.ps1 / keys.ps1 (run, drive and capture
                    programs), closecheck.ps1, ThemeSheet, DesignPreview, Stress (stress and destroy paths of the
-                   real ribbon), fix-encoding.ps1
+                   real ribbon), fix-encoding.ps1, linux-run.ps1/.sh (Linux programs on a headless Weston),
+                   IconFont (make-icon-font.ps1, segoe-fluent-map.txt)
 ```
 
 ## Building and checking
 
 - `.\build.ps1 -Project <dpr>` builds Win64 Debug into `bin\Win64\Debug` (every folder of `Source` is on the search
-  path). `-Platform Win32`, `-Config Release`, `-SearchPath` for extra folders.
+  path). `-Platform Win32`, `-Config Release`, `-SearchPath` for extra folders. `-Platform Linux64` builds with
+  FMXWayland (`-FmxWayland`, `-Sdk`; `Docs\LINUX.md`); `.\tools\linux-run.ps1` runs the result on a headless Weston
+  in WSL and keeps screenshots.
 - `.\tools\shot.ps1 -Exe bin\Win64\Debug\X.exe -Out shots\x.png -Probe "40,15;..." -Actions "click:..;keys:.."`
   starts the program, drives it, saves a screenshot of the window (as composed by DWM) and prints the window rect,
   the client rect in screen coordinates, the non-client thickness on each side and the hit-test code under probe

@@ -13,6 +13,10 @@ unit FMR.Bars.Images;
 /// FastCanvas): image list entries through TCustomImageList, SVG through a renderer that produces a bitmap (Skia by
 /// default, cached per pixel size and tint), icon font glyphs with FillText and path data with FillPath.
 /// Define FMR_NO_SKIA to build without Skia (SVG then needs a TFmrImageSource.SvgRenderer of your own).
+/// Glyph codes are Segoe Fluent Icons / Segoe MDL2 Assets code points by default. Where that font is not installed
+/// (Linux, macOS) a known code is drawn from GlyphFallbackFontFamily ("FMR Fluent Icons", Assets\Fonts: icons of
+/// Fluent UI System Icons, MIT; table FMR.Ribbon.IconFont.inc, RegisterGlyphFallback adds codes); an unknown code or
+/// a missing font gives a small placeholder dot instead of the "missing glyph" box.
 
 interface
 
@@ -55,6 +59,12 @@ type
   private class var
     FDefaultGlyphFontFamily: string;
     FSvgRenderer: TFmrSvgRenderer;
+    FGlyphFallbackFontFamily: string;
+    FGlyphFallbacks: TDictionary<Cardinal, Cardinal>;
+    FGlyphFallbacksLoaded: Boolean;
+    FCheckedFamily: string;
+    FCheckedGeneration: Integer;
+    FCheckedAvailable: Boolean;
   private
     [Weak] FOwner: TPersistent;
     FKind: TFmrImageKind;
@@ -92,13 +102,25 @@ type
       const AColor: TAlphaColor);
     procedure DrawPath(const ACanvas: TCanvas; const ARect: TRectF; const AOpacity: Single; const AColor: TAlphaColor);
     function IsPathViewBoxStored: Boolean;
+    class procedure LoadGlyphFallbacks; static;
+    class function GlyphFamilyAvailable(const AFamily: string): Boolean; static;
+    class function FallbackFontReady: Boolean; static;
   protected
     function GetOwner: TPersistent; override;
     procedure Changed; virtual;
   public
+    class destructor Destroy;
     constructor Create(const AOwner: TPersistent);
     destructor Destroy; override;
     procedure Assign(Source: TPersistent); override;
+    /// <summary>Draws ACode of GlyphFallbackFontFamily for the Segoe Fluent Icons / Segoe MDL2 Assets code ASegoeCode
+    /// where those fonts are not installed (adds to or replaces an entry of the built-in table).</summary>
+    class procedure RegisterGlyphFallback(const ASegoeCode, AFallbackCode: Cardinal); static;
+    /// <summary>The code point in GlyphFallbackFontFamily for a Segoe icon code; False when there is none.</summary>
+    class function GlyphFallback(const ASegoeCode: Cardinal; out AFallbackCode: Cardinal): Boolean; static;
+    /// <summary>True when AFamily ('' = DefaultGlyphFontFamily) is one of the Segoe icon fonts, whose codes the
+    /// fallback table maps.</summary>
+    class function IsSegoeIconFamily(const AFamily: string): Boolean; static;
     /// <summary>True when both describe the same image.</summary>
     function SameAs(const AOther: TFmrImageSource): Boolean;
     /// <summary>The kind actually drawn (Auto resolved).</summary>
@@ -115,9 +137,13 @@ type
     function GlyphText: string;
     /// <summary>Parsed PathData (nil when empty).</summary>
     property Path: TPathData read GetPath;
-    /// <summary>Icon font used when GlyphFontFamily is empty: 'Segoe Fluent Icons' on Windows 11,
-    /// 'Segoe MDL2 Assets' on Windows 10.</summary>
+    /// <summary>Icon font used when GlyphFontFamily is empty: 'Segoe Fluent Icons' on Windows 11 and on other
+    /// platforms (its codes are mapped to GlyphFallbackFontFamily there), 'Segoe MDL2 Assets' on Windows 10.</summary>
     class property DefaultGlyphFontFamily: string read FDefaultGlyphFontFamily write FDefaultGlyphFontFamily;
+    /// <summary>Icon font for Segoe icon codes when the Segoe icon fonts are not installed: 'FMR Fluent Icons'
+    /// (FMR.Ribbon.Fonts.FmrEnsureIconFont registers Assets\Fonts\FmrFluentIcons.ttf deployed with the program).
+    /// </summary>
+    class property GlyphFallbackFontFamily: string read FGlyphFallbackFontFamily write FGlyphFallbackFontFamily;
     /// <summary>Renderer of SVG images; Skia by default (nil with FMR_NO_SKIA).</summary>
     class property SvgRenderer: TFmrSvgRenderer read FSvgRenderer write FSvgRenderer;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
@@ -149,8 +175,17 @@ function FmrRecolorBitmap(const ASource: TBitmap; const AColor: TAlphaColor): TB
 implementation
 
 uses
-  System.Math, System.Character
+  System.Math, System.Character, FMR.Ribbon.Fonts
   {$IFNDEF FMR_NO_SKIA}, System.Skia, FMX.Skia{$ENDIF};
+
+type
+  TFmrIconFontMapEntry = record
+    Code: Cardinal;
+    Fallback: Cardinal;
+  end;
+
+const
+  {$I FMR.Ribbon.IconFont.inc}
 
 function FmrRecolorBitmap(const ASource: TBitmap; const AColor: TAlphaColor): TBitmap;
 var
@@ -257,6 +292,70 @@ begin
 end;
 
 { TFmrImageSource }
+
+class destructor TFmrImageSource.Destroy;
+begin
+  FreeAndNil(FGlyphFallbacks);
+end;
+
+class procedure TFmrImageSource.LoadGlyphFallbacks;
+var
+  I: Integer;
+begin
+  if FGlyphFallbacksLoaded then
+    Exit;
+  FGlyphFallbacksLoaded := True;
+  if FGlyphFallbacks = nil then
+    FGlyphFallbacks := TDictionary<Cardinal, Cardinal>.Create(FmrIconFontMapCount);
+  for I := 0 to High(FmrIconFontMap) do
+    if not FGlyphFallbacks.ContainsKey(FmrIconFontMap[I].Code) then
+      FGlyphFallbacks.Add(FmrIconFontMap[I].Code, FmrIconFontMap[I].Fallback);
+end;
+
+class procedure TFmrImageSource.RegisterGlyphFallback(const ASegoeCode, AFallbackCode: Cardinal);
+begin
+  LoadGlyphFallbacks;
+  FGlyphFallbacks.AddOrSetValue(ASegoeCode, AFallbackCode);
+end;
+
+class function TFmrImageSource.GlyphFallback(const ASegoeCode: Cardinal; out AFallbackCode: Cardinal): Boolean;
+begin
+  LoadGlyphFallbacks;
+  Result := FGlyphFallbacks.TryGetValue(ASegoeCode, AFallbackCode);
+end;
+
+class function TFmrImageSource.GlyphFamilyAvailable(const AFamily: string): Boolean;
+begin
+  // Painting asks for the same family again and again: one answer per family and change of the font list.
+  if (FCheckedGeneration <> FmrFontFamiliesGeneration) or (FCheckedFamily <> AFamily) then
+  begin
+    FCheckedAvailable := FmrFontFamilyAvailable(AFamily);
+    FCheckedFamily := AFamily;
+    FCheckedGeneration := FmrFontFamiliesGeneration;
+  end;
+  Result := FCheckedAvailable;
+end;
+
+class function TFmrImageSource.FallbackFontReady: Boolean;
+begin
+  if FGlyphFallbackFontFamily = '' then
+    Result := False
+  else if SameText(FGlyphFallbackFontFamily, FmrIconFontFamily) then
+    // The bundled font is registered from the file deployed with the program on first use.
+    Result := FmrEnsureIconFont
+  else
+    Result := FmrFontFamilyAvailable(FGlyphFallbackFontFamily);
+end;
+
+class function TFmrImageSource.IsSegoeIconFamily(const AFamily: string): Boolean;
+var
+  Family: string;
+begin
+  Family := AFamily;
+  if Family = '' then
+    Family := FDefaultGlyphFontFamily;
+  Result := SameText(Family, 'Segoe Fluent Icons') or SameText(Family, 'Segoe MDL2 Assets');
+end;
 
 constructor TFmrImageSource.Create(const AOwner: TPersistent);
 begin
@@ -581,7 +680,9 @@ procedure TFmrImageSource.DrawGlyph(const ACanvas: TCanvas; const ARect: TRectF;
   const AColor: TAlphaColor);
 var
   Text, Family: string;
+  Fallback: Cardinal;
   State: TCanvasSaveState;
+  D: Single;
 begin
   Text := GlyphText;
   if Text = '' then
@@ -589,6 +690,29 @@ begin
   Family := FGlyphFontFamily;
   if Family = '' then
     Family := FDefaultGlyphFontFamily;
+  if (Family <> '') and not GlyphFamilyAvailable(Family) then
+  begin
+    // The icon font is missing (Segoe Fluent Icons outside Windows): the same icon from the fallback font, or a
+    // placeholder dot instead of the "missing glyph" box.
+    if IsSegoeIconFamily(Family) and GlyphFallback(FGlyphCode, Fallback) and FallbackFontReady then
+    begin
+      Family := FGlyphFallbackFontFamily;
+      Text := Char.ConvertFromUtf32(UCS4Char(Fallback));
+    end
+    else
+    begin
+      State := ACanvas.SaveState;
+      try
+        D := Max(2, Min(ARect.Width, ARect.Height) * 0.28);
+        ACanvas.Fill.Kind := TBrushKind.Solid;
+        ACanvas.Fill.Color := AColor;
+        ACanvas.FillEllipse(TRectF.Create(0, 0, D, D).CenterAt(ARect), AOpacity * 0.6);
+      finally
+        ACanvas.RestoreState(State);
+      end;
+      Exit;
+    end;
+  end;
   State := ACanvas.SaveState;
   try
     if Family <> '' then
@@ -653,7 +777,11 @@ initialization
     TFmrImageSource.DefaultGlyphFontFamily := 'Segoe Fluent Icons'
   else
     TFmrImageSource.DefaultGlyphFontFamily := 'Segoe MDL2 Assets';
+  {$ELSE}
+  // The codes stay Segoe codes: drawn from GlyphFallbackFontFamily where the Segoe font is missing.
+  TFmrImageSource.DefaultGlyphFontFamily := 'Segoe Fluent Icons';
   {$ENDIF}
+  TFmrImageSource.GlyphFallbackFontFamily := FmrIconFontFamily;
   {$IFNDEF FMR_NO_SKIA}
   TFmrImageSource.SvgRenderer := SkiaRenderSvg;
   {$ENDIF}

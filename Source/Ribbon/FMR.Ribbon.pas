@@ -571,6 +571,7 @@ type
     procedure PlaceBars;
     procedure UpdateHeights;
     function CaptionBarVisible: Boolean;
+    function CaptionUnderNativeTitleBar: Boolean;
     function BodyVisible: Boolean;
     function IsCollapsed: Boolean;
     function CaptionBarHeight: Single;
@@ -898,7 +899,7 @@ implementation
 uses
   System.Character, System.StrUtils, System.Math.Vectors, System.Rtti, System.TypInfo, FMX.Styles, FMX.Menus,
   FMX.Layouts,
-  FMR.Ribbon.Fonts.Win, FMR.Ribbon.Customize,
+  FMR.Ribbon.Fonts.Win, FMR.Ribbon.Fonts.Linux, FMR.Ribbon.Customize,
   // Linked for their registrations: galleries and the color gallery work in every application with a ribbon.
   FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery;
 
@@ -2129,7 +2130,14 @@ begin
 end;
 
 procedure TFmrRibbonCaptionBar.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+var
+  Host: TFmrFrameHost;
 begin
+  // A frame that moves the window itself (Wayland) takes presses on the empty caption; on Windows the window manager
+  // gets them before FMX (HTCAPTION) and this does nothing.
+  Host := FmrFindFrameHost(Self);
+  if FRibbon.FBarsInHost and (Host <> nil) and Host.HandleFrameMouseDown(Self, Button, Shift, X, Y) then
+    Exit;
   // Double click on the empty caption maximizes (the frame does it in the non-client modes).
   inherited;
   // Auto-hide without a frame: a click at the top of the window shows the ribbon (Office).
@@ -2308,7 +2316,12 @@ end;
 procedure TFmrRibbonTabBar.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 var
   E: TFmrElement;
+  Host: TFmrFrameHost;
 begin
+  // The gaps of the tab row move the window (see TFmrRibbonCaptionBar.MouseDown).
+  Host := FmrFindFrameHost(Self);
+  if FRibbon.FBarsInHost and (Host <> nil) and Host.HandleFrameMouseDown(Self, Button, Shift, X, Y) then
+    Exit;
   if (Button = TMouseButton.mbLeft) and (ssDouble in Shift) and not (csDesigning in ComponentState) then
   begin
     E := FindElement(Logical(X, Y));
@@ -3154,11 +3167,23 @@ begin
   Result := FMinimized or (FShowMode <> TFmrRibbonShowMode.TabsAndCommands);
 end;
 
+function TFmrRibbon.CaptionUnderNativeTitleBar: Boolean;
+begin
+  // The caption row of the frame host lies under a title bar drawn by the system: the strip of the NCStrip mode, or
+  // the host at the top of the client area when the frame is not attached at run time (no platform frame: Linux
+  // under FMXWayland's title bar without IFMXWaylandWindowFrame; a disabled frame) on a window with a border.
+  Result := FBarsInHost and (FFrame <> nil) and
+    ((FFrame.Hooked and (FFrame.Mode = TFmrFrameMode.NCStrip)) or
+    (not FFrame.Hooked and not (csDesigning in ComponentState) and (OwnerForm <> nil) and
+    (OwnerForm.BorderStyle <> TFmxFormBorderStyle.None)));
+end;
+
 function TFmrRibbon.CaptionBarVisible: Boolean;
 begin
   // Auto-hide keeps the caption row: it holds the button that shows the ribbon.
   Result := FShowCaption or AutoHideActive;
-  if Result and FBarsInHost and (FFrame <> nil) and FFrame.Hooked and (FFrame.Mode = TFmrFrameMode.NCStrip) then
+  // Under a system title bar the row is only kept for the quick access toolbar (no second title).
+  if Result and CaptionUnderNativeTitleBar then
     Result := AutoHideActive or (FQAT.Visible and (FQAT.Position = TFmrQATPosition.AboveRibbon) and
       (FQAT.ItemLinks.VisibleCount > 0));
 end;
@@ -5094,10 +5119,9 @@ begin
   // title: centered in the window, inside the free space that avoids the QAT, the search box and the headers
   Title := TitleText;
   FCaptionBar.FTitleRect := TRectF.Empty;
-  // No title in the strip under the system caption (NCStrip) nor in a caption row inside the ribbon under a native
-  // title bar, unless CaptionText asks for one.
-  if (Title <> '') and not (FBarsInHost and (FFrame <> nil) and FFrame.Hooked and
-    (FFrame.Mode = TFmrFrameMode.NCStrip)) and (FBarsInHost or (FCaptionText <> '') or (OwnerForm = nil) or
+  // No title in the strip under the system caption (NCStrip), in the host of a frame that is not attached under the
+  // system title bar, nor in a caption row inside the ribbon under a native title bar, unless CaptionText asks for one.
+  if (Title <> '') and not CaptionUnderNativeTitleBar and (FBarsInHost or (FCaptionText <> '') or (OwnerForm = nil) or
     (OwnerForm.BorderStyle = TFmxFormBorderStyle.None)) then
   begin
     TW := FPainter.TextWidth(Title, M.CaptionFontSize) + 16;

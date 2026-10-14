@@ -13,9 +13,15 @@ uses
   FastCanvas.Device,
   FastCanvas.Canvas,
 {$ENDIF}
+{$IFDEF LINUX}
+  FMX.Types,
+  FMX.Skia,
+{$ENDIF}
   ShowcaseMain in 'ShowcaseMain.pas';
 
+{$IFDEF MSWINDOWS}
 {$R WinApp.res}
+{$ENDIF}
 
 begin
   {$IFDEF DEBUG}
@@ -23,6 +29,10 @@ begin
   {$ENDIF}
 {$IFDEF FMR_FASTCANVAS}
   InstallFastCanvas;
+{$ENDIF}
+{$IFDEF LINUX}
+  // FMXWayland (Docs\LINUX.md) draws with FMX's Skia canvas only.
+  GlobalUseSkia := True;
 {$ENDIF}
   Application.Initialize;
   Application.CreateForm(TShowcaseForm, ShowcaseForm);

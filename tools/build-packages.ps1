@@ -6,6 +6,11 @@
   - Win32: both packages with dcc32 (the classic 32-bit IDE, bin\bds.exe).
   - Win64: both packages with dcc64 (the runtime package for Win64 applications; the design package for the 64-bit
     IDE, bin64\bds.exe, which loads Win64 design packages).
+  - Linux64 (-Platform Linux64, runtime package only): dcclinux64 against Embarcadero's fmx.dcp, linked with the Linux
+    SDK (-Sdk, default D:\LinuxSDK\ubuntu-22.04): bin\packages\Linux64\bplFMRRibbon370.so. It proves the units
+    compile for Linux and lets the IDE target Linux64; programs running on FMXWayland must not use runtime packages
+    (bplfmx370.so carries Embarcadero's FMUX.Api, which loads libfmux): they link the units statically
+    (.\build.ps1 -Platform Linux64, Docs\LINUX.md).
   - BPL:  bin\packages\<Platform>\FMRRibbon370.bpl, dclFMRRibbon370.bpl   ({$LIBSUFFIX AUTO})
   - DCP:  dcu\packages\<Platform>\FMRRibbon.dcp, dclFMRRibbon.dcp
   - DCU:  dcu\packages\<Platform>\<Package>\
@@ -21,7 +26,10 @@
   .\tools\build-packages.ps1 -CopyToBplDir -Install
 #>
 param(
-  [ValidateSet('All', 'Win32', 'Win64')] [string] $Platform = 'All',
+  # All = Win32 + Win64; Linux64 builds the runtime package only.
+  [ValidateSet('All', 'Win32', 'Win64', 'Linux64')] [string] $Platform = 'All',
+  # Linux64: the Linux platform SDK to link against.
+  [string] $Sdk = $(if ($env:FMR_LINUX_SDK) { $env:FMR_LINUX_SDK } else { 'D:\LinuxSDK\ubuntu-22.04' }),
   [ValidateSet('Release', 'Debug')] [string] $Config = 'Release',
   # Rebuild the icon PNGs and the .dcr.
   [switch] $Icons,
@@ -169,7 +177,7 @@ function Update-FmrIcons {
 # Compilation
 # ---------------------------------------------------------------------------------------------------------------
 function Invoke-FmrPackage([string] $Dpk, [string] $Plat, [string[]] $ExtraUnitPath) {
-  $dccName = if ($Plat -eq 'Win32') { 'dcc32' } else { 'dcc64' }
+  $dccName = switch ($Plat) { 'Win32' { 'dcc32' } 'Linux64' { 'dcclinux64' } default { 'dcc64' } }
   $dcc = Join-Path $Bds "bin\$dccName.exe"
   $name = [IO.Path]::GetFileNameWithoutExtension($Dpk)
   $bplDir = Join-Path $Root "bin\packages\$Plat"
@@ -191,13 +199,22 @@ function Invoke-FmrPackage([string] $Dpk, [string] $Plat, [string[]] $ExtraUnitP
     [IO.File]::WriteAllText($Dpk, $text, [Text.UTF8Encoding]::new($false))
     Write-Host "  (excluded: $($Exclude -join ', '))"
   }
-  $flags = @(
-    '-B', '-Q',
-    '--codepage:65001',
-    '-NSSystem;Winapi;FMX;System.Win;Data;Xml;Vcl;Vcl.Imaging;Vcl.Shell',
-    "-LE$bplDir", "-LN$dcpDir", "-NU$dcuDir",
-    "-U$pathArg", "-I$pathArg", "-R$pathArg"
-  )
+  $flags = @('-B', '-Q', '--codepage:65001')
+  if ($Plat -eq 'Linux64') {
+    if (-not (Test-Path (Join-Path $Sdk 'usr\lib\x86_64-linux-gnu\libc.so.6'))) {
+      throw "No Linux SDK at '$Sdk' (-Sdk or FMR_LINUX_SDK; see Docs\LINUX.md)"
+    }
+    $gccDir = Get-ChildItem (Join-Path $Sdk 'usr\lib\gcc\x86_64-linux-gnu') -Directory |
+      Sort-Object { [int]($_.Name -replace '\D.*', '') } | Select-Object -Last 1
+    # The required packages link against their bpl*.so in Redist\linux64.
+    $libPaths = @($lib, (Join-Path $Bds 'Redist\linux64'), (Join-Path $Sdk 'usr\lib\x86_64-linux-gnu'), $gccDir.FullName)
+    # dcclinux64 runs its linker (ld.lld.exe) from the PATH.
+    $env:PATH = "$Bds\bin;$Bds\bin64;$env:PATH"
+    $flags += '-NSSystem;Xml;Data;FMX;Posix;Linuxapi', "--syslibroot:$Sdk", "--libpath:$($libPaths -join ';')"
+  } else {
+    $flags += '-NSSystem;Winapi;FMX;System.Win;Data;Xml;Vcl;Vcl.Imaging;Vcl.Shell'
+  }
+  $flags += "-LE$bplDir", "-LN$dcpDir", "-NU$dcuDir", "-U$pathArg", "-I$pathArg", "-R$pathArg"
   if ($Config -eq 'Release') {
     $flags += '-$O+', '-$D-', '-$L-', '-$C-', '-DRELEASE'
   } else {
@@ -216,7 +233,8 @@ function Invoke-FmrPackage([string] $Dpk, [string] $Plat, [string[]] $ExtraUnitP
   $errors + $warnings + $hints | ForEach-Object { Write-Host "  $_" }
   if ($code -ne 0 -or $errors.Count -gt 0) { throw "$dccName $name failed ($code)" }
   if ($implicit.Count -gt 0) { throw "$name has implicitly imported units: list them in the package or require their package" }
-  $bpl = Get-ChildItem $bplDir -Filter "$name*.bpl" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+  $pattern = if ($Plat -eq 'Linux64') { "bpl$name*.so" } else { "$name*.bpl" }
+  $bpl = Get-ChildItem $bplDir -Filter $pattern | Sort-Object LastWriteTime -Descending | Select-Object -First 1
   Write-Host ("  OK -> {0} ({1} warnings, {2} hints)" -f $bpl.FullName, $warnings.Count, $hints.Count)
   return $bpl.FullName
 }
@@ -233,6 +251,20 @@ function Write-FmrDproj([string] $Name, [string] $Guid, [string] $Description, [
   foreach ($r in $requires) { [void]$refs.AppendLine("        <DCCReference Include=""$r.dcp""/>") }
   foreach ($u in $units) { [void]$refs.AppendLine("        <DCCReference Include=""$u""/>") }
   $kind = if ($Design) { '<DesignOnlyPackage>true</DesignOnlyPackage>' } else { '<RuntimeOnlyPackage>true</RuntimeOnlyPackage>' }
+  # The runtime package also targets Linux64 (TargetedPlatforms: Win32 1 + Win64 2 + Linux64 128).
+  $targeted = if ($Design) { 3 } else { 131 }
+  $linuxBase = if ($Design) { '' } else { @"
+    <PropertyGroup Condition="('`$(Platform)'=='Linux64' and '`$(Base)'=='true') or '`$(Base_Linux64)'!=''">
+        <Base_Linux64>true</Base_Linux64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'`$(Base_Linux64)'!=''">
+        <DCC_Namespace>System;Xml;Data;FMX;Posix;Linuxapi;`$(DCC_Namespace)</DCC_Namespace>
+    </PropertyGroup>
+
+"@ }
+  $linuxPlatform = if ($Design) { '' } else { "`r`n                <Platform value=""Linux64"">True</Platform>" }
   $xml = @"
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- Generated by tools\build-packages.ps1 -UpdateProjects from $Name.dpk. -->
@@ -244,7 +276,7 @@ function Write-FmrDproj([string] $Name, [string] $Guid, [string] $Description, [
         <Base>True</Base>
         <Config Condition="'`$(Config)'==''">Release</Config>
         <Platform Condition="'`$(Platform)'==''">Win32</Platform>
-        <TargetedPlatforms>3</TargetedPlatforms>
+        <TargetedPlatforms>$targeted</TargetedPlatforms>
         <AppType>Package</AppType>
         <ProjectName Condition="'`$(ProjectName)'==''">$Name</ProjectName>
     </PropertyGroup>
@@ -261,7 +293,7 @@ function Write-FmrDproj([string] $Name, [string] $Guid, [string] $Description, [
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
     </PropertyGroup>
-    <PropertyGroup Condition="'`$(Config)'=='Debug' or '`$(Cfg_1)'!=''">
+$linuxBase    <PropertyGroup Condition="'`$(Config)'=='Debug' or '`$(Cfg_1)'!=''">
         <Cfg_1>true</Cfg_1>
         <CfgParent>Base</CfgParent>
         <Base>true</Base>
@@ -325,7 +357,7 @@ $($refs.ToString().TrimEnd())
             </Delphi.Personality>
             <Platforms>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">True</Platform>
+                <Platform value="Win64">True</Platform>$linuxPlatform
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
@@ -364,6 +396,8 @@ Test-FmrPackageUnits 'FMRRibbon.dpk' @('Core', 'Themes', 'Frame', 'Extras', 'Rib
 if (-not $RuntimeOnly) { Test-FmrPackageUnits 'dclFMRRibbon.dpk' @('Design') }
 
 $platforms = if ($Platform -eq 'All') { @('Win32', 'Win64') } else { @($Platform) }
+# The design package is for the IDE (Windows); Linux64 gets the runtime package only.
+if ($Platform -eq 'Linux64') { $RuntimeOnly = [switch]::new($true); $CopyToBplDir = [switch]::new($false); $Install = [switch]::new($false) }
 if (-not $RuntimeOnly) {
   if ($Icons -or -not (Test-Path (Join-Path $DesignDir 'FMR.Ribbon.Reg.dcr'))) { Update-FmrIcons }
 }

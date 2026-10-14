@@ -1,7 +1,7 @@
 # Status
 
 State of FMR Ribbon at the end of the first development round (2026-10-14). Everything below was built and
-checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
+checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux64 on FMXWayland as noted.
 
 ## Screenshots
 
@@ -36,7 +36,8 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
 | Packages (runtime + design, Win32/Win64), registration, property and component editors, items and structure editors, image picker, templates | done | compiled with 0 warnings, `LoadPackage` test, DesignPreview screenshots |
 | In-form design (tab click, selection, drag & drop, insertion marks, drop from items editor) | done | `DesignPreview /realtest`: 45/45 checks with the real ribbon in design state |
 | Demos: NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize | done | screenshots, leak check on close |
-| Tests | 169 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
+| Tests | 171 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
+| Linux64 with FMXWayland (2026-10-14) | every runtime unit and the runtime package compile with `dcclinux64`; RibbonBasic and Showcase run; themes, reduction, galleries and menus as `xdg_popup`, key tips, fontconfig font list, theme font fallback, Segoe icon codes from the bundled Fluent UI System Icons subset; the integrated title bar is ready on FMR's side (`IFMXWaylandWindowFrame`), FMXWayland does not offer the service yet | headless Weston 14 screenshots and frame dumps (`tools\linux-run.ps1`, `Docs\LINUX.md`) |
 | Stress and destroy paths (QA round, 2026-10-14) | 25 scenarios pass on Win64/Win32, Debug/Release: 50 theme switches, frame modes with maximize/restore, 50 popup and key tip cycles, display modes, ribbon or manager freed first, manager set to nil, items/groups/tabs deleted while hot, pressed or shown in open menus, form closed with each kind of popup open, frame/application menu/backstage/mini toolbar/radial menu freed while open, unknown theme, StyleBook set/freed, focus after menus and deactivation; GDI, USER and heap do not grow; no leak report | `tools\Stress\FmrStress.dpr` |
 
 ## Not verified (no environment here)
@@ -61,7 +62,9 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
 - Layout files don't store designed tabs/groups without a `Name`; user-defined group glyphs are stored only as
   image-list indexes.
 - Other platforms: the frame units compile for macOS (not linked, no SDK here); the ribbon was not built or run on
-  macOS, iOS, Android or Linux.
+  macOS, iOS or Android. Linux (FMXWayland): built and run on a headless Weston only — no real input, no WSLg or
+  desktop compositor; the ribbon sits under FMXWayland's title bar until FMXWayland offers `IFMXWaylandWindowFrame`;
+  UI Automation is Windows only; WordLike, Extras and Customize were not ported (`Docs\LINUX.md`).
 - Popup contents written by an application (own `IFmrPopupContent` controls) are closed when an item or link they
   show is destroyed only if they implement `IFmrItemDisplay`; the library's menus, color palettes and drop-down
   galleries do.
@@ -80,3 +83,5 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
 1. Install the design package in the IDE and go through `Docs\DESIGNTIME.md` (the checklist names what to confirm).
 2. Test on Windows 10, with multiple monitors and with a screen reader.
 3. Fill the gaps above (UIA events, RTL in editors, layout of unnamed objects).
+4. Linux: implement `IFMXWaylandWindowFrame` in FMXWayland (`Docs\LINUX.md`, "What FMXWayland has to implement") and
+   test the integrated title bar with real input on WSLg/GNOME/KDE; port WordLike, Extras and Customize.

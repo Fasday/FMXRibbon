@@ -13,13 +13,22 @@ was measured on Windows 11 and what is still open. The contract (types, interfac
 | `FMR.Frame.Host` | `TFmrFrameHost = class(TControl, IScene)`: container of the caption content; `FmrFindFrameHost` |
 | `FMR.Frame` | `TFmrFormFrame` (component, platform neutral), `TFmrFramePlatform` + `FmrFramePlatformClass` (factory filled by the platform unit) |
 | `FMR.Frame.Win` | `TFmrWinFrame`: Windows implementation (subclassing, `WM_NC*`, DWM attributes, painting); `FmrHitTestName` |
+| `FMR.Frame.Wayland` | Linux (FMXWayland): the contract `IFMXWaylandWindowFrame` and `TFmrWaylandFrame`, which attaches only when the platform offers it (`Docs\LINUX.md`) |
 | `FMR.Frame.Buttons` | `TFmrCaptionButton` (Minimize/Maximize/Close/Help, Windows 11 look), `TFmrCaptionTitle` (title that dims when inactive) |
 | `FMR.Frame.Form` | `TFmrForm = class(TForm)` with a built-in `Frame` (sub-component, streamed with the form) |
 
-`FMR.Frame` uses `FMR.Frame.Win` in its implementation section under `{$IFDEF MSWINDOWS}`, so using `FMR.Frame` (or
-`FMR.Frame.Form`) is enough. All units except `FMR.Frame.Win` compile for every platform (checked with `dccosx64`:
-compiles, only the link fails without the macOS SDK); without a platform class the frame does nothing and the host is
-an ordinary control aligned to the top of the client area.
+`FMR.Frame` uses `FMR.Frame.Win` in its implementation section under `{$IFDEF MSWINDOWS}` (and `FMR.Frame.Wayland`
+under `{$IFDEF LINUX}`), so using `FMR.Frame` (or `FMR.Frame.Form`) is enough. All units compile for every platform
+(`FMR.Frame.Win` to nothing outside Windows; checked with `dccosx64` and `dcclinux64`); without a platform class, or
+when it does not attach (Linux without `IFMXWaylandWindowFrame`), the frame does nothing and the host is an ordinary
+control aligned to the top of the client area — the ribbon then hides its title and window buttons there, as in the
+NCStrip mode (`TFmrRibbon.CaptionUnderNativeTitleBar`).
+
+**Platforms that move the window themselves.** The host offers `OnFrameMouseDown` (and sets nothing on Windows,
+where `WM_NCHITTEST` does the work): a platform frame sets it and turns `HitTest` of the host on; presses on the empty
+host and, through `TFmrFrameHost.HandleFrameMouseDown`, on caption space of the ribbon's caption and tab rows
+(`IFmrFrameHitTest` = Caption or SysMenu) reach it. `FMR.Frame.Wayland` uses it for interactive moves, the window menu
+and double-click maximize.
 
 ## How it works
 

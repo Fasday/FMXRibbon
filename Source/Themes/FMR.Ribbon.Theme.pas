@@ -157,6 +157,8 @@ type
 
   /// <summary>Sizes in dp at 100 % scale (FMX scales them).</summary>
   TFmrThemeMetrics = record
+    /// <summary>UI font: 'Segoe UI' on Windows; elsewhere FMR.Ribbon.Fonts.FmrUIFontFamily (the first installed of
+    /// Noto Sans, Cantarell, Ubuntu, DejaVu Sans...). A StyleBook font ('fmr_font') may name a list.</summary>
     FontFamily: string;
     FontSize: Single;
     CaptionFontSize: Single;
@@ -331,7 +333,7 @@ function FmrAccentShade(const AAccent: TAlphaColor; const ALevel: Integer): TAlp
 implementation
 
 uses
-  System.Math, System.TypInfo, System.Character;
+  System.Math, System.TypInfo, System.Character, FMR.Ribbon.Fonts;
 
 { color helpers }
 
@@ -731,7 +733,8 @@ begin
   Res := AStyleRoot.FindStyleResource(FmrFontStyleName);
   if Res is TFontObject then
   begin
-    FMetrics.FontFamily := TFontObject(Res).Font.Family;
+    // A list ('Segoe UI, Noto Sans') gives the first installed family.
+    FMetrics.FontFamily := FmrResolveFontFamily(TFontObject(Res).Font.Family);
     if TFontObject(Res).Font.Size > 0 then
     begin
       // Sizes derived from the font size keep their difference to it.

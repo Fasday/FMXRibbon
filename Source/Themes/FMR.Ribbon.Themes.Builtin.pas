@@ -30,7 +30,7 @@ procedure FmrRegisterBuiltinThemes;
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils, FMR.Ribbon.Fonts;
 
 type
   TFill = TFmrFill;
@@ -64,7 +64,8 @@ end;
 
 procedure BaseMetrics(var M: TFmrThemeMetrics);
 begin
-  M.FontFamily := 'Segoe UI';
+  // 'Segoe UI' on Windows; elsewhere the first installed of FmrUIFontCandidates (Noto Sans, Cantarell, ...).
+  M.FontFamily := FmrUIFontFamily;
   M.FontSize := 12;
   M.CaptionFontSize := 12;
   M.GroupCaptionFontSize := 12;

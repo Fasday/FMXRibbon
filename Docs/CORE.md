@@ -18,6 +18,7 @@ cross-platform. The visual ribbon (`TFmrRibbon`, painter, popups) is built on to
 | `FMR.Ribbon.Merge` | `TFmrRibbonMerger`: merge/unmerge of structure owners |
 | `FMR.Ribbon.KeyTips` | `TFmrKeyTipAssigner` (automatic key tips), `TFmrKeyTipMatcher` (typed sequence) |
 | `FMR.Ribbon.Strings` | `FmrStr`, `FmrFmt`, `FmrSetLanguage`, English and Russian tables, overrides, extra languages |
+| `FMR.Ribbon.Fonts` | Installed font families (`FmrFontFamilies`, `FmrFontFamilyAvailable`; filled by `FMR.Ribbon.Fonts.Win`/`.Linux`), `FmrResolveFontFamily` (first installed of a list), `FmrUIFontFamily` (theme font), `FmrRegisterFont`/`FmrEnsureIconFont` (private fonts for the Skia canvas), `FmrPreloadFontFamily`/`FmrAliasFontFamily` (Linux: Skia typeface registration) |
 
 The theme engine lives in `Source\Themes\` (`FMR.Ribbon.Theme`, `FMR.Ribbon.Themes.Builtin`); the core does not
 depend on it. `TFmrLayoutMetrics` is filled by the ribbon from the theme metrics.
@@ -109,13 +110,17 @@ centers the image keeping the aspect ratio and works with any canvas:
 - image list: `TCustomImageList.Draw`; with `Recolor` a single-color copy (`FmrRecolorBitmap`) is cached;
 - SVG: rendered by `TFmrImageSource.SvgRenderer` (Skia by default: `TSkSVGDOM` into a `TBitmap` via `SkiaDraw`),
   cached per pixel size and tint (6 entries per source); `Recolor` tints with an `SrcIn` color filter;
-- glyph: `FillText` with `GlyphFontFamily` (default `Segoe Fluent Icons` on Windows 11, `Segoe MDL2 Assets` on
-  Windows 10; set `DefaultGlyphFontFamily` elsewhere), code points above $FFFF supported;
+- glyph: `FillText` with `GlyphFontFamily` (default `Segoe Fluent Icons` on Windows 11 and elsewhere,
+  `Segoe MDL2 Assets` on Windows 10), code points above $FFFF supported. When the family is not installed
+  (`FMR.Ribbon.Fonts.FmrFontFamilyAvailable`) and it is a Segoe icon font, a known code is drawn from
+  `GlyphFallbackFontFamily` ("FMR Fluent Icons", `Assets\Fonts\FmrFluentIcons.ttf`, registered by `FmrEnsureIconFont`;
+  table `FMR.Ribbon.IconFont.inc` made by `tools\IconFont\make-icon-font.ps1`, `RegisterGlyphFallback` adds codes);
+  anything else gives a small placeholder dot instead of the "missing glyph" box (`Docs\LINUX.md`, "Icons");
 - path: `FillPath` of `PathData` fitted to the rect (or drawn in a 0..`PathViewBox` square like an SVG viewBox).
 
 `Color` fixes the color of glyphs/paths (and recolored images); otherwise the painter's `Tint` is used (black when
-Null). Define `FMR_NO_SKIA` to build without Skia (then assign `SvgRenderer` yourself). Programs drawing SVG need
-`sk4d.dll` next to the exe (`build.ps1` copies it).
+Null). Define `FMR_NO_SKIA` to build without Skia (then assign `SvgRenderer` yourself; no private fonts, so no icon
+font fallback). Programs drawing SVG need `sk4d.dll` next to the exe (`build.ps1` copies it; Linux: `libsk4d.so`).
 
 ## Ribbon structure
 

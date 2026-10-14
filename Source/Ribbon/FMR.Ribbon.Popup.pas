@@ -1208,6 +1208,8 @@ begin
   C := APopup.ContentIntf;
   if C <> nil then
     C.PopupClosed;
+  // The closed handler may free the content: no interface reference to it may be released after that.
+  C := nil;
   Proc := APopup.FOnClosed;
   APopup.FOnClosed := nil;
   if Assigned(Proc) then

@@ -22,7 +22,9 @@ const
 type
   TFmrFormFrame = class;
 
-  /// <summary>Platform part of a frame (Windows: <c>FMR.Frame.Win</c>). A platform unit registers its class in
+  /// <summary>Platform part of a frame (Windows: <c>FMR.Frame.Win</c>; Linux under FMXWayland:
+  /// <c>FMR.Frame.Wayland</c>, which attaches only when the platform offers IFMXWaylandWindowFrame). A platform unit
+  /// registers its class in
   /// <see cref="FmrFramePlatformClass"/>; without one the frame does nothing and the host stays an ordinary control
   /// at the top of the client area.</summary>
   TFmrFramePlatform = class abstract
@@ -168,7 +170,8 @@ implementation
 
 uses
   System.SysUtils, System.Math
-  {$IFDEF MSWINDOWS}, FMR.Frame.Win{$ENDIF};
+  {$IFDEF MSWINDOWS}, FMR.Frame.Win{$ENDIF}
+  {$IFDEF LINUX}, FMR.Frame.Wayland{$ENDIF};
 
 const
   DefaultLightCaption = $FFF3F3F3;

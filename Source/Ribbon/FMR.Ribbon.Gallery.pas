@@ -1776,6 +1776,9 @@ begin
           CreateMenus(0);
           if Supports(S.FMenu, IFmrPopupContent, Intf) then
             S.FNaturalWidth := Intf.GetPopupSize.Width - 2;
+          // CreateMenus(W) below frees this menu: no reference may outlive it (releasing it later read freed memory;
+          // seen as an access violation on Linux, where freed blocks are reused at once).
+          Intf := nil;
         end;
         W := Max(W, S.FNaturalWidth);
       end;
