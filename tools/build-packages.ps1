@@ -152,13 +152,15 @@ function Update-FmrIcons {
       $suffix = if ($size -eq 24) { '' } else { "$size" }
       $file = Join-Path $iconDir ("{0}{1}.png" -f $spec.Class, $suffix)
       if ($Icons -or -not (Test-Path $file)) { New-FmrIconPng $spec $size $file }
-      [void]$rc.AppendLine(('{0}{1}_PNG RCDATA "{2}"' -f $spec.Class.ToUpper(), $suffix, ($file -replace '\\', '\\')))
+      [void]$rc.AppendLine(('{0}{1}_PNG RCDATA "{2}"' -f $spec.Class.ToUpper(), $suffix, (Split-Path $file -Leaf))))
     }
   }
   $rcFile = Join-Path $iconDir 'FMR.Ribbon.Reg.rc'
   [IO.File]::WriteAllText($rcFile, $rc.ToString(), [Text.Encoding]::ASCII)
   $dcr = Join-Path $DesignDir 'FMR.Ribbon.Reg.dcr'
-  & $Brcc -fo"$dcr" "$rcFile" | Out-Null
+  # File names in the .rc are relative to the icon folder (no machine-specific paths in the repository)
+  Push-Location $iconDir
+  try { & $Brcc -fo"$dcr" "$rcFile" | Out-Null } finally { Pop-Location }
   if ($LASTEXITCODE -ne 0) { throw "brcc32 failed for the icons ($LASTEXITCODE)" }
   Write-Host "icons -> $dcr"
 }
