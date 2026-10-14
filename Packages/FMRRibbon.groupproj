@@ -1,0 +1,48 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{F2275A93-5834-4A41-9A76-6D919C395385}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="FMRRibbon.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="dclFMRRibbon.dproj">
+            <Dependencies>FMRRibbon.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FMRRibbon">
+        <MSBuild Projects="FMRRibbon.dproj"/>
+    </Target>
+    <Target Name="FMRRibbon:Clean">
+        <MSBuild Projects="FMRRibbon.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FMRRibbon:Make">
+        <MSBuild Projects="FMRRibbon.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="dclFMRRibbon" DependsOnTargets="FMRRibbon">
+        <MSBuild Projects="dclFMRRibbon.dproj"/>
+    </Target>
+    <Target Name="dclFMRRibbon:Clean" DependsOnTargets="FMRRibbon:Clean">
+        <MSBuild Projects="dclFMRRibbon.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="dclFMRRibbon:Make" DependsOnTargets="FMRRibbon:Make">
+        <MSBuild Projects="dclFMRRibbon.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FMRRibbon;dclFMRRibbon"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FMRRibbon:Clean;dclFMRRibbon:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FMRRibbon:Make;dclFMRRibbon:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

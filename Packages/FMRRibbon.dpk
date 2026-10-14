@@ -1,0 +1,93 @@
+package FMRRibbon;
+
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'FMR Ribbon for FireMonkey'}
+{$LIBSUFFIX AUTO}
+{$RUNONLY}
+{$IMPLICITBUILD OFF}
+
+// Runtime package: every unit of Source\Core, Source\Themes, Source\Frame, Source\Extras, Source\Ribbon and
+// Source\Templates. Windows only for now (FMR.Frame.Win, FMR.Ribbon.Fonts.Win).
+// When a unit is added to one of these folders, add it here and to FMRRibbon.dproj.
+
+requires
+  rtl,
+  fmx,
+  Skia.Package.RTL,
+  Skia.Package.FMX;
+
+contains
+  { Core }
+  FMR.Ribbon.Types in '..\Source\Core\FMR.Ribbon.Types.pas',
+  FMR.Ribbon.Strings in '..\Source\Core\FMR.Ribbon.Strings.pas',
+  FMR.Bars.Images in '..\Source\Core\FMR.Bars.Images.pas',
+  FMR.Bars in '..\Source\Core\FMR.Bars.pas',
+  FMR.Bars.Items in '..\Source\Core\FMR.Bars.Items.pas',
+  FMR.Ribbon.Structure in '..\Source\Core\FMR.Ribbon.Structure.pas',
+  FMR.Ribbon.Layout in '..\Source\Core\FMR.Ribbon.Layout.pas',
+  FMR.Ribbon.KeyTips in '..\Source\Core\FMR.Ribbon.KeyTips.pas',
+  FMR.Ribbon.Persistence in '..\Source\Core\FMR.Ribbon.Persistence.pas',
+  FMR.Ribbon.Merge in '..\Source\Core\FMR.Ribbon.Merge.pas',
+  { Themes }
+  FMR.Ribbon.Theme in '..\Source\Themes\FMR.Ribbon.Theme.pas',
+  FMR.Ribbon.Themes.Builtin in '..\Source\Themes\FMR.Ribbon.Themes.Builtin.pas',
+  FMR.Ribbon.Painter in '..\Source\Themes\FMR.Ribbon.Painter.pas',
+  { Frame }
+  FMR.Frame.Types in '..\Source\Frame\FMR.Frame.Types.pas',
+  FMR.Frame.Host in '..\Source\Frame\FMR.Frame.Host.pas',
+  FMR.Frame in '..\Source\Frame\FMR.Frame.pas',
+  FMR.Frame.Win in '..\Source\Frame\FMR.Frame.Win.pas',
+  FMR.Frame.Buttons in '..\Source\Frame\FMR.Frame.Buttons.pas',
+  FMR.Frame.Form in '..\Source\Frame\FMR.Frame.Form.pas',
+  { Extras }
+  FMR.Ribbon.Extras.Layout in '..\Source\Extras\FMR.Ribbon.Extras.Layout.pas',
+  FMR.Ribbon.ThemeLink in '..\Source\Extras\FMR.Ribbon.ThemeLink.pas',
+  FMR.Ribbon.StatusBar in '..\Source\Extras\FMR.Ribbon.StatusBar.pas',
+  FMR.Ribbon.Backstage in '..\Source\Extras\FMR.Ribbon.Backstage.pas',
+  FMR.Ribbon.Backstage.Controls in '..\Source\Extras\FMR.Ribbon.Backstage.Controls.pas',
+  { Ribbon }
+  FMR.Ribbon.BiDi in '..\Source\Ribbon\FMR.Ribbon.BiDi.pas',
+  FMR.Ribbon.Views in '..\Source\Ribbon\FMR.Ribbon.Views.pas',
+  FMR.Ribbon.Popup in '..\Source\Ribbon\FMR.Ribbon.Popup.pas',
+  FMR.Ribbon.ScreenTips in '..\Source\Ribbon\FMR.Ribbon.ScreenTips.pas',
+  FMR.Ribbon.EditorStyles in '..\Source\Ribbon\FMR.Ribbon.EditorStyles.pas',
+  FMR.Ribbon.Editors in '..\Source\Ribbon\FMR.Ribbon.Editors.pas',
+  FMR.Ribbon.Gallery in '..\Source\Ribbon\FMR.Ribbon.Gallery.pas',
+  FMR.Ribbon.ColorGallery in '..\Source\Ribbon\FMR.Ribbon.ColorGallery.pas',
+  FMR.Ribbon.CustomizeModel in '..\Source\Ribbon\FMR.Ribbon.CustomizeModel.pas',
+  FMR.Ribbon.CustomizeControls in '..\Source\Ribbon\FMR.Ribbon.CustomizeControls.pas',
+  FMR.Ribbon.Customize in '..\Source\Ribbon\FMR.Ribbon.Customize.pas',
+  FMR.Ribbon.AppMenu in '..\Source\Ribbon\FMR.Ribbon.AppMenu.pas',
+  FMR.Ribbon.MiniToolbar in '..\Source\Ribbon\FMR.Ribbon.MiniToolbar.pas',
+  FMR.Ribbon.RadialMenu in '..\Source\Ribbon\FMR.Ribbon.RadialMenu.pas',
+  FMR.Ribbon.Fonts.Win in '..\Source\Ribbon\FMR.Ribbon.Fonts.Win.pas',
+  FMR.Ribbon.UIA.Win in '..\Source\Ribbon\FMR.Ribbon.UIA.Win.pas',
+  FMR.Ribbon in '..\Source\Ribbon\FMR.Ribbon.pas',
+  { Templates and design-time contracts usable at run time }
+  FMR.Ribbon.DesignSupport in '..\Source\Templates\FMR.Ribbon.DesignSupport.pas',
+  FMR.Ribbon.Templates in '..\Source\Templates\FMR.Ribbon.Templates.pas';
+
+end.

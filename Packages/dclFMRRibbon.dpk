@@ -1,0 +1,56 @@
+package dclFMRRibbon;
+
+{$R '..\Source\Design\FMR.Ribbon.Reg.dcr'}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO OFF}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'FMR Ribbon for FireMonkey - design time'}
+{$LIBSUFFIX AUTO}
+{$DESIGNONLY}
+{$IMPLICITBUILD OFF}
+
+// Design-time package: registration, property and component editors, items editor, structure editor, image
+// dialog, templates and the in-form design hooks. The editor windows are VCL forms built in code.
+
+requires
+  rtl,
+  vcl,
+  vclimg,
+  designide,
+  fmx,
+  FMRRibbon;
+
+contains
+  FMR.Ribbon.Design.Bridge in '..\Source\Design\FMR.Ribbon.Design.Bridge.pas',
+  FMR.Ribbon.Design.Graphics in '..\Source\Design\FMR.Ribbon.Design.Graphics.pas',
+  FMR.Ribbon.Design.Window in '..\Source\Design\FMR.Ribbon.Design.Window.pas',
+  FMR.Ribbon.Design.ImageDialog in '..\Source\Design\FMR.Ribbon.Design.ImageDialog.pas',
+  FMR.Ribbon.Design.ItemsEditor in '..\Source\Design\FMR.Ribbon.Design.ItemsEditor.pas',
+  FMR.Ribbon.Design.Templates in '..\Source\Design\FMR.Ribbon.Design.Templates.pas',
+  FMR.Ribbon.Design.StructureEditor in '..\Source\Design\FMR.Ribbon.Design.StructureEditor.pas',
+  FMR.Ribbon.Design.Interactive in '..\Source\Design\FMR.Ribbon.Design.Interactive.pas',
+  FMR.Ribbon.Design.Editors in '..\Source\Design\FMR.Ribbon.Design.Editors.pas',
+  FMR.Ribbon.Reg in '..\Source\Design\FMR.Ribbon.Reg.pas';
+
+end.

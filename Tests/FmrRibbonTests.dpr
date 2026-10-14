@@ -23,7 +23,9 @@ uses
   FMR.Tests.Persistence in 'FMR.Tests.Persistence.pas',
   FMR.Tests.Merge in 'FMR.Tests.Merge.pas',
   FMR.Tests.KeyTips in 'FMR.Tests.KeyTips.pas',
-  FMR.Tests.Extras in 'FMR.Tests.Extras.pas';
+  FMR.Tests.Extras in 'FMR.Tests.Extras.pas',
+  FMR.Tests.Customize in 'FMR.Tests.Customize.pas',
+  FMR.Tests.Templates in 'FMR.Tests.Templates.pas';
 
 var
   Runner: ITestRunner;
