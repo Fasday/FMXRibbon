@@ -155,7 +155,7 @@ procedure WriteTokenTable(const AFileName: string);
 var
   L: TStringList;
   T: TFmrToken;
-  Light, Dark: TFmrTheme;
+  Light, Dark, Light24, Dark24: TFmrTheme;
 
   function Desc(const F: TFmrFill): string;
   var
@@ -175,17 +175,22 @@ var
 begin
   Light := TFmrTheme.CreateTheme('Office365White');
   Dark := TFmrTheme.CreateTheme('Office365Black');
+  Light24 := TFmrTheme.CreateTheme('Office2024Light');
+  Dark24 := TFmrTheme.CreateTheme('Office2024Dark');
   L := TStringList.Create;
   try
-    L.Add('| Token (StyleName) | Office 365 White | Office 365 Black |');
-    L.Add('|---|---|---|');
+    L.Add('| Token (StyleName) | Office 365 White | Office 365 Black | Office 2024 Light | Office 2024 Dark |');
+    L.Add('|---|---|---|---|---|');
     for T := Low(TFmrToken) to High(TFmrToken) do
-      L.Add(Format('| `%s` | %s | %s |', [TFmrTheme.TokenStyleName(T), Desc(Light.Fills[T]), Desc(Dark.Fills[T])]));
+      L.Add(Format('| `%s` | %s | %s | %s | %s |', [TFmrTheme.TokenStyleName(T), Desc(Light.Fills[T]),
+        Desc(Dark.Fills[T]), Desc(Light24.Fills[T]), Desc(Dark24.Fills[T])]));
     L.SaveToFile(AFileName, TEncoding.UTF8);
   finally
     L.Free;
     Light.Free;
     Dark.Free;
+    Light24.Free;
+    Dark24.Free;
   end;
 end;
 

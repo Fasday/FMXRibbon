@@ -4,6 +4,8 @@ object WordLikeForm: TWordLikeForm
   Caption = 'Document1 - FMR Write'
   ClientHeight = 800
   ClientWidth = 1280
+  Fill.Color = claNull
+  Fill.Kind = Solid
   Position = ScreenCenter
   FormFactor.Width = 320
   FormFactor.Height = 480
@@ -23,6 +25,16 @@ object WordLikeForm: TWordLikeForm
     Images = ImageList1
     Left = 520
     Top = 520
+    object chkAutoSave: TFmrCheckItem
+      Caption = 'AutoSave'
+      Category = 'File'
+      ScreenTip.Header = 'AutoSave'
+      ScreenTip.Description = 
+        'Save the document on every change (a Save of the demo when it ha' +
+        's a file name).'
+      OnClick = AutoSaveClick
+      CheckStyle = ToggleSwitch
+    end
     object btnSave: TFmrButtonItem
       Caption = 'Save'
       Category = 'File'
@@ -40,6 +52,16 @@ object WordLikeForm: TWordLikeForm
       Glyph.GlyphCode = 59303
       ShortCut = 16474
       OnClick = UndoClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnUndoAll
+        end>
+    end
+    object btnUndoAll: TFmrButtonItem
+      Caption = 'Undo All Changes'
+      Category = 'File'
+      OnClick = UndoAllClick
     end
     object btnRedo: TFmrButtonItem
       Caption = 'Redo'
@@ -68,6 +90,65 @@ object WordLikeForm: TWordLikeForm
       Glyph.GlyphCode = 59209
       ShortCut = 16464
       OnClick = PrintClick
+    end
+    object btnAccount: TFmrAvatarItem
+      Caption = 'Account'
+      Category = 'File'
+      ScreenTip.Header = 'FMR Write user'
+      ScreenTip.Description = 'The account of the document (a demo menu).'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnAccountName
+        end
+        item
+          Item = btnAccountSwitch
+          BeginGroup = True
+        end>
+      Initials = 'FW'
+      Color = xFFA4262C
+    end
+    object btnAccountName: TFmrStaticItem
+      Caption = 'FMR Write user'
+      Alignment = Center
+    end
+    object btnAccountSwitch: TFmrButtonItem
+      Caption = 'Switch account'
+      Glyph.GlyphCode = 59208
+      OnClick = CommandClick
+    end
+    object btnComments: TFmrButtonItem
+      Caption = 'Comments'
+      Category = 'File'
+      Glyph.GlyphCode = 59658
+      OnClick = CommandClick
+    end
+    object btnShare: TFmrButtonItem
+      Caption = 'Share'
+      Category = 'File'
+      Glyph.GlyphCode = 59181
+      ScreenTip.Header = 'Share'
+      ScreenTip.Description = 'Invite others to work on the document together.'
+      OnClick = CommandClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnShareLink
+        end
+        item
+          Item = btnShareCopy
+        end>
+      Primary = True
+    end
+    object btnShareLink: TFmrButtonItem
+      Caption = 'Copy Link'
+      Glyph.GlyphCode = 59163
+      OnClick = CommandClick
+    end
+    object btnShareCopy: TFmrButtonItem
+      Caption = 'Send a Copy'
+      Glyph.GlyphCode = 59172
+      OnClick = CommandClick
     end
     object btnPaste: TFmrButtonItem
       Caption = 'Paste'
@@ -117,6 +198,15 @@ object WordLikeForm: TWordLikeForm
       ScreenTip.Description = 'Put a copy of the selection on the clipboard.'
       OnClick = CopyClick
     end
+    object btnFormatPainter: TFmrButtonItem
+      Caption = 'Format Painter'
+      Glyph.GlyphCode = 59249
+      KeyTip = 'FP'
+      ScreenTip.Header = 'Format Painter'
+      ScreenTip.Description = 'Copy the formatting of the selection and apply it to other text.'
+      OnClick = FormatPainterClick
+      ButtonStyle = Check
+    end
     object btnSelectAll: TFmrButtonItem
       Caption = 'Select All'
       Glyph.GlyphCode = 59571
@@ -128,16 +218,16 @@ object WordLikeForm: TWordLikeForm
       KeyTip = 'FF'
       ScreenTip.Header = 'Font'
       ScreenTip.Description = 'Pick a new font for the document.'
-      Width = 140.00000000000000000
+      Width = 112.00000000000000000
       OnChange = FontNameChange
-      Text = 'Calibri'
+      Text = 'Aptos (Body)'
     end
     object cbFontSize: TFmrComboItem
       Caption = 'Font Size'
       KeyTip = 'FS'
       ScreenTip.Header = 'Font Size'
       ScreenTip.Description = 'Change the size of the text.'
-      Width = 54.00000000000000000
+      Width = 62.00000000000000000
       OnChange = FontSizeChange
       Editable = True
       Items.Strings = (
@@ -155,7 +245,7 @@ object WordLikeForm: TWordLikeForm
         '36'
         '48'
         '72')
-      ItemIndex = 3
+      ItemIndex = 4
     end
     object btnGrowFont: TFmrButtonItem
       Caption = 'Grow Font'
@@ -232,6 +322,14 @@ object WordLikeForm: TWordLikeForm
       Category = 'Home'
       OnClick = ChangeCaseClick
     end
+    object btnClearFormatting: TFmrButtonItem
+      Caption = 'Clear Formatting'
+      Glyph.GlyphCode = 60768
+      KeyTip = 'E'
+      ScreenTip.Header = 'Clear All Formatting'
+      ScreenTip.Description = 'Remove all the formatting: back to the Normal style.'
+      OnClick = ClearFormattingClick
+    end
     object btnBold: TFmrButtonItem
       Caption = 'Bold'
       Glyph.GlyphCode = 59613
@@ -271,6 +369,45 @@ object WordLikeForm: TWordLikeForm
       OnClick = FontStyleClick
       ButtonStyle = Check
     end
+    object btnSubscript: TFmrButtonItem
+      Caption = 'x'#8322
+      KeyTip = '5'
+      ScreenTip.Header = 'Subscript (Ctrl+=)'
+      ScreenTip.Description = 'Type very small letters just below the line of text.'
+      OnClick = CommandClick
+      AllowAllUp = True
+      ButtonStyle = Check
+      GroupIndex = 21
+    end
+    object btnSuperscript: TFmrButtonItem
+      Caption = 'x'#178
+      KeyTip = '6'
+      ScreenTip.Header = 'Superscript (Ctrl+Shift++)'
+      ScreenTip.Description = 'Type very small letters just above the line of text.'
+      OnClick = CommandClick
+      AllowAllUp = True
+      ButtonStyle = Check
+      GroupIndex = 21
+    end
+    object btnTextEffects: TFmrButtonItem
+      Caption = 'Text Effects and Typography'
+      Glyph.GlyphCode = 61280
+      KeyTip = 'FT'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnClearFormatting
+        end>
+    end
+    object clrHighlight: TFmrColorGalleryItem
+      Caption = 'Text Highlight Color'
+      Glyph.GlyphCode = 59366
+      KeyTip = 'I'
+      ScreenTip.Header = 'Text Highlight Color'
+      ScreenTip.Description = 'Make the text look like it was marked with a highlighter pen.'
+      OnClick = CommandClick
+      Color = claYellow
+    end
     object clrFontColor: TFmrColorGalleryItem
       Caption = 'Font Color'
       Glyph.GlyphCode = 59603
@@ -281,14 +418,6 @@ object WordLikeForm: TWordLikeForm
       Color = claRed
       OnPreview = FontColorPreview
     end
-    object btnClearFormatting: TFmrButtonItem
-      Caption = 'Clear Formatting'
-      Glyph.GlyphCode = 60768
-      KeyTip = 'E'
-      ScreenTip.Header = 'Clear All Formatting'
-      ScreenTip.Description = 'Remove all the formatting: back to the Normal style.'
-      OnClick = ClearFormattingClick
-    end
     object btnBullets: TFmrButtonItem
       Caption = 'Bullets'
       Glyph.GlyphCode = 59645
@@ -297,6 +426,23 @@ object WordLikeForm: TWordLikeForm
       ScreenTip.Description = 
         'Start a bulleted list (or remove the bullets of the selected lin' +
         'es).'
+      OnClick = BulletsClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnBulletDot
+        end
+        item
+          Item = btnBulletDash
+        end>
+    end
+    object btnBulletDot: TFmrButtonItem
+      Caption = #8226'  Bullet'
+      OnClick = BulletsClick
+    end
+    object btnBulletDash: TFmrButtonItem
+      Tag = 1
+      Caption = #8211'  Dash'
       OnClick = BulletsClick
     end
     object btnNumbering: TFmrButtonItem
@@ -308,6 +454,29 @@ object WordLikeForm: TWordLikeForm
         'Start a numbered list (or remove the numbers of the selected lin' +
         'es).'
       OnClick = NumberingClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnNumber1
+        end>
+    end
+    object btnNumber1: TFmrButtonItem
+      Caption = '1.  2.  3.'
+      OnClick = NumberingClick
+    end
+    object btnMultilevel: TFmrButtonItem
+      Caption = 'Multilevel List'
+      Glyph.GlyphCode = 59968
+      KeyTip = 'M'
+      OnClick = CommandClick
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnBulletDot
+        end
+        item
+          Item = btnNumber1
+        end>
     end
     object btnIndentDec: TFmrButtonItem
       Tag = -1
@@ -331,6 +500,18 @@ object WordLikeForm: TWordLikeForm
       ScreenTip.Header = 'Sort'
       ScreenTip.Description = 'Sort the selected lines alphabetically.'
       OnClick = SortClick
+    end
+    object btnShowMarks: TFmrButtonItem
+      Caption = 'Show/Hide'
+      Glyph.PathData = 
+        'M18,4 L18,5.6 L16.4,5.6 L16.4,20 L14.8,20 L14.8,5.6 L12.8,5.6 L1' +
+        '2.8,20 L11.2,20 L11.2,12.4 A4.2,4.2 0 0 1 11.2,4 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      KeyTip = '8'
+      ScreenTip.Header = 'Show/Hide '#182' (Ctrl+*)'
+      ScreenTip.Description = 'Show paragraph marks and other hidden formatting symbols.'
+      OnClick = CommandClick
+      ButtonStyle = Check
     end
     object btnAlignLeft: TFmrButtonItem
       Caption = 'Align Left'
@@ -371,6 +552,83 @@ object WordLikeForm: TWordLikeForm
       OnClick = AlignClick
       ButtonStyle = Check
       GroupIndex = 1
+    end
+    object btnLineSpacing: TFmrButtonItem
+      Caption = 'Line and Paragraph Spacing'
+      Glyph.GlyphCode = 60647
+      KeyTip = 'K'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnSpacing10
+        end
+        item
+          Item = btnSpacing115
+        end
+        item
+          Item = btnSpacing15
+        end
+        item
+          Item = btnSpacing20
+        end>
+    end
+    object btnSpacing10: TFmrButtonItem
+      Caption = '1.0'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object btnSpacing115: TFmrButtonItem
+      Tag = 1
+      Caption = '1.15'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 22
+    end
+    object btnSpacing15: TFmrButtonItem
+      Tag = 2
+      Caption = '1.5'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object btnSpacing20: TFmrButtonItem
+      Tag = 3
+      Caption = '2.0'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object clrShading: TFmrColorItem
+      Caption = 'Shading'
+      Glyph.GlyphCode = 60226
+      KeyTip = 'H'
+      OnClick = CommandClick
+      AutomaticColor = claNull
+    end
+    object btnBorders: TFmrButtonItem
+      Caption = 'Borders'
+      Glyph.GlyphCode = 59193
+      KeyTip = 'B'
+      OnClick = CommandClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnBorderBottom
+        end
+        item
+          Item = btnBorderNone
+        end>
+    end
+    object btnBorderBottom: TFmrButtonItem
+      Caption = 'Bottom Border'
+      Glyph.GlyphCode = 59193
+      OnClick = CommandClick
+    end
+    object btnBorderNone: TFmrButtonItem
+      Caption = 'No Border'
+      OnClick = CommandClick
     end
     object galStyles: TFmrRibbonGalleryItem
       Caption = 'Styles'
@@ -420,32 +678,49 @@ object WordLikeForm: TWordLikeForm
               Tag = 5
             end
             item
-              Caption = 'Emphasis'
+              Caption = 'Subtle Emphasis'
               Tag = 6
             end
             item
-              Caption = 'Strong'
+              Caption = 'Emphasis'
               Tag = 7
             end
             item
-              Caption = 'Quote'
+              Caption = 'Intense Emphasis'
               Tag = 8
             end
             item
-              Caption = 'Intense Quote'
+              Caption = 'Strong'
               Tag = 9
             end
             item
-              Caption = 'Code'
+              Caption = 'Quote'
               Tag = 10
             end
             item
-              Caption = 'Book Title'
+              Caption = 'Intense Quote'
               Tag = 11
+            end
+            item
+              Caption = 'Subtle Reference'
+              Tag = 12
+            end
+            item
+              Caption = 'Intense Reference'
+              Tag = 13
+            end
+            item
+              Caption = 'Book Title'
+              Tag = 14
+            end
+            item
+              Caption = 'List Paragraph'
+              Tag = 15
             end>
         end>
-      ItemHeight = 62.00000000000000000
-      ItemWidth = 80.00000000000000000
+      ItemHeight = 56.00000000000000000
+      ItemWidth = 72.00000000000000000
+      MaxColumns = 16
       SelectedIndex = 0
       ShowGroupHeaders = False
       OnHotTrack = StylesHotTrack
@@ -460,6 +735,24 @@ object WordLikeForm: TWordLikeForm
       ScreenTip.Description = 'Find text in the document.'
       ShortCut = 16454
       OnClick = FindClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnAdvancedFind
+        end
+        item
+          Item = btnGoTo
+        end>
+    end
+    object btnAdvancedFind: TFmrButtonItem
+      Caption = 'Advanced Find...'
+      Glyph.GlyphCode = 59169
+      OnClick = FindClick
+    end
+    object btnGoTo: TFmrButtonItem
+      Caption = 'Go To...'
+      Glyph.GlyphCode = 59565
+      OnClick = CommandClick
     end
     object btnReplace: TFmrButtonItem
       Caption = 'Replace'
@@ -469,6 +762,45 @@ object WordLikeForm: TWordLikeForm
       ScreenTip.Description = 'Search for text and replace it.'
       ShortCut = 16456
       OnClick = ReplaceClick
+    end
+    object btnSelect: TFmrButtonItem
+      Caption = 'Select'
+      Glyph.GlyphCode = 59571
+      KeyTip = 'SL'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnSelectAll
+        end
+        item
+          Item = btnSelectSimilar
+        end>
+    end
+    object btnSelectSimilar: TFmrButtonItem
+      Caption = 'Select Text with Similar Formatting'
+      Enabled = False
+      OnClick = CommandClick
+    end
+    object btnAddins: TFmrButtonItem
+      Caption = 'Add-ins'
+      Glyph.SvgSource = 
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g f' +
+        'ill="none" stroke="#D83B01" stroke-width="1.6"><rect x="3.8" y="' +
+        '3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.' +
+        '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
+        '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
+        '" y="16.8" width="7.4" height="7.4"/></g></svg>'
+      LargeGlyph.SvgSource = 
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g f' +
+        'ill="none" stroke="#D83B01" stroke-width="1.6"><rect x="3.8" y="' +
+        '3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.' +
+        '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
+        '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
+        '" y="16.8" width="7.4" height="7.4"/></g></svg>'
+      KeyTip = 'Y2'
+      ScreenTip.Header = 'Add-ins'
+      ScreenTip.Description = 'Find add-ins for Word and manage them.'
+      OnClick = CommandClick
     end
     object btnBlankPage: TFmrButtonItem
       Tag = 1
@@ -1307,6 +1639,21 @@ object WordLikeForm: TWordLikeForm
               Caption = 'Windows 11 Dark'
               Hint = 'FluentDark'
               Tag = 17
+            end
+            item
+              Caption = 'Office 2024 Light'
+              Hint = 'Office2024Light'
+              Tag = 18
+            end
+            item
+              Caption = 'Office 2024 Dark Gray'
+              Hint = 'Office2024DarkGray'
+              Tag = 19
+            end
+            item
+              Caption = 'Office 2024 Dark'
+              Hint = 'Office2024Dark'
+              Tag = 20
             end>
         end>
       ItemHeight = 60.00000000000000000
@@ -1314,6 +1661,58 @@ object WordLikeForm: TWordLikeForm
       MaxColumns = 5
       OnItemClick = ThemeItemClick
       OnDrawItem = ThemeDrawItem
+    end
+    object btnOfficeTheme: TFmrButtonItem
+      Caption = 'Office Theme'
+      Glyph.GlyphCode = 59280
+      LargeGlyph.GlyphCode = 59280
+      KeyTip = 'OT'
+      ScreenTip.Header = 'Office Theme'
+      ScreenTip.Description = 
+        'Office 2024 Light, Dark Gray or Dark, or the light or dark mode ' +
+        'of Windows.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnThemeLight
+        end
+        item
+          Item = btnThemeDarkGray
+        end
+        item
+          Item = btnThemeDark
+        end
+        item
+          Item = btnThemeSystem
+        end>
+    end
+    object btnThemeLight: TFmrButtonItem
+      Caption = 'Light'
+      OnClick = OfficeThemeClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeDarkGray: TFmrButtonItem
+      Tag = 1
+      Caption = 'Dark Gray'
+      OnClick = OfficeThemeClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeDark: TFmrButtonItem
+      Tag = 2
+      Caption = 'Dark'
+      OnClick = OfficeThemeClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeSystem: TFmrButtonItem
+      Tag = 3
+      Caption = 'Use System Setting'
+      OnClick = OfficeThemeClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 23
     end
     object galAccent: TFmrRibbonGalleryItem
       Caption = 'Accent'
@@ -1462,12 +1861,39 @@ object WordLikeForm: TWordLikeForm
   end
   object Ribbon1: TFmrRibbon
     ActiveTab = tabHome
+    ApplicationIcon.SvgSource = 
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rec' +
+      't x="8" y="3" width="22" height="26" rx="2" fill="#41A5EE"/><rec' +
+      't x="8" y="10" width="22" height="7" fill="#2B7CD3"/><rect x="8"' +
+      ' y="17" width="22" height="7" fill="#185ABD"/><path d="M8 24h22v' +
+      '3a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z" fill="#103F91"/><rect x="2" y' +
+      '="8" width="16" height="16" rx="2" fill="#185ABD"/><path d="M4.6' +
+      ' 12h2.1l1.3 6.1 1.5-6.1h1.5l1.5 6.1 1.3-6.1h2.1l-2.4 9h-1.7L10 1' +
+      '5.1 8.7 21H7z" fill="#fff"/></svg>'
+    CaptionToolbar.ItemLinks = <
+      item
+        Item = btnAccount
+      end>
+    TabAreaToolbar.ItemLinks = <
+      item
+        Item = btnComments
+        ViewLevels = [SmallWithText]
+        Visible = False
+      end
+      item
+        Item = btnShare
+        ViewLevels = [SmallWithText]
+      end>
     ApplicationButton.ScreenTip.Header = 'File'
     ApplicationButton.ScreenTip.Description = 'Open the backstage view: new, open, save, print and options.'
     ApplicationMenu = BackstageView1
     BarManager = BarManager1
     Frame = Frame1
+    Position.Y = 78.00000000000000000
     QuickAccessToolbar.ItemLinks = <
+      item
+        Item = chkAutoSave
+      end
       item
         Item = btnSave
       end
@@ -1477,13 +1903,11 @@ object WordLikeForm: TWordLikeForm
       item
         Item = btnRedo
       end>
-    ShowDisplayOptionsButton = True
-    ShowDisplayModeButton = True
     ShowSearchBox = True
     Size.Width = 1280.00000000000000000
-    Size.Height = 101.00000000000000000
+    Size.Height = 108.00000000000000000
     Size.PlatformDefault = False
-    Theme = 'Office365Colorful'
+    Theme = 'Office2024Light'
     OnDisplayModeChanged = RibbonDisplayModeChanged
     OnSearch = RibbonSearch
     object tabHome: TFmrRibbonTab
@@ -1499,9 +1923,15 @@ object WordLikeForm: TWordLikeForm
           end
           item
             Item = btnCut
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnCopy
+            ViewLevels = [SmallWithText, Small]
+          end
+          item
+            Item = btnFormatPainter
+            ViewLevels = [SmallWithText, Small]
           end>
         ShowDialogLauncher = True
         OnDialogLauncherClick = ClipboardLauncherClick
@@ -1539,6 +1969,12 @@ object WordLikeForm: TWordLikeForm
             ViewLevels = [Small]
           end
           item
+            Item = btnClearFormatting
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
             Item = btnBold
             ButtonGroup = Start
             ViewLevels = [Small]
@@ -1559,14 +1995,28 @@ object WordLikeForm: TWordLikeForm
             ViewLevels = [Small]
           end
           item
-            Item = clrFontColor
+            Item = btnSubscript
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnSuperscript
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnTextEffects
             BeginGroup = True
             ButtonGroup = Member
             ViewLevels = [Small]
           end
           item
-            Item = btnClearFormatting
-            BeginGroup = True
+            Item = clrHighlight
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = clrFontColor
             ButtonGroup = Member
             ViewLevels = [Small]
           end>
@@ -1575,6 +2025,7 @@ object WordLikeForm: TWordLikeForm
       end
       object grpParagraph: TFmrRibbonGroup
         Caption = 'Paragraph'
+        DialogLauncherKeyTip = 'PG'
         ItemLinks = <
           item
             Item = btnBullets
@@ -1583,6 +2034,11 @@ object WordLikeForm: TWordLikeForm
           end
           item
             Item = btnNumbering
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnMultilevel
             ButtonGroup = Member
             ViewLevels = [Small]
           end
@@ -1599,6 +2055,12 @@ object WordLikeForm: TWordLikeForm
           end
           item
             Item = btnSort
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnShowMarks
             BeginGroup = True
             ButtonGroup = Member
             ViewLevels = [Small]
@@ -1622,15 +2084,38 @@ object WordLikeForm: TWordLikeForm
             Item = btnJustify
             ButtonGroup = Member
             ViewLevels = [Small]
+          end
+          item
+            Item = btnLineSpacing
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = clrShading
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnBorders
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
           end>
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = FontLauncherClick
       end
       object grpStyles: TFmrRibbonGroup
         Caption = 'Styles'
+        DialogLauncherKeyTip = 'FY'
         ItemLinks = <
           item
             Item = galStyles
           end>
         ReductionPriority = -1
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = FontLauncherClick
       end
       object grpEditing: TFmrRibbonGroup
         Caption = 'Editing'
@@ -1644,8 +2129,16 @@ object WordLikeForm: TWordLikeForm
             ViewLevels = [SmallWithText, Small]
           end
           item
-            Item = btnSelectAll
+            Item = btnSelect
             ViewLevels = [SmallWithText, Small]
+          end>
+      end
+      object grpAddins: TFmrRibbonGroup
+        Caption = 'Add-ins'
+        ItemLinks = <
+          item
+            Item = btnAddins
+            ViewLevels = [Large]
           end>
       end
     end
@@ -1819,6 +2312,10 @@ object WordLikeForm: TWordLikeForm
             Item = galThemes
           end
           item
+            Item = btnOfficeTheme
+            ViewLevels = [Large]
+          end
+          item
             Item = galAccent
             ViewLevels = [Large]
           end>
@@ -1944,9 +2441,9 @@ object WordLikeForm: TWordLikeForm
   end
   object StatusBar1: TFmrStatusBar
     BarManager = BarManager1
-    Position.Y = 777.00000000000000000
+    Position.Y = 778.00000000000000000
     Size.Width = 1280.00000000000000000
-    Size.Height = 23.00000000000000000
+    Size.Height = 22.00000000000000000
     Size.PlatformDefault = False
     ThemeProvider = Ribbon1
     object spPage: TFmrStatusBarPanel
@@ -1965,34 +2462,53 @@ object WordLikeForm: TWordLikeForm
     object spChars: TFmrStatusBarPanel
       Text = '0 characters'
       ItemLinks = <>
+      Visible = False
       TabOrder = 2
     end
     object spLanguage: TFmrStatusBarPanel
       Text = 'English (United States)'
-      Glyph.GlyphCode = 59252
       ItemLinks = <>
       Hint = 'Click to switch the user interface language (English / Russian)'
       TabOrder = 3
       OnClick = StatusLanguageClick
     end
-    object spMessage: TFmrStatusBarPanel
-      Text = 'Ready'
-      Stretch = True
+    object spAccessibility: TFmrStatusBarPanel
+      Text = 'Accessibility: Good to go'
+      Glyph.GlyphCode = 59254
       ItemLinks = <>
       TabOrder = 4
+    end
+    object spMessage: TFmrStatusBarPanel
+      Stretch = True
+      ItemLinks = <>
+      TabOrder = 5
+    end
+    object spDisplay: TFmrStatusBarPanel
+      Side = Right
+      Text = 'Display Settings'
+      Glyph.GlyphCode = 59380
+      ItemLinks = <>
+      TabOrder = 6
+    end
+    object spFocus: TFmrStatusBarPanel
+      Side = Right
+      Text = 'Focus'
+      Glyph.GlyphCode = 59200
+      ItemLinks = <>
+      TabOrder = 7
     end
     object spView: TFmrStatusBarPanel
       Kind = ViewButtons
       Side = Right
       ItemLinks = <>
-      TabOrder = 5
+      TabOrder = 8
       OnViewChange = StatusViewChange
     end
     object spZoom: TFmrStatusBarPanel
       Kind = ZoomSlider
       Side = Right
       ItemLinks = <>
-      TabOrder = 6
+      TabOrder = 9
       OnZoomChange = StatusZoomChange
       OnZoomClick = StatusZoomClick
     end
@@ -2002,7 +2518,7 @@ object WordLikeForm: TWordLikeForm
     ClipChildren = True
     Fill.Color = xFFE6E6E6
     Size.Width = 1280.00000000000000000
-    Size.Height = 676.00000000000000000
+    Size.Height = 592.00000000000000000
     Size.PlatformDefault = False
     Stroke.Kind = None
     OnResize = DocAreaResize
@@ -2212,8 +2728,8 @@ object WordLikeForm: TWordLikeForm
             'click a command to add it to the Quick Access Toolbar, or custom' +
             'ize the whole ribbon (View > Customize Ribbon).')
         StyledSettings = []
-        TextSettings.Font.Family = 'Calibri'
-        TextSettings.Font.Size = 14.66666698455811000
+        TextSettings.Font.Family = 'Aptos'
+        TextSettings.Font.Size = 16.00000000000000000
         TextSettings.WordWrap = True
         OnChangeTracking = MemoChangeTracking
         Align = Client
@@ -3383,9 +3899,11 @@ object WordLikeForm: TWordLikeForm
     end
   end
   object Frame1: TFmrFormFrame
-    CaptionHeight = 62.00000000000000000
-    CaptionColor = xFF2B579A
-    CaptionInactiveColor = xFF4068A4
+    Mode = Dwm
+    CaptionHeight = 78.00000000000000000
+    Backdrop = Mica
+    CaptionColor = xFFF0F0F0
+    CaptionInactiveColor = xFFF0F0F0
     Left = 400
     Top = 520
   end

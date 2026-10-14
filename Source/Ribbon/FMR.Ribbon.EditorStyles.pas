@@ -1,4 +1,4 @@
-﻿{*******************************************************}
+{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Editor controls painted with the ribbon theme        }
@@ -47,6 +47,8 @@ type
     Radius: Single;
     FontFamily: string;
     FontSize: Single;
+    /// <summary>Drop-down arrows are stroked chevrons (Office 2024).</summary>
+    Chevron: Boolean;
     class function FromTheme(const ATheme: TFmrTheme): TFmrEditorColors; static;
     /// <summary>Identity of the scheme (equal keys = equal styles).</summary>
     function Key: string;
@@ -287,7 +289,8 @@ begin
   A.Parent := AParent;
 end;
 
-function NewArrow(const AParent: TFmxObject; const AColor: TAlphaColor; const AUp: Boolean = False): TPath;
+function NewArrow(const AParent: TFmxObject; const AColor: TAlphaColor; const AUp: Boolean = False;
+  const AChevron: Boolean = False): TPath;
 begin
   Result := TPath.Create(nil);
   Result.Align := TAlignLayout.Center;
@@ -296,13 +299,30 @@ begin
   Result.HitTest := False;
   Result.Locked := True;
   Result.WrapMode := TPathWrapMode.Stretch;
-  if AUp then
-    Result.Data.Data := 'M0,4 L4,0 L8,4 Z'
+  if AChevron then
+  begin
+    // Office 2024: a thin chevron
+    if AUp then
+      Result.Data.Data := 'M0,4 L4,0 L8,4'
+    else
+      Result.Data.Data := 'M0,0 L4,4 L8,0';
+    Result.Fill.Kind := TBrushKind.None;
+    Result.Stroke.Kind := TBrushKind.Solid;
+    Result.Stroke.Color := AColor;
+    Result.Stroke.Thickness := 1;
+    Result.Stroke.Cap := TStrokeCap.Round;
+    Result.Stroke.Join := TStrokeJoin.Round;
+  end
   else
-    Result.Data.Data := 'M0,0 L8,0 L4,4 Z';
-  Result.Fill.Kind := TBrushKind.Solid;
-  Result.Fill.Color := AColor;
-  Result.Stroke.Kind := TBrushKind.None;
+  begin
+    if AUp then
+      Result.Data.Data := 'M0,4 L4,0 L8,4 Z'
+    else
+      Result.Data.Data := 'M0,0 L8,0 L4,4 Z';
+    Result.Fill.Kind := TBrushKind.Solid;
+    Result.Fill.Color := AColor;
+    Result.Stroke.Kind := TBrushKind.None;
+  end;
   Result.Parent := AParent;
 end;
 
@@ -550,7 +570,7 @@ begin
   begin
     Arrow := NewLayout(Root, 'arrow', TAlignLayout.Right, 18);
     Arrow.HitTest := True;
-    NewArrow(Arrow, AColors.Arrow);
+    NewArrow(Arrow, AColors.Arrow, False, AColors.Chevron);
   end;
   if ASpin then
   begin
@@ -565,7 +585,7 @@ begin
     Plus.CanFocus := False;
     Plus.Text := '';
     Plus.Parent := Col;
-    NewArrow(Plus, AColors.Arrow, True);
+    NewArrow(Plus, AColors.Arrow, True, AColors.Chevron);
     Minus := TButton.Create(nil);
     Minus.StyleName := 'minusbutton';
     Minus.StyleLookup := Lookup;
@@ -573,7 +593,7 @@ begin
     Minus.CanFocus := False;
     Minus.Text := '';
     Minus.Parent := Col;
-    NewArrow(Minus, AColors.Arrow, False);
+    NewArrow(Minus, AColors.Arrow, False, AColors.Chevron);
   end;
   Result := Root;
 end;
@@ -588,7 +608,7 @@ begin
   NewBackground(Root, AColors);
   NewBrush(Root, 'foreground', AColors.Text);
   Arrow := NewLayout(Root, '', TAlignLayout.Right, 18);
-  NewArrow(Arrow, AColors.Arrow);
+  NewArrow(Arrow, AColors.Arrow, False, AColors.Chevron);
   Content := NewLayout(Root, 'content', TAlignLayout.Contents);
   Content.Margins.Rect := RectF(1, 1, 18, 1);
   Result := Root;
@@ -649,13 +669,14 @@ begin
   Result.Radius := Min(M.ButtonRadius, 4);
   Result.FontFamily := M.FontFamily;
   Result.FontSize := M.FontSize;
+  Result.Chevron := ATheme.Style.ChevronArrows;
 end;
 
 function TFmrEditorColors.Key: string;
 begin
-  Result := Format('%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%g.%s.%g', [Fill, Border, BorderHot,
+  Result := Format('%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%x.%g.%s.%g.%d', [Fill, Border, BorderHot,
     BorderFocused, Text, Selection, Arrow, ButtonHot, ButtonPressed, PopupFill, PopupBorder, ItemText, Track,
-    TrackHighlight, Thumb, ThumbHot, Radius, FontFamily, FontSize]);
+    TrackHighlight, Thumb, ThumbHot, Radius, FontFamily, FontSize, Ord(Chevron)]);
 end;
 
 procedure FmrThemeEditor(const AControl: TControl; const ATheme: TFmrTheme);

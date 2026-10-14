@@ -74,6 +74,8 @@ type
     procedure DrawTab(const ACanvas: TCanvas; const R: TRectF; const ACaption: string; const AHot, ASelected,
       AEnabled, ARibbonMinimized: Boolean; const AContextColor: TAlphaColor = 0);
     function TabTextColor(const AHot, ASelected, AEnabled: Boolean): TAlphaColor;
+    /// <summary>Width of the caption of a tab (tab font, bold when the theme makes the active tab bold).</summary>
+    function TabCaptionWidth(const ACaption: string): Single;
     procedure DrawContextGroupHeader(const ACanvas: TCanvas; const R: TRectF; const ACaption: string;
       const AColor: TAlphaColor);
     procedure DrawAppButton(const ACanvas: TCanvas; const R: TRectF; const ACaption: string;
@@ -178,6 +180,17 @@ type
     /// <summary>True when the canvas draws mirrored (right-to-left parts flip their canvas horizontally); the text
     /// methods then draw unmirrored text and swap leading and trailing alignment.</summary>
     class function IsMirrored(const ACanvas: TCanvas): Boolean; static;
+
+    { additions for the caption row and tab row items (Office 2024) }
+    /// <summary>Toggle switch (a pill with a round thumb) in ATrack; AOpacity dims a disabled switch.</summary>
+    procedure DrawToggleSwitch(const ACanvas: TCanvas; const ATrack: TRectF; const AChecked: Boolean;
+      const AState: TFmrPartState);
+    /// <summary>Background of an accent filled "primary" button (Office "Share").</summary>
+    procedure DrawPrimaryButton(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState;
+      const ACorners: TCorners = []);
+    /// <summary>Account picture: initials in a colored circle (AColor 0 = the accent).</summary>
+    procedure DrawAvatar(const ACanvas: TCanvas; const R: TRectF; const AInitials: string; const AColor: TAlphaColor;
+      const AState: TFmrPartState);
 
     { state helpers }
     function ButtonTextColor(const AState: TFmrPartState): TAlphaColor;
@@ -318,6 +331,35 @@ begin
   if S <= 0 then
     S := FTheme.Metrics.ArrowSize;
   H := S / 2;
+  if FTheme.Style.ChevronArrows then
+  begin
+    // Office 2024: a thin stroked chevron, S wide and S / 2 high.
+    case ADirection of
+      TFmrArrowDirection.Down:
+        P := [PointF(ACenter.X - H, ACenter.Y - H / 2), PointF(ACenter.X, ACenter.Y + H / 2),
+          PointF(ACenter.X + H, ACenter.Y - H / 2)];
+      TFmrArrowDirection.Up:
+        P := [PointF(ACenter.X - H, ACenter.Y + H / 2), PointF(ACenter.X, ACenter.Y - H / 2),
+          PointF(ACenter.X + H, ACenter.Y + H / 2)];
+      TFmrArrowDirection.Left:
+        P := [PointF(ACenter.X + H / 2, ACenter.Y - H), PointF(ACenter.X - H / 2, ACenter.Y),
+          PointF(ACenter.X + H / 2, ACenter.Y + H)];
+      TFmrArrowDirection.Right:
+        P := [PointF(ACenter.X - H / 2, ACenter.Y - H), PointF(ACenter.X + H / 2, ACenter.Y),
+          PointF(ACenter.X - H / 2, ACenter.Y + H)];
+    end;
+    FStroke.Kind := TBrushKind.Solid;
+    FStroke.Color := AColor;
+    FStroke.Thickness := 1;
+    FStroke.Cap := TStrokeCap.Round;
+    FStroke.Join := TStrokeJoin.Round;
+    FStroke.Dash := TStrokeDash.Solid;
+    ACanvas.DrawLine(P[0], P[1], AOpacity, FStroke);
+    ACanvas.DrawLine(P[1], P[2], AOpacity, FStroke);
+    FStroke.Cap := TStrokeCap.Flat;
+    FStroke.Join := TStrokeJoin.Miter;
+    Exit;
+  end;
   case ADirection of
     TFmrArrowDirection.Down:
       P := [PointF(ACenter.X - H, ACenter.Y - H / 2), PointF(ACenter.X + H, ACenter.Y - H / 2),
@@ -602,7 +644,8 @@ var
   TextR, Ind: TRectF;
   Caption: string;
   TextColor: TAlphaColor;
-  W: Single;
+  W, IndH: Single;
+  Bold: Boolean;
 begin
   Rad := FTheme.Metrics.TabRadius;
   // A selected tab of a minimized ribbon looks like a hot tab until its popup opens
@@ -642,18 +685,33 @@ begin
   TextColor := TabTextColor(AHot, Shown, AEnabled);
   if (AContextColor <> 0) and Shown and (FTheme.Style.TabShape <> TFmrTabShape.Underline) then
     TextColor := FmrDarken(AContextColor, 0.25);
+  Bold := Shown and FTheme.Style.BoldActiveTab;
   TextR := R;
-  Text(ACanvas, TextR, Caption, TextColor, TTextAlign.Center, TTextAlign.Center, 0, False);
+  Text(ACanvas, TextR, Caption, TextColor, TTextAlign.Center, TTextAlign.Center, FTheme.Metrics.EffectiveTabFontSize,
+    Bold);
 
   if Shown and (FTheme.Style.TabShape = TFmrTabShape.Underline) then
   begin
-    W := Min(TextWidth(Caption), R.Width - 8);
-    Ind := RectF(R.CenterPoint.X - W / 2, R.Bottom - 5, R.CenterPoint.X + W / 2, R.Bottom - 2);
+    IndH := FTheme.Metrics.TabIndicatorHeight;
+    W := Min(TextWidth(Caption, FTheme.Metrics.EffectiveTabFontSize, Bold), R.Width - 8);
+    Ind := RectF(R.CenterPoint.X - W / 2, R.Bottom - FTheme.Metrics.TabIndicatorOffset - IndH,
+      R.CenterPoint.X + W / 2, R.Bottom - FTheme.Metrics.TabIndicatorOffset);
     if AContextColor <> 0 then
-      Fill(ACanvas, Ind, TFmrFill.Solid(AContextColor), 1.5)
+      Fill(ACanvas, Ind, TFmrFill.Solid(AContextColor), IndH / 2)
     else
-      Fill(ACanvas, Ind, TFmrToken.TabActiveIndicator, 1.5);
+      Fill(ACanvas, Ind, TFmrToken.TabActiveIndicator, IndH / 2);
   end;
+end;
+
+function TFmrRibbonPainter.TabCaptionWidth(const ACaption: string): Single;
+var
+  Caption: string;
+begin
+  // A tab is as wide as its caption when it is active (bold in Office 2024), so tabs do not move when one is picked.
+  Caption := ACaption;
+  if FTheme.Style.UppercaseTabs then
+    Caption := Caption.ToUpper;
+  Result := TextWidth(Caption, FTheme.Metrics.EffectiveTabFontSize, FTheme.Style.BoldActiveTab);
 end;
 
 procedure TFmrRibbonPainter.DrawContextGroupHeader(const ACanvas: TCanvas; const R: TRectF; const ACaption: string;
@@ -724,7 +782,8 @@ begin
         Fill(ACanvas, RectF(R.Left + 1, R.Top + 2, R.Right - 1, R.Bottom - 2), Token, FTheme.Metrics.TabRadius)
       else
         Fill(ACanvas, R, Token);
-      Text(ACanvas, R, ACaption, FTheme.Colors[TFmrToken.AppButtonText]);
+      Text(ACanvas, R, ACaption, FTheme.Colors[TFmrToken.AppButtonText], TTextAlign.Center, TTextAlign.Center,
+        FTheme.Metrics.EffectiveTabFontSize);
     end;
   end;
 end;
@@ -733,12 +792,27 @@ end;
 
 procedure TFmrRibbonPainter.DrawBody(const ACanvas: TCanvas; const R: TRectF);
 var
-  Rad: Single;
-  B: TRectF;
+  Rad, A: Single;
+  B, E: TRectF;
+  Shadow: TAlphaColor;
+  I: Integer;
 begin
   Rad := FTheme.Metrics.BodyRadius;
   B := R;
-  if FTheme.Style.FloatingBody then
+  if FTheme.Style.FloatingBody and (FTheme.Style.Family = TFmrThemeFamily.Office2024) then
+  begin
+    // Office 2024: a 1 dp edge around the card and a short soft shadow below it.
+    Shadow := FTheme.Colors[TFmrToken.BodyShadow];
+    A := TAlphaColorRec(Shadow).A / 255;
+    for I := 3 downto 0 do
+      Fill(ACanvas, RectF(B.Left + Rad * 0.6, B.Bottom + I, B.Right - Rad * 0.6, B.Bottom + I + 1),
+        TFmrFill.Solid(FmrWithAlpha(Shadow, A * Power(0.55, I))));
+    E := B;
+    E.Inflate(1, 1);
+    Fill(ACanvas, E, TFmrToken.BodyBorder, Rad + 1);
+    Fill(ACanvas, B, TFmrToken.BodyFill, Rad);
+  end
+  else if FTheme.Style.FloatingBody then
   begin
     // soft shadow under the card
     Fill(ACanvas, RectF(B.Left, B.Top + 1, B.Right, B.Bottom + 1.5), TFmrToken.BodyShadow, Rad + 1);
@@ -772,8 +846,8 @@ begin
     Frame(ACanvas, R, TFmrToken.GroupBorder, Rad);
   end
   else if not ALast or True then
-    Line(ACanvas, PointF(R.Right - 0.5, R.Top + 4), PointF(R.Right - 0.5, R.Bottom - 4),
-      FTheme.Colors[TFmrToken.GroupSeparator]);
+    Line(ACanvas, PointF(R.Right - 0.5, R.Top + FTheme.Metrics.GroupSeparatorInsetTop), PointF(R.Right - 0.5,
+      R.Bottom - FTheme.Metrics.GroupSeparatorInsetBottom), FTheme.Colors[TFmrToken.GroupSeparator]);
   Text(ACanvas, RectF(CapR.Left + 4, CapR.Top, CapR.Right - 4, CapR.Bottom - 1), ACaption,
     FTheme.Colors[TFmrToken.GroupCaptionText], TTextAlign.Center, TTextAlign.Center,
     FTheme.Metrics.GroupCaptionFontSize);
@@ -1066,8 +1140,25 @@ end;
 procedure TFmrRibbonPainter.DrawSearchBox(const ACanvas: TCanvas; const R: TRectF; const AHot: Boolean);
 var
   Rad: Single;
+  Border: TAlphaColor;
+  Inner: TRectF;
 begin
   Rad := Max(FTheme.Metrics.ButtonRadius, 4);
+  if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+  begin
+    // Office 2024: the edge is a little darker at the bottom (a shadow line).
+    Border := FTheme.Colors[TFmrToken.SearchBoxBorder];
+    Fill(ACanvas, RectF(R.Left, R.Top, R.Right, R.Bottom + 1), TFmrFill.Solid(FmrDarken(Border or $FF000000, 0.12)),
+      Rad + 1, [], TAlphaColorRec(Border).A / 255);
+    Fill(ACanvas, R, TFmrFill.Solid(Border), Rad);
+    Inner := R;
+    Inner.Inflate(-1, -1);
+    if AHot then
+      Fill(ACanvas, Inner, TFmrToken.SearchBoxHotFill, Rad - 1)
+    else
+      Fill(ACanvas, Inner, TFmrToken.SearchBoxFill, Rad - 1);
+    Exit;
+  end;
   if AHot then
     Fill(ACanvas, R, TFmrToken.SearchBoxHotFill, Rad)
   else
@@ -1228,9 +1319,20 @@ begin
   FStroke.Color := AColor;
   FStroke.Thickness := 1.2;
   FStroke.Cap := TStrokeCap.Round;
-  ACanvas.DrawEllipse(RectF(C.X - Rad - 1, C.Y - Rad - 1, C.X + Rad - 1, C.Y + Rad - 1), 1, FStroke);
-  ACanvas.DrawLine(PointF(C.X + Rad * 0.7 - 1, C.Y + Rad * 0.7 - 1), PointF(C.X + Rad * 1.6, C.Y + Rad * 1.6), 1,
-    FStroke);
+  if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+  begin
+    // Fluent magnifier: the handle points down to the left.
+    FStroke.Thickness := 1;
+    ACanvas.DrawEllipse(RectF(C.X - Rad + 1, C.Y - Rad - 1, C.X + Rad + 1, C.Y + Rad - 1), 1, FStroke);
+    ACanvas.DrawLine(PointF(C.X - Rad * 0.7 + 1, C.Y + Rad * 0.7 - 1), PointF(C.X - Rad * 1.6, C.Y + Rad * 1.6), 1,
+      FStroke);
+  end
+  else
+  begin
+    ACanvas.DrawEllipse(RectF(C.X - Rad - 1, C.Y - Rad - 1, C.X + Rad - 1, C.Y + Rad - 1), 1, FStroke);
+    ACanvas.DrawLine(PointF(C.X + Rad * 0.7 - 1, C.Y + Rad * 0.7 - 1), PointF(C.X + Rad * 1.6, C.Y + Rad * 1.6), 1,
+      FStroke);
+  end;
   FStroke.Cap := TStrokeCap.Flat;
 end;
 
@@ -1357,6 +1459,87 @@ begin
     TFmrPartState.Pressed, TFmrPartState.Checked:
       Fill(ACanvas, R, TFmrToken.CaptionButtonPressedFill);
   end;
+end;
+
+{ caption row and tab row items }
+
+procedure TFmrRibbonPainter.DrawToggleSwitch(const ACanvas: TCanvas; const ATrack: TRectF; const AChecked: Boolean;
+  const AState: TFmrPartState);
+var
+  T, Thumb: TRectF;
+  Rad, D, Op: Single;
+  C: TPointF;
+begin
+  T := RectF(Round(ATrack.Left), Round(ATrack.Top), Round(ATrack.Right), Round(ATrack.Bottom));
+  Rad := T.Height / 2;
+  if AState = TFmrPartState.Disabled then
+    Op := 0.45
+  else
+    Op := 1;
+  // Windows 11: the thumb grows a little under the mouse.
+  if AState in [TFmrPartState.Hot, TFmrPartState.CheckedHot, TFmrPartState.Pressed] then
+    D := T.Height - 6
+  else
+    D := T.Height - 8;
+  if AChecked then
+  begin
+    Fill(ACanvas, T, TFmrToken.ToggleSwitchFill, Rad, [], Op);
+    C := PointF(T.Right - Rad, T.CenterPoint.Y);
+  end
+  else
+  begin
+    Frame(ACanvas, T, TFmrToken.ToggleSwitchBorder, Rad, [], 1, Op);
+    C := PointF(T.Left + Rad, T.CenterPoint.Y);
+  end;
+  Thumb := RectF(C.X - D / 2, C.Y - D / 2, C.X + D / 2, C.Y + D / 2);
+  if AChecked then
+    FTheme.Fills[TFmrToken.ToggleSwitchThumbOn].ApplyTo(FBrush)
+  else
+    FTheme.Fills[TFmrToken.ToggleSwitchThumb].ApplyTo(FBrush);
+  ACanvas.FillEllipse(Thumb, Op, FBrush);
+end;
+
+procedure TFmrRibbonPainter.DrawPrimaryButton(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState;
+  const ACorners: TCorners);
+var
+  Token: TFmrToken;
+  Op: Single;
+begin
+  Op := 1;
+  case AState of
+    TFmrPartState.Hot, TFmrPartState.CheckedHot:
+      Token := TFmrToken.PrimaryButtonHotFill;
+    TFmrPartState.Pressed, TFmrPartState.Checked:
+      Token := TFmrToken.PrimaryButtonPressedFill;
+    TFmrPartState.Disabled:
+      begin
+        Token := TFmrToken.PrimaryButtonFill;
+        Op := 0.45;
+      end;
+  else
+    Token := TFmrToken.PrimaryButtonFill;
+  end;
+  Fill(ACanvas, R, Token, Max(FTheme.Metrics.ButtonRadius, 2), ACorners, Op);
+end;
+
+procedure TFmrRibbonPainter.DrawAvatar(const ACanvas: TCanvas; const R: TRectF; const AInitials: string;
+  const AColor: TAlphaColor; const AState: TFmrPartState);
+var
+  D: Single;
+  Circle: TRectF;
+  Col: TAlphaColor;
+begin
+  if AState in [TFmrPartState.Hot, TFmrPartState.Pressed, TFmrPartState.CheckedHot] then
+    DrawCaptionStyleButton(ACanvas, R, AState);
+  D := Min(Min(R.Width, R.Height) - 4, 24);
+  Circle := RectF(0, 0, D, D).CenterAt(R);
+  Col := AColor;
+  if TAlphaColorRec(Col).A = 0 then
+    Col := FTheme.Accent;
+  FBrush.Kind := TBrushKind.Solid;
+  FBrush.Color := Col;
+  ACanvas.FillEllipse(Circle, 1, FBrush);
+  Text(ACanvas, Circle, AInitials, FmrContrastText(Col), TTextAlign.Center, TTextAlign.Center, Max(9, D * 0.44));
 end;
 
 { galleries, application menu, mini toolbar, radial menu }

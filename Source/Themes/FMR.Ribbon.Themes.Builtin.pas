@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Built-in themes                                      }
@@ -15,7 +15,8 @@ unit FMR.Ribbon.Themes.Builtin;
 ///   Office2013White, Office2013LightGray, Office2013DarkGray,
 ///   Office2010Blue, Office2010Silver, Office2010Black,
 ///   Office2007Blue, Office2007Silver, Office2007Black,
-///   FluentLight, FluentDark.
+///   FluentLight, FluentDark,
+///   Office2024Light, Office2024DarkGray, Office2024Dark (Microsoft 365 / Office 2024 look, measured on Word).
 /// Colors are approximations of the look of the corresponding Office versions, built from an accent color.
 
 interface
@@ -98,6 +99,16 @@ begin
   M.ScrollButtonWidth := 14;
   M.StatusBarHeight := 23;
   M.TouchScale := 1.3;
+  M.TabFontSize := 0;
+  M.TabIndicatorHeight := 3;
+  M.TabIndicatorOffset := 2;
+  M.CaptionButtonWidth := 46;
+  M.SearchBoxWidth := 360;
+  M.SearchBoxHeight := 0;
+  M.MaxRowGap := 0;
+  M.StatusBarFontSize := 0;
+  M.GroupSeparatorInsetTop := 4;
+  M.GroupSeparatorInsetBottom := 4;
 end;
 
 function FamilyMetrics(const AFamily: TFmrThemeFamily): TFmrThemeMetrics;
@@ -160,6 +171,44 @@ begin
         Result.KeyTipRadius := 4;
         Result.ScrollButtonWidth := 16;
       end;
+    TFmrThemeFamily.Office2024:
+      begin
+        // Measured on Word (Microsoft 365, 2024 look) at 100 %: caption row 48, tab row 30, a 100 dp body card
+        // 8 dp from the window edges, tab captions 10 pt, commands 9 pt.
+        Result.CaptionHeight := 48;
+        Result.TabRowHeight := 30;
+        Result.TabFontSize := 13.33;
+        Result.TabPaddingH := 8;
+        Result.TabSpacing := 2;
+        Result.TabRadius := 4;
+        Result.TabIndicatorHeight := 2;
+        Result.TabIndicatorOffset := 3;
+        Result.ContentHeight := 78;
+        Result.SmallButtonHeight := 24;
+        Result.MaxRowGap := 8;
+        Result.GroupCaptionHeight := 18;
+        Result.GroupPaddingH := 6;
+        Result.GroupPaddingTop := 4;
+        Result.GroupSeparatorInsetTop := 5;
+        Result.GroupSeparatorInsetBottom := 6;
+        Result.BodyPaddingV := 0;
+        Result.BodyRadius := 8;
+        Result.BodyMargin := 8;
+        Result.ButtonRadius := 4;
+        Result.ArrowSize := 8;
+        Result.SimplifiedBodyHeight := 44;
+        Result.QATButtonSize := 28;
+        Result.MenuItemHeight := 28;
+        Result.MenuGutterWidth := 36;
+        Result.MenuRadius := 8;
+        Result.KeyTipRadius := 4;
+        Result.ScrollButtonWidth := 16;
+        Result.StatusBarHeight := 22;
+        Result.StatusBarFontSize := 11;
+        Result.CaptionButtonWidth := 48;
+        Result.SearchBoxWidth := 370;
+        Result.SearchBoxHeight := 34;
+      end;
   end;
 end;
 
@@ -168,10 +217,14 @@ begin
   Result.Family := AFamily;
   Result.Dark := ADark;
   Result.ColoredCaption := AColoredCaption;
-  Result.FloatingBody := AFamily in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent];
-  Result.TransparentCaption := AFamily = TFmrThemeFamily.Fluent;
+  Result.FloatingBody := AFamily in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
+  Result.TransparentCaption := AFamily in [TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
   Result.UppercaseTabs := AFamily = TFmrThemeFamily.Office2013;
   Result.Glossy := AFamily = TFmrThemeFamily.Office2007;
+  Result.ChevronArrows := AFamily = TFmrThemeFamily.Office2024;
+  Result.BoldActiveTab := AFamily = TFmrThemeFamily.Office2024;
+  Result.LeadingTitle := AFamily = TFmrThemeFamily.Office2024;
+  Result.CollapseInBody := AFamily = TFmrThemeFamily.Office2024;
   case AFamily of
     TFmrThemeFamily.Office2007:
       Result.TabShape := TFmrTabShape.Rounded;
@@ -320,6 +373,7 @@ begin
 
   T.Colors[TFmrToken.CaptionFill] := P.Caption;
   T.Colors[TFmrToken.CaptionFillInactive] := P.Caption;
+  T[TFmrToken.CaptionBackdropFill] := N;
   T.Colors[TFmrToken.CaptionText] := P.CaptionText;
   T.Colors[TFmrToken.CaptionTextInactive] := P.CaptionTextInactive;
   T.Colors[TFmrToken.CaptionButtonGlyph] := P.CaptionText;
@@ -350,6 +404,7 @@ begin
   T.Colors[TFmrToken.TabTextHot] := P.TabTextHot;
   T.Colors[TFmrToken.TabTextActive] := P.TabTextActive;
   T.Colors[TFmrToken.TabTextDisabled] := P.TextDisabled;
+  T.Colors[TFmrToken.TabTextInactive] := P.TabText;
   T.Colors[TFmrToken.TabHotFill] := P.CaptionHot;
   T.Colors[TFmrToken.TabActiveFill] := P.TabActiveFill;
   T.Colors[TFmrToken.TabActiveBorder] := P.TabActiveBorder;
@@ -465,6 +520,7 @@ begin
 
   T.Colors[TFmrToken.SearchBoxFill] := P.Edit;
   T.Colors[TFmrToken.SearchBoxHotFill] := P.Edit;
+  T.Colors[TFmrToken.SearchBoxFillInactive] := P.Edit;
   T.Colors[TFmrToken.SearchBoxBorder] := P.EditBorder;
   T.Colors[TFmrToken.SearchBoxText] := P.Text;
   T.Colors[TFmrToken.SearchBoxPrompt] := P.TextSecondary;
@@ -475,6 +531,15 @@ begin
   T.Colors[TFmrToken.RadialBorder] := P.AccentText;
   T.Colors[TFmrToken.RadialSectorHotFill] := P.Hot;
   T.Colors[TFmrToken.RadialText] := P.Text;
+
+  T.Colors[TFmrToken.PrimaryButtonFill] := P.Accent;
+  T.Colors[TFmrToken.PrimaryButtonHotFill] := FmrLighten(P.Accent, 0.1);
+  T.Colors[TFmrToken.PrimaryButtonPressedFill] := FmrDarken(P.Accent, 0.15);
+  T.Colors[TFmrToken.PrimaryButtonText] := FmrContrastText(P.Accent);
+  T.Colors[TFmrToken.ToggleSwitchFill] := P.AccentText;
+  T.Colors[TFmrToken.ToggleSwitchBorder] := P.TextSecondary;
+  T.Colors[TFmrToken.ToggleSwitchThumb] := P.TextSecondary;
+  T.Colors[TFmrToken.ToggleSwitchThumbOn] := FmrContrastText(P.AccentText);
 end;
 
 /// Caption and tab row painted with the accent (Colorful themes): text and hover in white.
@@ -495,7 +560,17 @@ begin
   T.Colors[TFmrToken.TabRowFill] := AAccent;
   T.Colors[TFmrToken.TabText] := TAlphaColors.White;
   T.Colors[TFmrToken.TabTextHot] := TAlphaColors.White;
+  T.Colors[TFmrToken.TabTextInactive] := TAlphaColors.White;
   T.Colors[TFmrToken.TabHotFill] := Hot;
+  // Items of the caption row on the accent: white switches, a white "primary" button with accent text.
+  T.Colors[TFmrToken.ToggleSwitchFill] := TAlphaColors.White;
+  T.Colors[TFmrToken.ToggleSwitchBorder] := TAlphaColors.White;
+  T.Colors[TFmrToken.ToggleSwitchThumb] := TAlphaColors.White;
+  T.Colors[TFmrToken.ToggleSwitchThumbOn] := AAccent;
+  T.Colors[TFmrToken.PrimaryButtonFill] := TAlphaColors.White;
+  T.Colors[TFmrToken.PrimaryButtonHotFill] := $FFF0F0F0;
+  T.Colors[TFmrToken.PrimaryButtonPressedFill] := $FFDCDCDC;
+  T.Colors[TFmrToken.PrimaryButtonText] := AAccent;
   T.Colors[TFmrToken.AppButtonText] := TAlphaColors.White;
   T.Colors[TFmrToken.AppButtonHotFill] := Hot;
   T.Colors[TFmrToken.AppButtonPressedFill] := Pressed;
@@ -506,6 +581,7 @@ begin
   end;
   T.Colors[TFmrToken.SearchBoxFill] := FmrLighten(AAccent, 0.22);
   T.Colors[TFmrToken.SearchBoxHotFill] := FmrLighten(AAccent, 0.32);
+  T.Colors[TFmrToken.SearchBoxFillInactive] := FmrLighten(AAccent, 0.22);
   T[TFmrToken.SearchBoxBorder] := N;
   T.Colors[TFmrToken.SearchBoxText] := TAlphaColors.White;
   T.Colors[TFmrToken.SearchBoxPrompt] := $D0FFFFFF;
@@ -768,6 +844,7 @@ begin
 
   T[TFmrToken.CaptionFill] := V(P.CaptionTop, P.CaptionBottom);
   T.Colors[TFmrToken.CaptionFillInactive] := P.CaptionInactive;
+  T[TFmrToken.CaptionBackdropFill] := N;
   T.Colors[TFmrToken.CaptionText] := P.CaptionText;
   T.Colors[TFmrToken.CaptionTextInactive] := FmrBlend(P.CaptionText, P.CaptionInactive, 0.45);
   T.Colors[TFmrToken.CaptionButtonGlyph] := P.CaptionText;
@@ -784,6 +861,7 @@ begin
   T.Colors[TFmrToken.TabTextHot] := P.TabText;
   T.Colors[TFmrToken.TabTextActive] := P.TabTextActive;
   T.Colors[TFmrToken.TabTextDisabled] := P.TextDisabled;
+  T.Colors[TFmrToken.TabTextInactive] := P.TabText;
   T[TFmrToken.TabHotFill] := V(FmrWithAlpha($FFFFFFFF, 0.75), FmrWithAlpha($FFFFFFFF, 0.25));
   T[TFmrToken.TabActiveFill] := V(FmrLighten(P.BodyTop, 0.5), P.BodyTop);
   T.Colors[TFmrToken.TabActiveBorder] := P.BodyBorder;
@@ -886,6 +964,7 @@ begin
 
   T.Colors[TFmrToken.SearchBoxFill] := $FFFFFFFF;
   T.Colors[TFmrToken.SearchBoxHotFill] := $FFFFFFFF;
+  T.Colors[TFmrToken.SearchBoxFillInactive] := $FFFFFFFF;
   T.Colors[TFmrToken.SearchBoxBorder] := P.BodyBorder;
   T.Colors[TFmrToken.SearchBoxText] := P.Text;
   T.Colors[TFmrToken.SearchBoxPrompt] := P.TextDisabled;
@@ -896,6 +975,15 @@ begin
   T.Colors[TFmrToken.RadialBorder] := A;
   T[TFmrToken.RadialSectorHotFill] := Hot;
   T.Colors[TFmrToken.RadialText] := P.Text;
+
+  T.Colors[TFmrToken.PrimaryButtonFill] := A;
+  T.Colors[TFmrToken.PrimaryButtonHotFill] := FmrLighten(A, 0.12);
+  T.Colors[TFmrToken.PrimaryButtonPressedFill] := FmrDarken(A, 0.15);
+  T.Colors[TFmrToken.PrimaryButtonText] := FmrContrastText(A);
+  T.Colors[TFmrToken.ToggleSwitchFill] := A;
+  T.Colors[TFmrToken.ToggleSwitchBorder] := P.Text;
+  T.Colors[TFmrToken.ToggleSwitchThumb] := P.Text;
+  T.Colors[TFmrToken.ToggleSwitchThumbOn] := FmrContrastText(A);
 
   ColoredFileTab(T, A, True);
 end;
@@ -1091,6 +1179,275 @@ begin
   T.Colors[TFmrToken.BackstageNavSelectedFill] := $0FFFFFFF;
 end;
 
+{ Office 2024 (Microsoft 365, 2023/2024 visual refresh) }
+
+/// The older Office accents give the 2024 brand colors (Word #2B579A -> #185ABD and so on).
+function Brand2024(const A: TAlphaColor): TAlphaColor;
+begin
+  if A = $FF2B579A then
+    Result := FmrAccentWord2024
+  else if A = $FF217346 then
+    Result := FmrAccentExcel
+  else if A = $FFB7472A then
+    Result := FmrAccentPowerPoint
+  else
+    Result := A;
+end;
+
+/// Every channel x 0.9: the active tab line of the White theme (Word #185ABD -> #1651AA).
+function Darker09(const A: TAlphaColor): TAlphaColor;
+var
+  C: TAlphaColorRec;
+begin
+  C := TAlphaColorRec(A);
+  C.R := Round(C.R * 0.9);
+  C.G := Round(C.G * 0.9);
+  C.B := Round(C.B * 0.9);
+  Result := TAlphaColor(C);
+end;
+
+type
+  /// Colors of an Office 2024 theme that the flat palette does not have.
+  T2024 = record
+    Glyph: TAlphaColor;
+    GroupCaption: TAlphaColor;
+    Underline: TAlphaColor;
+    Share, ShareText: TAlphaColor;
+    BodyShadow: TAlphaColor;
+    StatusFill, StatusText, StatusLine, StatusHot: TAlphaColor;
+    SearchFill, SearchFillInactive, SearchBorder, SearchText, SearchPrompt: TAlphaColor;
+    KeyTipFill, KeyTipText, KeyTipBorder: TAlphaColor;
+  end;
+
+procedure Apply2024(const T: TFmrTheme; const P: TFlat; const X: T2024);
+begin
+  ApplyFlat(T, P);
+  // The caption has no inactive color of its own: over Mica the system changes the material, painted the caption
+  // is flat in both states; only its content dims (CaptionTextInactive).
+  T.Colors[TFmrToken.CaptionFillInactive] := P.Caption;
+  T.Colors[TFmrToken.TabTextActive] := P.TabText;
+  T.Colors[TFmrToken.TabTextInactive] := P.TabText;
+  T.Colors[TFmrToken.TabActiveIndicator] := X.Underline;
+  T.Colors[TFmrToken.AppButtonText] := P.TabText;
+  T.Colors[TFmrToken.BodyShadow] := X.BodyShadow;
+  T.Colors[TFmrToken.GroupCaptionText] := X.GroupCaption;
+  T.Colors[TFmrToken.GroupLauncherGlyph] := X.GroupCaption;
+  T.Colors[TFmrToken.GlyphTint] := X.Glyph;
+  T.Colors[TFmrToken.ButtonArrow] := X.Glyph;
+  T.Colors[TFmrToken.ButtonSplitLine] := P.Separator;
+  T.Colors[TFmrToken.ScrollButtonGlyph] := X.Glyph;
+  T.Colors[TFmrToken.GalleryScrollGlyph] := X.Glyph;
+  T.Colors[TFmrToken.GalleryScrollFill] := P.Body;
+  T.Colors[TFmrToken.GalleryItemSelectedFill] := P.Checked;
+  T.Colors[TFmrToken.GalleryItemSelectedBorder] := P.CheckedBorder;
+  T.Colors[TFmrToken.GalleryItemHotBorder] := P.CheckedBorder;
+  T.Colors[TFmrToken.StatusBarFill] := X.StatusFill;
+  T.Colors[TFmrToken.StatusBarText] := X.StatusText;
+  T.Colors[TFmrToken.StatusBarSeparator] := X.StatusLine;
+  T.Colors[TFmrToken.StatusBarItemHotFill] := X.StatusHot;
+  T.Colors[TFmrToken.SearchBoxFill] := X.SearchFill;
+  T.Colors[TFmrToken.SearchBoxHotFill] := X.SearchFill;
+  T.Colors[TFmrToken.SearchBoxFillInactive] := X.SearchFillInactive;
+  T.Colors[TFmrToken.SearchBoxBorder] := X.SearchBorder;
+  T.Colors[TFmrToken.SearchBoxText] := X.SearchText;
+  T.Colors[TFmrToken.SearchBoxPrompt] := X.SearchPrompt;
+  T.Colors[TFmrToken.PrimaryButtonFill] := X.Share;
+  T.Colors[TFmrToken.PrimaryButtonHotFill] := FmrBlend(X.Share, X.ShareText, 0.1);
+  T.Colors[TFmrToken.PrimaryButtonPressedFill] := FmrBlend(X.Share, X.ShareText, 0.2);
+  T.Colors[TFmrToken.PrimaryButtonText] := X.ShareText;
+  T.Colors[TFmrToken.ToggleSwitchFill] := X.Underline;
+  T.Colors[TFmrToken.ToggleSwitchBorder] := P.CaptionText;
+  T.Colors[TFmrToken.ToggleSwitchThumb] := P.CaptionText;
+  T.Colors[TFmrToken.ToggleSwitchThumbOn] := FmrContrastText(X.Underline);
+  T.Colors[TFmrToken.KeyTipFill] := X.KeyTipFill;
+  T.Colors[TFmrToken.KeyTipText] := X.KeyTipText;
+  T.Colors[TFmrToken.KeyTipBorder] := X.KeyTipBorder;
+  T.Colors[TFmrToken.BackstageNavFill] := P.Caption;
+  T.Colors[TFmrToken.MenuHeaderFill] := FmrBlend(P.Popup, P.Text, 0.04);
+  T.Colors[TFmrToken.GalleryGroupHeaderFill] := FmrBlend(P.Popup, P.Text, 0.04);
+  T.Colors[TFmrToken.FocusBorder] := P.Text;
+end;
+
+procedure BuildOffice2024Light(const T: TFmrTheme; const A: TAlphaColor);
+var
+  P: TFlat;
+  X: T2024;
+  B: TAlphaColor;
+begin
+  // Word "White" (measured): flat caption #F0F0F0 (#EBEEF2 Mica when active), white card, text #242424.
+  Init(T, TFmrThemeFamily.Office2024, False, False);
+  B := Brand2024(A);
+  P := LightFlat(B);
+  P.Caption := $FFF0F0F0;
+  P.CaptionText := $FF242424;
+  P.CaptionTextInactive := $FFBDBDBD;
+  P.CaptionHot := $0F000000;
+  P.CaptionPressed := $1A000000;
+  P.TabText := $FF242424;
+  P.TabTextHot := $FF242424;
+  P.TabTextActive := $FF242424;
+  P.Body := $FFFFFFFF;
+  P.BodyBorder := $FFDCDEE1;
+  P.Separator := $FFD1D1D1;
+  P.Text := $FF242424;
+  P.TextSecondary := $FF616161;
+  P.TextDisabled := $FFBDBDBD;
+  P.Hot := $FFF0F0F0;
+  P.Pressed := $FFE0E0E0;
+  P.Checked := $FFEBEBEB;
+  P.CheckedBorder := $FF616161;
+  P.CheckedHot := $FFE0E0E0;
+  P.Popup := $FFFFFFFF;
+  P.PopupBorder := $FFE0E0E0;
+  P.Edit := $FFFFFFFF;
+  P.EditBorder := $FF8A8A8A;
+  P.EditBorderHot := $FF616161;
+  X.Glyph := $FF3B3B3B;
+  X.GroupCaption := $FF242424;
+  X.Underline := Darker09(B);
+  X.Share := B;
+  X.ShareText := TAlphaColors.White;
+  X.BodyShadow := $24000000;
+  X.StatusFill := $FFF5F5F5;
+  X.StatusText := $FF242424;
+  X.StatusLine := $FFFFFFFF;
+  X.StatusHot := $FFE0E0E0;
+  X.SearchFill := $FFFAFAFA;
+  X.SearchFillInactive := $FFF0F0F0;
+  X.SearchBorder := $FFD6D6D6;
+  X.SearchText := $FF242424;
+  X.SearchPrompt := $FF616161;
+  X.KeyTipFill := $FFFFFFFF;
+  X.KeyTipText := $FF242424;
+  X.KeyTipBorder := $FF8A8A8A;
+  Apply2024(T, P, X);
+  T.Colors[TFmrToken.FrameBorder] := $FFC8C8C8;
+  T.Colors[TFmrToken.FrameBorderInactive] := $FFD6D6D6;
+  T.Colors[TFmrToken.PopupShadow] := $30000000;
+end;
+
+procedure BuildOffice2024DarkGray(const T: TFmrTheme; const A: TAlphaColor);
+var
+  P: TFlat;
+  X: T2024;
+  B: TAlphaColor;
+begin
+  // Word "Dark Gray" (measured): dark gray caption #525252 with white text, LIGHT GRAY card #BDBDBD with dark text.
+  Init(T, TFmrThemeFamily.Office2024, False, False);
+  B := Brand2024(A);
+  P := LightFlat(B);
+  P.AccentText := FmrAccentShade(B, 3);
+  P.Caption := $FF525252;
+  P.CaptionText := $FFFFFFFF;
+  P.CaptionTextInactive := $FF9E9E9E;
+  P.CaptionHot := $1AFFFFFF;
+  P.CaptionPressed := $10FFFFFF;
+  P.TabText := $FFFFFFFF;
+  P.TabTextHot := $FFFFFFFF;
+  P.TabTextActive := $FFFFFFFF;
+  P.Body := $FFBDBDBD;
+  P.BodyBorder := $FF464748;
+  P.Separator := $FF858585;
+  P.Text := $FF242424;
+  P.TextSecondary := $FF424242;
+  P.TextDisabled := $FF858585;
+  P.Hot := $FFCDCDCD;
+  P.Pressed := $FFDADADA;
+  P.Checked := $FFCCCCCC;
+  P.CheckedBorder := $FF7A7A7A;
+  P.CheckedHot := $FFD6D6D6;
+  P.Popup := $FFEFEFEF;
+  P.PopupBorder := $FF9A9A9A;
+  P.Edit := $FFBDBDBD;
+  P.EditBorder := $FF666666;
+  P.EditBorderHot := $FF424242;
+  X.Glyph := $FF3F3F3F;
+  X.GroupCaption := $FF242424;
+  X.Underline := FmrAccentShade(B, 3);
+  X.Share := FmrAccentShade(B, 2);
+  X.ShareText := $FF242424;
+  X.BodyShadow := $66000000;
+  X.StatusFill := $FF525252;
+  X.StatusText := $FFFFFFFF;
+  X.StatusLine := $FF3B3A39;
+  X.StatusHot := $FF5C5C5C;
+  X.SearchFill := $FFBDBDBD;
+  X.SearchFillInactive := $FF858585;
+  X.SearchBorder := $FF808080;
+  X.SearchText := $FF242424;
+  X.SearchPrompt := $FF424242;
+  X.KeyTipFill := $FFEFEFEF;
+  X.KeyTipText := $FF242424;
+  X.KeyTipBorder := $FF666666;
+  Apply2024(T, P, X);
+  // The menus and the backstage are light; the hot fill of the popup rows a shade darker than the menu.
+  T.Colors[TFmrToken.MenuItemHotFill] := $FFD9D9D9;
+  T.Colors[TFmrToken.BackstageNavText] := TAlphaColors.White;
+  T.Colors[TFmrToken.BackstageNavSelectedText] := TAlphaColors.White;
+  T.Colors[TFmrToken.BackstageNavHotFill] := $1AFFFFFF;
+  T.Colors[TFmrToken.BackstageNavSelectedFill] := $33FFFFFF;
+  T.Colors[TFmrToken.BackstageNavSeparator] := $FF6A6A6A;
+  // Over Mica the gray caption (and the document background) is nearly opaque, the material shows a little.
+  T.Colors[TFmrToken.CaptionBackdropFill] := $F0525252;
+  T.Colors[TFmrToken.FrameBorder] := $FF3C3C3C;
+  T.Colors[TFmrToken.FrameBorderInactive] := $FF464646;
+  T.Colors[TFmrToken.PopupShadow] := $50000000;
+end;
+
+procedure BuildOffice2024Dark(const T: TFmrTheme; const A: TAlphaColor);
+var
+  P: TFlat;
+  X: T2024;
+  B: TAlphaColor;
+begin
+  // Word "Black" (measured on all Office apps): flat caption and document #0A0A0A (Mica tint #1D222A only while active),
+  // card #292929, white text, inactive caption content #5C5C5C, light brand shades for the accents.
+  Init(T, TFmrThemeFamily.Office2024, True, False);
+  B := Brand2024(A);
+  P := DarkFlat(B, $FF0A0A0A, $FF292929, $FF3D3D3D, $FF474747, $FF666666);
+  P.AccentText := FmrAccentShade(B, 2);
+  P.CaptionText := $FFFFFFFF;
+  P.CaptionTextInactive := $FF5C5C5C;
+  P.CaptionHot := $14FFFFFF;
+  P.CaptionPressed := $0CFFFFFF;
+  P.TabText := $FFFFFFFF;
+  P.TabTextHot := $FFFFFFFF;
+  P.TabTextActive := $FFFFFFFF;
+  P.BodyBorder := $40000000;
+  P.Text := $FFFFFFFF;
+  P.TextSecondary := $FFC8C8C8;
+  P.TextDisabled := $FF5C5C5C;
+  P.Checked := $FF383838;
+  P.CheckedBorder := $FFADADAD;
+  P.CheckedHot := $FF424242;
+  P.Popup := $FF2B2B2B;
+  P.PopupBorder := $FF454545;
+  P.Edit := $FF292929;
+  P.EditBorder := $FF757575;
+  P.EditBorderHot := $FF9E9E9E;
+  X.Glyph := $FFD4D4D4;
+  X.GroupCaption := $FFFFFFFF;
+  X.Underline := FmrAccentShade(B, 2);
+  X.Share := FmrAccentShade(B, 1);
+  X.ShareText := TAlphaColors.Black;
+  X.BodyShadow := $60000000;
+  X.StatusFill := $FF141414;
+  X.StatusText := $FFFFFFFF;
+  X.StatusLine := $FF3B3A39;
+  X.StatusHot := $FF242424;
+  X.SearchFill := $FF1F1F1F;
+  X.SearchFillInactive := $FF141414;
+  X.SearchBorder := $40000000;
+  X.SearchText := $FFFFFFFF;
+  X.SearchPrompt := $FFADADAD;
+  X.KeyTipFill := $FF2B2B2B;
+  X.KeyTipText := $FFFFFFFF;
+  X.KeyTipBorder := $FFADADAD;
+  Apply2024(T, P, X);
+  T.Colors[TFmrToken.MenuItemHotFill] := $FF3D3D3D;
+  T.Colors[TFmrToken.PopupShadow] := $66000000;
+end;
+
 procedure FmrRegisterBuiltinThemes;
 begin
   TFmrTheme.RegisterTheme('Office365Colorful', 'Office 365 Colorful', FmrAccentWord, BuildOffice365Colorful);
@@ -1111,6 +1468,9 @@ begin
   TFmrTheme.RegisterTheme('Office2007Black', 'Office 2007 Black', $FF2B579A, BuildOffice2007Black);
   TFmrTheme.RegisterTheme('FluentLight', 'Windows 11 Light', FmrAccentFluent, BuildFluentLight);
   TFmrTheme.RegisterTheme('FluentDark', 'Windows 11 Dark', FmrAccentFluent, BuildFluentDark);
+  TFmrTheme.RegisterTheme('Office2024Light', 'Office 2024 Light', FmrAccentWord2024, BuildOffice2024Light);
+  TFmrTheme.RegisterTheme('Office2024DarkGray', 'Office 2024 Dark Gray', FmrAccentWord2024, BuildOffice2024DarkGray);
+  TFmrTheme.RegisterTheme('Office2024Dark', 'Office 2024 Dark', FmrAccentWord2024, BuildOffice2024Dark);
 end;
 
 initialization

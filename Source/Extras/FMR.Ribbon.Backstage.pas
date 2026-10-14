@@ -1132,7 +1132,7 @@ begin
     TFmrBackstageNavGlyphs.Hide:
       Result := False;
   else
-    Result := CurrentTheme.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent];
+    Result := CurrentTheme.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
   end;
 end;
 
@@ -1977,7 +1977,7 @@ begin
   else if Hot then
     P.Fill(ACanvas, HR, TFmrToken.BackstageNavHotFill, M.ItemRadius, [], AOpacity);
   // Office 365 / Fluent: an accent bar marks the selected item when the pane is not colored
-  if Selected and (T.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent]) then
+  if Selected and (T.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024]) then
   begin
     Colored := T.Fills[TFmrToken.BackstageNavFill].MainColor = T.Colors[TFmrToken.Accent];
     if not Colored then

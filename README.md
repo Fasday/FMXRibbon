@@ -1,7 +1,7 @@
-﻿# FMR Ribbon for Delphi FireMonkey
+# FMR Ribbon for Delphi FireMonkey
 
 A Microsoft Office-style ribbon for FireMonkey: tabs, groups with adaptive reduction, galleries, backstage view,
-Office 2007 application menu, quick access toolbar, key tips, screen tips, user customization, 18 themes — and the
+Office 2007 application menu, quick access toolbar, key tips, screen tips, user customization, 21 themes — and the
 **real non-client area of the window**: the caption row and the tab row can live in the non-client area
 (`WM_NCCALCSIZE` / `WM_NCPAINT`) while holding ordinary FMX controls — buttons, `TEdit`, `TComboBox`, anything.
 
@@ -31,8 +31,9 @@ Office 2007 application menu, quick access toolbar, key tips, screen tips, user 
   **screen tips**, **mini toolbar**, **radial menu**, **status bar** (zoom slider, view buttons).
 - **User customization:** "Customize the Ribbon" / "Quick Access Toolbar" dialog, layout saved to and loaded from
   JSON, import/export, reset; **ribbon merging**.
-- **Themes:** Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver, Black),
-  Windows 11 Light/Dark; any accent color; any token can be overridden by a StyleBook (`Docs\STYLES.md`).
+- **Themes:** Office 2024 (Light, Dark Gray, Dark: the Microsoft 365 look measured on Word, with the focus effect
+  of the caption row), Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver,
+  Black), Windows 11 Light/Dark; any accent color; any token can be overridden by a StyleBook (`Docs\STYLES.md`).
 - **Icons:** `TImageList`, SVG (Skia), icon-font glyphs (Segoe Fluent Icons), `TPathData`.
 - **IDE designer:** packages, items and structure editors, image picker, templates (Word, Excel, simple), themes from
   the context menu; tab switching, item selection and drag & drop on the form (`Docs\DESIGNTIME.md`).
@@ -41,20 +42,24 @@ Office 2007 application menu, quick access toolbar, key tips, screen tips, user 
 
 ## Themes
 
-The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 10 of the 18 built-in themes. The theme is switched at run time with`TFmrRibbon.Theme`; `AccentColor` recolors any of them. Regenerate the pictures with `tools\theme-shots.ps1`.
+The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in themes. The theme is switched at run time with `TFmrRibbon.Theme`; `AccentColor` recolors any of them. Regenerate the pictures with `tools\theme-shots.ps1`.
 
 | | |
 |---|---|
-| ![Office 365 Colorful](Docs/images/themes/Office365Colorful.png) | ![Office 365 White](Docs/images/themes/Office365White.png) |
-| `Office365Colorful` — Office 365 Colorful | `Office365White` — Office 365 White |
-| ![Office 365 Black](Docs/images/themes/Office365Black.png) | ![Office 2016 Colorful](Docs/images/themes/Office2016Colorful.png) |
-| `Office365Black` — Office 365 Black | `Office2016Colorful` — Office 2016 Colorful |
-| ![Office 2013 White](Docs/images/themes/Office2013White.png) | ![Office 2010 Blue](Docs/images/themes/Office2010Blue.png) |
-| `Office2013White` — Office 2013 White | `Office2010Blue` — Office 2010 Blue |
-| ![Office 2007 Blue](Docs/images/themes/Office2007Blue.png) | ![Office 2007 Black](Docs/images/themes/Office2007Black.png) |
-| `Office2007Blue` — Office 2007 Blue | `Office2007Black` — Office 2007 Black |
-| ![Windows 11 Light](Docs/images/themes/FluentLight.png) | ![Windows 11 Dark](Docs/images/themes/FluentDark.png) |
-| `FluentLight` — Windows 11 Light | `FluentDark` — Windows 11 Dark |
+| ![Office 2024 Light](Docs/images/themes/Office2024Light.png) | ![Office 2024 Dark](Docs/images/themes/Office2024Dark.png) |
+| `Office2024Light` — Office 2024 Light | `Office2024Dark` — Office 2024 Dark |
+| ![Office 2024 Dark Gray](Docs/images/themes/Office2024DarkGray.png) | ![Office 365 Colorful](Docs/images/themes/Office365Colorful.png) |
+| `Office2024DarkGray` — Office 2024 Dark Gray | `Office365Colorful` — Office 365 Colorful |
+| ![Office 365 White](Docs/images/themes/Office365White.png) | ![Office 365 Black](Docs/images/themes/Office365Black.png) |
+| `Office365White` — Office 365 White | `Office365Black` — Office 365 Black |
+| ![Office 2016 Colorful](Docs/images/themes/Office2016Colorful.png) | ![Office 2013 White](Docs/images/themes/Office2013White.png) |
+| `Office2016Colorful` — Office 2016 Colorful | `Office2013White` — Office 2013 White |
+| ![Office 2010 Blue](Docs/images/themes/Office2010Blue.png) | ![Office 2007 Blue](Docs/images/themes/Office2007Blue.png) |
+| `Office2010Blue` — Office 2010 Blue | `Office2007Blue` — Office 2007 Blue |
+| ![Office 2007 Black](Docs/images/themes/Office2007Black.png) | ![Windows 11 Light](Docs/images/themes/FluentLight.png) |
+| `Office2007Black` — Office 2007 Black | `FluentLight` — Windows 11 Light |
+| ![Windows 11 Dark](Docs/images/themes/FluentDark.png) |  |
+| `FluentDark` — Windows 11 Dark |  |
 
 ## Requirements
 

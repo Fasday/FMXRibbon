@@ -9,6 +9,8 @@
   tools\shot.ps1):
     move:X,Y  click:X,Y  rclick:X,Y  dclick:X,Y  wait:MS  shot:NAME (Out without .png + _NAME.png)
     key:KEYS  (keys.ps1 syntax: alt, ctrl+F1, esc, H, ...)   text:TEXT (typed with WM_CHAR)
+    post:MSG,WPARAM,LPARAM (a message posted to the form, e.g. post:0x86,0,0 = WM_NCACTIVATE inactive)
+  -NoCursor: mouse messages are posted without moving the real cursor (use it while somebody works at the desktop).
 
 .EXAMPLE
   .\tools\drive.ps1 -Arguments "/theme=Office2007Blue" -Out shots\x.png -Actions "click:302,82;wait:500;shot:a"
@@ -19,7 +21,9 @@ param(
   [string] $Out = 'shots\drive.png',
   [string] $Actions = '',
   [int] $Wait = 2500,
-  [switch] $Keep
+  [switch] $Keep,
+  # Do not move the real cursor (SetCursorPos) before posting mouse messages: the desktop stays usable for others.
+  [switch] $NoCursor
 )
 
 $ErrorActionPreference = 'Stop'
@@ -85,7 +89,7 @@ function Post-Mouse([string] $xy, [uint32] $down, [uint32] $up, [int] $wparamDow
   $parts = $xy.Split(',')
   $w = New-Object RibbonDrive+RECT; [void][RibbonDrive]::GetWindowRect($form, [ref]$w)
   $sx = $w.Left + [int]$parts[0]; $sy = $w.Top + [int]$parts[1]
-  [void][RibbonDrive]::SetCursorPos($sx, $sy)
+  if (-not $NoCursor) { [void][RibbonDrive]::SetCursorPos($sx, $sy) }
   $target = [RibbonDrive]::TargetAt([uint32]$proc.Id, $form, $sx, $sy)
   $o = New-Object RibbonDrive+POINT; [void][RibbonDrive]::ClientToScreen($target, [ref]$o)
   $cx = $sx - $o.X; $cy = $sy - $o.Y
@@ -124,6 +128,11 @@ foreach ($a in $Actions.Split(';')) {
     'key'    { & (Join-Path $here 'keys.ps1') -ProcessId $proc.Id -Keys $arg }
     'text'   { foreach ($c in $arg.ToCharArray()) { [void][RibbonDrive]::PostMessage($form, 0x102, [IntPtr][int]$c, [IntPtr]1); Start-Sleep -Milliseconds 30 } }
     'shot'   { & (Join-Path $here 'capture.ps1') -ProcessId $proc.Id -Out ($outPath -replace '\.png$', "_$arg.png") }
+    # post:MSG,WPARAM,LPARAM - a message posted to the form (numbers, hex with 0x), e.g. post:0x86,0,0 = WM_NCACTIVATE
+    'post'   {
+      $p = $arg.Split(',') | ForEach-Object { [Convert]::ToInt64($_.Trim(), $(if ($_.Trim().StartsWith('0x')) { 16 } else { 10 })) }
+      [void][RibbonDrive]::PostMessage($form, [uint32]$p[0], [IntPtr]$p[1], [IntPtr]$p[2]); Start-Sleep -Milliseconds 100
+    }
     default  { throw "Unknown action '$a'" }
   }
 }

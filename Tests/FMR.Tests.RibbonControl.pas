@@ -89,7 +89,10 @@ begin
     Glyph := FmrTestOver(P.Theme.Colors[TFmrToken.GlyphTint], Caption);
     if FmrTestContrast(Glyph, Caption) < 3 then
       Failures := Failures + Format('%s %.2f; ', [N, FmrTestContrast(Glyph, Caption)]);
-    Assert.AreSame(P, TPartAccess(FRibbon.TabBar).GetPainter, 'caption and tab rows share the bar painter');
+    // The caption row has its own painter (its content dims when the window is inactive); while the window is
+    // active it paints with the colors of the tab row.
+    Assert.AreEqual(P.Theme.Colors[TFmrToken.GlyphTint],
+      TPartAccess(FRibbon.TabBar).GetPainter.Theme.Colors[TFmrToken.GlyphTint], 'caption and tab rows: ' + N);
   end;
   Assert.AreEqual('', Failures);
 end;

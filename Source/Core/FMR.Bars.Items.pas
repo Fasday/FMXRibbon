@@ -30,8 +30,10 @@ type
     FDown: Boolean;
     FGroupIndex: Integer;
     FAllowAllUp: Boolean;
+    FPrimary: Boolean;
     FDropDownLinks: TFmrItemLinks;
     FOnDropDown: TNotifyEvent;
+    procedure SetPrimary(const Value: Boolean);
     procedure SetButtonStyle(const Value: TFmrButtonStyle);
     procedure SetDown(const Value: Boolean);
     procedure SetGroupIndex(const Value: Integer);
@@ -68,7 +70,25 @@ type
     property DropDownLinks: TFmrItemLinks read FDropDownLinks write SetDropDownLinks stored IsDropDownLinksStored;
     /// <summary>Buttons with the same GroupIndex (not 0) in one manager are exclusive (radio).</summary>
     property GroupIndex: Integer read FGroupIndex write SetGroupIndex default 0;
+    /// <summary>Filled with the accent color in every state, like the "Share" button of Office (PrimaryButton*
+    /// tokens).</summary>
+    property Primary: Boolean read FPrimary write SetPrimary default False;
     property OnDropDown: TNotifyEvent read FOnDropDown write FOnDropDown;
+  end;
+
+  /// <summary>Account picture of the caption row: the initials of a user in a colored circle; a click opens the
+  /// DropDownLinks (account menu) or runs OnClick.</summary>
+  TFmrAvatarItem = class(TFmrButtonItem)
+  private
+    FInitials: string;
+    FColor: TAlphaColor;
+    procedure SetInitials(const Value: string);
+    procedure SetColor(const Value: TAlphaColor);
+  published
+    /// <summary>Text in the circle (one or two letters).</summary>
+    property Initials: string read FInitials write SetInitials;
+    /// <summary>Color of the circle; Null = the accent color of the theme.</summary>
+    property Color: TAlphaColor read FColor write SetColor default TAlphaColors.Null;
   end;
 
   /// <summary>Sub menu: clicking it shows ItemLinks.</summary>
@@ -276,14 +296,23 @@ type
     property ShowFontPreview: Boolean read FShowFontPreview write SetShowFontPreview default True;
   end;
 
+  /// <summary>Look of a check item in the ribbon and its toolbars.</summary>
+  TFmrCheckStyle = (
+    /// <summary>A check box (a radio button with a GroupIndex) before the caption.</summary>
+    CheckBox,
+    /// <summary>The caption followed by a Windows 11 toggle switch (Office "AutoSave").</summary>
+    ToggleSwitch);
+
   /// <summary>Check box item painted by the ribbon; exclusive (radio) with a GroupIndex other than 0.</summary>
   TFmrCheckItem = class(TFmrBarItem)
   private
     FChecked: Boolean;
     FGroupIndex: Integer;
+    FCheckStyle: TFmrCheckStyle;
     FOnChange: TNotifyEvent;
     procedure SetChecked(const Value: Boolean);
     procedure SetGroupIndex(const Value: Integer);
+    procedure SetCheckStyle(const Value: TFmrCheckStyle);
   protected
     function GetIsChecked: Boolean; override;
     procedure SetIsChecked(const Value: Boolean); override;
@@ -295,6 +324,7 @@ type
     function DefaultViewLevels: TFmrViewLevels; override;
   published
     property Checked: Boolean read FChecked write SetChecked default False;
+    property CheckStyle: TFmrCheckStyle read FCheckStyle write SetCheckStyle default TFmrCheckStyle.CheckBox;
     property GroupIndex: Integer read FGroupIndex write SetGroupIndex default 0;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   end;
@@ -623,6 +653,15 @@ begin
   FAllowAllUp := Value;
 end;
 
+procedure TFmrButtonItem.SetPrimary(const Value: Boolean);
+begin
+  if FPrimary <> Value then
+  begin
+    FPrimary := Value;
+    Changed(TFmrItemChange.Paint);
+  end;
+end;
+
 procedure TFmrButtonItem.SetButtonStyle(const Value: TFmrButtonStyle);
 begin
   if FButtonStyle <> Value then
@@ -670,6 +709,26 @@ begin
     FGroupIndex := Value;
     if FDown and not (csLoading in ComponentState) then
       UncheckGroup;
+  end;
+end;
+
+{ TFmrAvatarItem }
+
+procedure TFmrAvatarItem.SetInitials(const Value: string);
+begin
+  if FInitials <> Value then
+  begin
+    FInitials := Value;
+    Changed(TFmrItemChange.Paint);
+  end;
+end;
+
+procedure TFmrAvatarItem.SetColor(const Value: TAlphaColor);
+begin
+  if FColor <> Value then
+  begin
+    FColor := Value;
+    Changed(TFmrItemChange.Paint);
   end;
 end;
 
@@ -1223,6 +1282,15 @@ end;
 procedure TFmrCheckItem.SetGroupIndex(const Value: Integer);
 begin
   FGroupIndex := Value;
+end;
+
+procedure TFmrCheckItem.SetCheckStyle(const Value: TFmrCheckStyle);
+begin
+  if FCheckStyle <> Value then
+  begin
+    FCheckStyle := Value;
+    Changed(TFmrItemChange.Layout);
+  end;
 end;
 
 procedure TFmrCheckItem.SetGroupIndexValue(const Value: Integer);
@@ -1857,7 +1925,7 @@ end;
 initialization
   RegisterFmxClasses([TFmrButtonItem, TFmrSubItem, TFmrSeparatorItem, TFmrStaticItem, TFmrControlItem,
     TFmrEditItem, TFmrComboItem, TFmrSpinItem, TFmrTrackBarItem, TFmrFontNameItem, TFmrCheckItem, TFmrColorItem,
-    TFmrGalleryItem]);
+    TFmrGalleryItem, TFmrAvatarItem]);
   RegisterClasses([TFmrItemLinks, TFmrItemLink, TFmrGalleryGroups, TFmrGalleryGroup, TFmrGalleryEntries,
     TFmrGalleryEntry]);
 

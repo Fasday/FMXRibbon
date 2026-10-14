@@ -6,7 +6,7 @@ unit RibbonBasicMain;
 /// Icons are icon font glyphs (Segoe Fluent Icons / Segoe MDL2 Assets) and vector paths, so no image files are needed.
 ///
 /// Command line (for tools\shot.ps1):
-///   /theme=<name>  /frame=fullnc|dwm|ncstrip|none  /minimized  /simplified  /width=N  /height=N  /qatbelow
+///   /theme=<name>  /frame=fullnc|dwm|ncstrip|none  /minimized  /simplified  /width=N  /height=N  /pos=X,Y  /qatbelow
 ///   /tabletools (show the contextual tabs)  /keytips (show key tips after start)  /touch  /nosearch  /tab=N
 ///   /topmost (stay on top while tools\shot.ps1 drives it)  /dump=<file> (write TFmrRibbon.DebugDump)
 ///   /backstage (the File tab opens a TFmrRibbonBackstageView of FMR.Ribbon.Backstage instead of a menu)
@@ -719,6 +719,16 @@ begin
       Width := N
     else if (S = '/height') and TryStrToInt(V, N) then
       Height := N
+    else if (S = '/pos') and V.Contains(',') then
+    begin
+      // window position in dp (screenshots of a window placed mostly outside the visible desktop)
+      Position := TFormPosition.Designed;
+      Left := StrToIntDef(V.Split([','])[0], Left);
+      Top := StrToIntDef(V.Split([','])[1], Top);
+    end
+    else if S = '/activelook' then
+      // screenshots of a window started in the background: keep the active look of the caption row
+      FRibbon.ShowInactiveState := False
     else if S = '/minimized' then
       FRibbon.Minimized := True
     else if S = '/simplified' then

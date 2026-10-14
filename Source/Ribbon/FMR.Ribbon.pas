@@ -397,8 +397,29 @@ type
     FAccentColor: TAlphaColor;
     FTheme: TFmrTheme;
     FPainter: TFmrRibbonPainter;
+    { caption and tab row: FBarThemeBase as built; FBarTheme (tab row) and FCaptionTheme (caption row) are it with
+      the activation level applied }
+    FBarThemeBase: TFmrTheme;
     FBarTheme: TFmrTheme;
     FBarPainter: TFmrRibbonPainter;
+    FCaptionTheme: TFmrTheme;
+    FCaptionPainter: TFmrRibbonPainter;
+    { focus effect }
+    FActiveLevel: Single;
+    FActiveTarget: Boolean;
+    FActiveFrom: Single;
+    FActiveStart: Cardinal;
+    FActiveTimer: TTimer;
+    FAnimateActivation: Boolean;
+    FShowInactiveState: Boolean;
+    FActivateId: TMessageSubscriptionId;
+    { caption row and tab row extras }
+    FCaptionToolbar: TFmrRibbonItemBar;
+    FTabAreaToolbar: TFmrRibbonItemBar;
+    FCaptionToolViews: TList<TFmrItemView>;
+    FTabToolViews: TList<TFmrItemView>;
+    FApplicationIcon: TFmrImageSource;
+    FIconRect: TRectF;
     FMinimized: Boolean;
     FShowMode: TFmrRibbonShowMode;
     FDisplayMode: TFmrRibbonDisplayMode;
@@ -522,6 +543,23 @@ type
     procedure SetRightToLeft(const Value: Boolean);
     function GetSearchText: string;
     procedure SetSearchText(const Value: string);
+    procedure SetCaptionToolbar(const Value: TFmrRibbonItemBar);
+    procedure SetTabAreaToolbar(const Value: TFmrRibbonItemBar);
+    procedure SetApplicationIcon(const Value: TFmrImageSource);
+    procedure ApplicationIconChanged(Sender: TObject);
+    procedure SetShowInactiveState(const Value: Boolean);
+    { focus effect }
+    /// <summary>The window is active, or a popup of the ribbon has the keyboard (Office keeps the caption active
+    /// while its menus are open).</summary>
+    function WantActive: Boolean;
+    /// <summary>Starts the transition to the active or inactive look when it changed.</summary>
+    procedure UpdateActiveState;
+    procedure ActiveTimerTick(Sender: TObject);
+    procedure SetActiveLevel(const AValue: Single);
+    /// <summary>Copies the base bar theme into the bar and caption themes with the activation level applied.
+    /// </summary>
+    procedure ApplyActiveLevel;
+    procedure ActivateHandler(const Sender: TObject; const M: TMessage);
     { theme }
     procedure BuildTheme;
     function FindStyleRoot: TFmxObject;
@@ -580,7 +618,6 @@ type
     procedure PaintOrb(const ACanvas: TCanvas; const AOffsetY: Single);
     function ActiveTabRect: TRectF;
     function TitleText: string;
-    function FrameActive: Boolean;
     { messages }
     procedure IdleHandler(const Sender: TObject; const M: TMessage);
     procedure StyleChangedHandler(const Sender: TObject; const M: TMessage);
@@ -781,10 +818,24 @@ type
     property QATBar: TFmrRibbonQATBar read FQATBar;
     property ScreenTips: TFmrScreenTipController read FScreenTips;
     property SearchText: string read GetSearchText write SetSearchText;
+    /// <summary>0 = the inactive look of the caption row, 1 = active; animated between the two (focus effect).
+    /// </summary>
+    property ActiveLevel: Single read FActiveLevel;
   published
     property AccentColor: TAlphaColor read FAccentColor write SetAccentColor default 0;
     property ActiveTab: TFmrRibbonTab read FActiveTab write SetActiveTabProp;
     property Align default TAlignLayout.Top;
+    /// <summary>The caption row fades to its inactive look (and back) in about 170 ms when the window loses (gets)
+    /// the focus; False switches at once.</summary>
+    property AnimateActivation: Boolean read FAnimateActivation write FAnimateActivation default True;
+    /// <summary>Icon at the left end of the caption row (a click shows the window menu), like the application icon
+    /// of Office.</summary>
+    property ApplicationIcon: TFmrImageSource read FApplicationIcon write SetApplicationIcon;
+    /// <summary>Links at the right end of the caption row, left of the window buttons (account picture...).
+    /// </summary>
+    property CaptionToolbar: TFmrRibbonItemBar read FCaptionToolbar write SetCaptionToolbar;
+    /// <summary>Links at the right end of the tab row (Comments, Share).</summary>
+    property TabAreaToolbar: TFmrRibbonItemBar read FTabAreaToolbar write SetTabAreaToolbar;
     property ApplicationButton: TFmrRibbonApplicationButton read FAppButton write SetAppButton;
     /// <summary>Shown by the application button: a TFmrPopupMenu, an object implementing IFmrApplicationMenu, or an
     /// object with public ShowApplicationMenu(TFmxObject, TRectF, Boolean) / IsApplicationMenuOpen methods (the
@@ -818,6 +869,9 @@ type
     /// simplified ribbon.</summary>
     property ShowDisplayModeButton: Boolean read FShowDisplayModeButton write SetShowDisplayModeButton default False;
     property ShowHelpButton: Boolean read FShowHelpButton write SetShowHelpButton default False;
+    /// <summary>The caption row dims its content (and takes the inactive colors of the theme) while the window is
+    /// inactive; False keeps the active look.</summary>
+    property ShowInactiveState: Boolean read FShowInactiveState write SetShowInactiveState default True;
     property ShowKeyTips: Boolean read FShowKeyTips write SetShowKeyTips default True;
     property ShowMode: TFmrRibbonShowMode read FShowMode write SetShowMode default TFmrRibbonShowMode.TabsAndCommands;
     property ShowScreenTips: Boolean read FShowScreenTips write SetShowScreenTips default True;
@@ -850,7 +904,6 @@ uses
 
 const
   DefaultContextColors: array[0..3] of TAlphaColor = ($FFE8A33D, $FF5B9B4A, $FFB05CC6, $FF3D9FD6);
-  CaptionButtonWidth = 46;
 
 function IsVisibleTab(const T: TFmrRibbonTab): Boolean; inline;
 begin
@@ -983,8 +1036,6 @@ begin
           S := TFmrPartState.Pressed;
         P.DrawCaptionStyleButton(ACanvas, R, S);
         Col := P.Theme.Colors[TFmrToken.CaptionButtonGlyph];
-        if not FRibbon.FrameActive and (S = TFmrPartState.Normal) then
-          Col := P.Theme.Colors[TFmrToken.CaptionTextInactive];
         if FKind = TFmrSysButtonKind.DisplayOptions then
           P.DrawDisplayOptionsGlyph(ACanvas, R, Col)
         else
@@ -1000,7 +1051,15 @@ begin
       P.DrawButton(ACanvas, R, S);
       case FKind of
         TFmrSysButtonKind.CollapseRibbon:
-          if FRibbon.IsCollapsed then
+          if P.Theme.Style.CollapseInBody then
+          begin
+            // Office 2024: a chevron in the corner of the card; a pin in the body of a collapsed ribbon.
+            if FRibbon.IsCollapsed then
+              P.DrawPinGlyph(ACanvas, R, True, Col)
+            else
+              P.Arrow(ACanvas, PointF(R.CenterPoint.X, R.CenterPoint.Y), TFmrArrowDirection.Up, Col, 11);
+          end
+          else if FRibbon.IsCollapsed then
             P.Arrow(ACanvas, PointF(R.CenterPoint.X, R.CenterPoint.Y), TFmrArrowDirection.Down, Col, 8)
           else
             P.Arrow(ACanvas, PointF(R.CenterPoint.X, R.CenterPoint.Y), TFmrArrowDirection.Up, Col, 8);
@@ -1822,7 +1881,7 @@ begin
   HitTest := True;
   CanFocus := False;
   AutoCapture := True;
-  Width := CaptionButtonWidth;
+  Width := ARibbon.FPainter.Metrics.CaptionButtonWidth;
 end;
 
 function TFmrRibbonCaptionButton.GetFrameButtonKind: TFmrHitArea;
@@ -1867,9 +1926,10 @@ var
   S: TFmrPartState;
   P: TFmrRibbonPainter;
 begin
-  if (FRibbon = nil) or (FRibbon.FPainter = nil) then
+  if (FRibbon = nil) or (FRibbon.FCaptionPainter = nil) then
     Exit;
-  P := FRibbon.FPainter;
+  // The caption theme has the activation level applied (dimmed glyphs of an inactive window).
+  P := FRibbon.FCaptionPainter;
   case FKind of
     TFmrHitArea.MinButton: Glyph := TFmrCaptionGlyph.Minimize;
     TFmrHitArea.MaxButton:
@@ -1887,7 +1947,7 @@ begin
     S := TFmrPartState.Hot
   else
     S := TFmrPartState.Normal;
-  P.DrawCaptionButton(Canvas, LocalRect, Glyph, S, FActive);
+  P.DrawCaptionButton(Canvas, LocalRect, Glyph, S, True);
 end;
 
 procedure TFmrRibbonCaptionButton.DoMouseEnter;
@@ -1982,7 +2042,7 @@ end;
 
 function TFmrRibbonCaptionBar.GetPainter: TFmrRibbonPainter;
 begin
-  Result := FRibbon.FBarPainter;
+  Result := FRibbon.FCaptionPainter;
 end;
 
 procedure TFmrRibbonCaptionBar.SearchEditApplyStyle(Sender: TObject);
@@ -2023,7 +2083,9 @@ var
   LP: TPointF;
 begin
   LP := Logical(ALocalPoint.X, ALocalPoint.Y);
-  if FindElement(LP) <> nil then
+  if not FRibbon.FIconRect.IsEmpty and FRibbon.FIconRect.Contains(LP) then
+    Result := TFmrHitArea.SysMenu
+  else if FindElement(LP) <> nil then
     Result := TFmrHitArea.Client
   else if FRibbon.FShowSearchBox and FSearchRect.Contains(LP) then
     Result := TFmrHitArea.Client
@@ -2036,6 +2098,7 @@ begin
   FRibbon.FFrameState := AState;
   FRibbon.UpdateHeights;
   FRibbon.InvalidateArrange;
+  FRibbon.UpdateActiveState;
   Repaint;
   if FRibbon.FTabBar <> nil then
     FRibbon.FTabBar.Repaint;
@@ -2055,6 +2118,9 @@ begin
   end;
   for V in FRibbon.FQATViews do
     if V.Visible and (V.Host <> nil) and (V.Host.GetHostControl = Self) and (V.PartAt(P) <> TFmrElementPart.None) then
+      Exit(V);
+  for V in FRibbon.FCaptionToolViews do
+    if V.Visible and (V.PartAt(P) <> TFmrElementPart.None) then
       Exit(V);
   for E in FRibbon.FCaptionSysElements do
     if E.Visible and E.Bounds.Contains(P) then
@@ -2080,34 +2146,48 @@ var
   Pair: TPair<TFmrRibbonContextGroup, TRectF>;
   V: TFmrItemView;
   E: TFmrSysButtonElement;
-  Active: Boolean;
+  Align: TTextAlign;
   Color: TAlphaColor;
 begin
   P := GetPainter;
   R := LocalRect;
-  Active := FRibbon.FrameActive;
-  if not FRibbon.FFrameState.Transparent then
-    P.DrawCaption(ACanvas, R, Active);
+  // The caption theme has the activation level applied: the active look is painted with the blended tokens.
+  if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost then
+    P.DrawCaption(ACanvas, R, True)
+  else
+    // Over a Mica/Acrylic backdrop: nothing, or the translucent caption of the theme (Office 2024 Dark Gray)
+    P.Fill(ACanvas, R, TFmrToken.CaptionBackdropFill);
   for Pair in FRibbon.FContextHeaders do
     P.DrawContextGroupHeader(ACanvas, Pair.Value, FmrStripAccel(Pair.Key.DisplayCaption),
       FRibbon.ContextColor(Pair.Key));
+  if not FRibbon.FIconRect.IsEmpty then
+    // Office keeps the icon in its colors when the window is inactive; a glyph or path icon follows the title.
+    FRibbon.FApplicationIcon.Draw(ACanvas, FRibbon.FIconRect, 1, P.Theme.Colors[TFmrToken.CaptionText],
+      FRibbon.GetThemeImages);
   if FRibbon.FShowSearchBox and not FSearchRect.IsEmpty then
   begin
     P.DrawSearchBox(ACanvas, FSearchRect, (FSearchEdit <> nil) and FSearchEdit.IsFocused);
-    G := RectF(FSearchRect.Left + 4, FSearchRect.Top, FSearchRect.Left + 24, FSearchRect.Bottom);
+    if P.Theme.Style.Family = TFmrThemeFamily.Office2024 then
+      G := RectF(FSearchRect.Left + 10, FSearchRect.Top, FSearchRect.Left + 32, FSearchRect.Bottom)
+    else
+      G := RectF(FSearchRect.Left + 4, FSearchRect.Top, FSearchRect.Left + 24, FSearchRect.Bottom);
     P.DrawSearchGlyph(ACanvas, G, P.Theme.Colors[TFmrToken.SearchBoxPrompt]);
   end;
   if not FTitleRect.IsEmpty then
   begin
-    if Active then
-      Color := P.Theme.Colors[TFmrToken.CaptionText]
+    Color := P.Theme.Colors[TFmrToken.CaptionText];
+    if P.Theme.Style.LeadingTitle then
+      Align := TTextAlign.Leading
     else
-      Color := P.Theme.Colors[TFmrToken.CaptionTextInactive];
-    P.TextEx(ACanvas, FTitleRect, FRibbon.TitleText, Color, TTextAlign.Center, TTextAlign.Center,
-      P.Metrics.CaptionFontSize, False, False);
+      Align := TTextAlign.Center;
+    P.TextEx(ACanvas, FTitleRect, FRibbon.TitleText, Color, Align, TTextAlign.Center, P.Metrics.CaptionFontSize,
+      False, False);
   end;
   for V in FRibbon.FQATViews do
     if V.Visible and (V.Host <> nil) and (V.Host.GetHostControl = Self) then
+      V.Paint(ACanvas);
+  for V in FRibbon.FCaptionToolViews do
+    if V.Visible then
       V.Paint(ACanvas);
   for E in FRibbon.FCaptionSysElements do
     E.Paint(ACanvas);
@@ -2133,6 +2213,7 @@ end;
 procedure TFmrRibbonTabBar.FrameStateChanged(const AState: TFmrFrameState);
 begin
   FRibbon.FFrameState := AState;
+  FRibbon.UpdateActiveState;
   Repaint;
 end;
 
@@ -2140,11 +2221,15 @@ function TFmrRibbonTabBar.FindElement(const P: TPointF): TFmrElement;
 var
   T: TFmrTabElement;
   E: TFmrSysButtonElement;
+  V: TFmrItemView;
   R: TRectF;
 begin
   for E in FRibbon.FTabSysElements do
     if E.Visible and E.Bounds.Contains(P) then
       Exit(E);
+  for V in FRibbon.FTabToolViews do
+    if V.Visible and (V.PartAt(P) <> TFmrElementPart.None) then
+      Exit(V);
   if (FRibbon.FAppElement <> nil) and FRibbon.FAppElement.Visible then
   begin
     if FRibbon.IsOrb then
@@ -2167,12 +2252,18 @@ var
   P: TFmrRibbonPainter;
   T: TFmrTabElement;
   E: TFmrSysButtonElement;
+  V: TFmrItemView;
   State: TCanvasSaveState;
   Clip: TRectF;
 begin
   P := GetPainter;
   if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost then
-    P.DrawTabRow(ACanvas, LocalRect, FRibbon.FrameActive);
+    P.DrawTabRow(ACanvas, LocalRect, True)
+  else
+    P.Fill(ACanvas, LocalRect, TFmrToken.CaptionBackdropFill);
+  for V in FRibbon.FTabToolViews do
+    if V.Visible then
+      V.Paint(ACanvas);
   if (FRibbon.FAppElement <> nil) and FRibbon.FAppElement.Visible and not FRibbon.IsOrb then
     FRibbon.FAppElement.Paint(ACanvas);
   State := ACanvas.SaveState;
@@ -2279,8 +2370,15 @@ var
 begin
   P := GetPainter;
   M := P.Metrics;
-  if P.Theme.Style.FloatingBody or (Parent is TFmrPopupFrame) then
-    P.DrawBodyBackground(ACanvas, LocalRect, FRibbon.FrameActive);
+  // Around a floating card: the color of the tab row (with the activation level applied), nothing over a Mica
+  // backdrop when the theme lets it show through.
+  if Parent is TFmrPopupFrame then
+    P.DrawBodyBackground(ACanvas, LocalRect, True)
+  else if P.Theme.Style.FloatingBody and FRibbon.FFrameState.Transparent and FRibbon.FBarsInHost and
+    P.Theme.Style.TransparentCaption then
+    P.Fill(ACanvas, LocalRect, TFmrToken.CaptionBackdropFill)
+  else if P.Theme.Style.FloatingBody then
+    FRibbon.FBarPainter.DrawBodyBackground(ACanvas, LocalRect, True);
   Card := FRibbon.BodyCardRect;
   P.DrawBody(ACanvas, Card);
   if not P.Theme.Style.FloatingBody and (P.Theme.Style.TabShape <> TFmrTabShape.Underline) and
@@ -2639,6 +2737,16 @@ begin
   FShowCollapseButton := True;
   FFrameAuto := True;
   FFrameState.Active := True;
+  FActiveLevel := 1;
+  FActiveTarget := True;
+  FAnimateActivation := True;
+  FShowInactiveState := True;
+  FCaptionToolbar := TFmrRibbonItemBar.Create(Self);
+  FTabAreaToolbar := TFmrRibbonItemBar.Create(Self);
+  FCaptionToolViews := TList<TFmrItemView>.Create;
+  FTabToolViews := TList<TFmrItemView>.Create;
+  FApplicationIcon := TFmrImageSource.Create(Self);
+  FApplicationIcon.OnChange := ApplicationIconChanged;
   FQAT := TFmrRibbonQuickAccessToolbar.Create(Self);
   FAppButton := TFmrRibbonApplicationButton.Create(Self);
   FViews := TList<TFmrItemView>.Create;
@@ -2670,6 +2778,7 @@ begin
   begin
     FMenuLoopId := TMessageManager.DefaultManager.SubscribeToMessage(TStartMenuLoopMessage, MenuLoopHandler);
     FDeactivateId := TMessageManager.DefaultManager.SubscribeToMessage(TFormDeactivateMessage, DeactivateHandler);
+    FActivateId := TMessageManager.DefaultManager.SubscribeToMessage(TFormActivateMessage, ActivateHandler);
   end
   else
   begin
@@ -2700,6 +2809,11 @@ begin
     TMessageManager.DefaultManager.Unsubscribe(TStartMenuLoopMessage, FMenuLoopId);
   if FDeactivateId <> 0 then
     TMessageManager.DefaultManager.Unsubscribe(TFormDeactivateMessage, FDeactivateId);
+  if FActivateId <> 0 then
+    TMessageManager.DefaultManager.Unsubscribe(TFormActivateMessage, FActivateId);
+  FActivateId := 0;
+  if FActiveTimer <> nil then
+    FActiveTimer.Enabled := False;
   if FFrameStateId <> 0 then
     TMessageManager.DefaultManager.Unsubscribe(TFmrFrameStateMessage, FFrameStateId);
   FFrameStateId := 0;
@@ -2753,11 +2867,20 @@ begin
   FreeAndNil(FKeyTipMatcher);
   FreeAndNil(FCalc);
   FreeAndNil(FQAT);
+  FreeAndNil(FCaptionToolbar);
+  FreeAndNil(FTabAreaToolbar);
+  FreeAndNil(FCaptionToolViews);
+  FreeAndNil(FTabToolViews);
+  FreeAndNil(FApplicationIcon);
   FreeAndNil(FAppButton);
+  FreeAndNil(FActiveTimer);
   inherited;
+  FreeAndNil(FCaptionPainter);
   FreeAndNil(FBarPainter);
   FreeAndNil(FPainter);
+  FreeAndNil(FCaptionTheme);
   FreeAndNil(FBarTheme);
+  FreeAndNil(FBarThemeBase);
   FreeAndNil(FTheme);
 end;
 
@@ -2868,19 +2991,26 @@ begin
     NewBar.Colors[TFmrToken.ButtonHotBorder] := TAlphaColors.Null;
     NewBar.Colors[TFmrToken.ButtonPressedBorder] := TAlphaColors.Null;
     NewBar.Colors[TFmrToken.ButtonCheckedBorder] := TAlphaColors.Null;
+    NewBar.Colors[TFmrToken.ToggleSwitchBorder] := NewTheme.Colors[TFmrToken.CaptionText];
+    NewBar.Colors[TFmrToken.ToggleSwitchThumb] := NewTheme.Colors[TFmrToken.CaptionText];
   end;
   if FPainter = nil then
     FPainter := TFmrRibbonPainter.Create(NewTheme)
   else
     FPainter.Theme := NewTheme;
-  if FBarPainter = nil then
-    FBarPainter := TFmrRibbonPainter.Create(NewBar)
-  else
-    FBarPainter.Theme := NewBar;
   FTheme.Free;
   FTheme := NewTheme;
-  FBarTheme.Free;
-  FBarTheme := NewBar;
+  FBarThemeBase.Free;
+  FBarThemeBase := NewBar;
+  if FBarTheme = nil then
+    FBarTheme := TFmrTheme.Create;
+  if FCaptionTheme = nil then
+    FCaptionTheme := TFmrTheme.Create;
+  if FBarPainter = nil then
+    FBarPainter := TFmrRibbonPainter.Create(FBarTheme);
+  if FCaptionPainter = nil then
+    FCaptionPainter := TFmrRibbonPainter.Create(FCaptionTheme);
+  ApplyActiveLevel;
   FCalc.Metrics := LayoutMetrics;
   ApplyFrameColors;
   // Companion controls (backstage view, status bar) paint with the theme of the ribbon.
@@ -2896,6 +3026,7 @@ end;
 procedure TFmrRibbon.ApplyFrameColors;
 var
   C, CI: TAlphaColor;
+  Dark: Boolean;
 begin
   if (FFrame = nil) or FDestroying or (csDesigning in ComponentState) or (csDestroying in FFrame.ComponentState) then
     Exit;
@@ -2905,8 +3036,10 @@ begin
     FFrame.CaptionColor := C;
   if FFrame.CaptionInactiveColor <> CI then
     FFrame.CaptionInactiveColor := CI;
-  if FFrame.DarkMode <> FTheme.Style.Dark then
-    FFrame.DarkMode := FTheme.Style.Dark;
+  // Office 2024 Dark Gray: a light body under a dark caption takes the dark window border.
+  Dark := FTheme.Style.Dark or ((FTheme.Style.Family = TFmrThemeFamily.Office2024) and (FmrLuminance(C) < 0.2));
+  if FFrame.DarkMode <> Dark then
+    FFrame.DarkMode := Dark;
 end;
 
 function TFmrRibbon.GetThemePainter: TFmrRibbonPainter;
@@ -3347,6 +3480,39 @@ begin
   FQAT.Assign(Value);
 end;
 
+procedure TFmrRibbon.SetCaptionToolbar(const Value: TFmrRibbonItemBar);
+begin
+  FCaptionToolbar.Assign(Value);
+end;
+
+procedure TFmrRibbon.SetTabAreaToolbar(const Value: TFmrRibbonItemBar);
+begin
+  FTabAreaToolbar.Assign(Value);
+end;
+
+procedure TFmrRibbon.SetApplicationIcon(const Value: TFmrImageSource);
+begin
+  FApplicationIcon.Assign(Value);
+end;
+
+procedure TFmrRibbon.SetShowInactiveState(const Value: Boolean);
+begin
+  if FShowInactiveState <> Value then
+  begin
+    FShowInactiveState := Value;
+    UpdateActiveState;
+  end;
+end;
+
+procedure TFmrRibbon.ApplicationIconChanged(Sender: TObject);
+begin
+  if FDestroying then
+    Exit;
+  InvalidateArrange;
+  if FCaptionBar <> nil then
+    FCaptionBar.Repaint;
+end;
+
 procedure TFmrRibbon.SetAppButton(const Value: TFmrRibbonApplicationButton);
 begin
   FAppButton.Assign(Value);
@@ -3659,7 +3825,7 @@ end;
 
 procedure TFmrRibbon.StructureObjectChanged(const ASender: TObject; const AChange: TFmrItemChange);
 begin
-  if ASender = FQAT then
+  if (ASender = FQAT) or (ASender = FCaptionToolbar) or (ASender = FTabAreaToolbar) then
   begin
     ClosePopups;
     InvalidateStructure;
@@ -3703,7 +3869,7 @@ end;
 
 procedure TFmrRibbon.LinksChanged(const AOwner: TPersistent; const ALinks: TFmrItemLinks);
 begin
-  if AOwner = FQAT then
+  if (AOwner = FQAT) or (AOwner = FCaptionToolbar) or (AOwner = FTabAreaToolbar) then
   begin
     InvalidateStructure;
     UpdateHeights;
@@ -3937,6 +4103,8 @@ begin
   FBodyViews.Remove(AView);
   FQATViews.Remove(AView);
   FQATOverflow.Remove(AView);
+  FCaptionToolViews.Remove(AView);
+  FTabToolViews.Remove(AView);
   if FDroppedElement = AView then
     FDroppedElement := nil;
   if FKeyFocus = AView then
@@ -3960,6 +4128,8 @@ begin
     FScreenTips.Cancel;
   if FCaptionBar <> nil then
     FCaptionBar.Tracker.Forget(AView);
+  if FTabBar <> nil then
+    FTabBar.Tracker.Forget(AView);
   if FBody <> nil then
     FBody.Tracker.Forget(AView);
   if FQATBar <> nil then
@@ -4031,6 +4201,28 @@ begin
         V.Hide;
       end;
     end;
+    FCaptionToolViews.Clear;
+    for J := 0 to FCaptionToolbar.ItemLinks.Count - 1 do
+    begin
+      V := ViewFor(FCaptionToolbar.ItemLinks[J], FCaptionBar, TFmrViewPlace.Toolbar);
+      if V <> nil then
+      begin
+        Seen.Add(V);
+        FCaptionToolViews.Add(V);
+        V.Hide;
+      end;
+    end;
+    FTabToolViews.Clear;
+    for J := 0 to FTabAreaToolbar.ItemLinks.Count - 1 do
+    begin
+      V := ViewFor(FTabAreaToolbar.ItemLinks[J], FTabBar, TFmrViewPlace.Toolbar);
+      if V <> nil then
+      begin
+        Seen.Add(V);
+        FTabToolViews.Add(V);
+        V.Hide;
+      end;
+    end;
     for I := FViews.Count - 1 downto 0 do
       if (I < FViews.Count) and (Seen.IndexOf(FViews[I]) < 0) then
       begin
@@ -4096,7 +4288,8 @@ begin
     NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.TabScrollRight).Visible := False;
     if FShowHelpButton then
       NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.Help);
-    if FShowCollapseButton then
+    // Office 2024 has the collapse chevron in the body (ArrangeBody adds it).
+    if FShowCollapseButton and not FTheme.Style.CollapseInBody then
       NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.CollapseRibbon);
     ValidateViews;
     FCaptionSysElements.Clear;
@@ -4126,7 +4319,7 @@ begin
       Edit.StyledSettings := Edit.StyledSettings - [TStyledSetting.FontColor, TStyledSetting.Size,
         TStyledSetting.Family];
       Edit.TextSettings.Font.Family := FTheme.Metrics.FontFamily;
-      Edit.TextSettings.Font.Size := FTheme.Metrics.FontSize;
+      Edit.TextSettings.Font.Size := FTheme.Metrics.EffectiveTabFontSize;
       Edit.OnApplyStyleLookup := FCaptionBar.SearchEditApplyStyle;
       Edit.OnChangeTracking := FCaptionBar.SearchEditChangeTracking;
       Edit.OnKeyDown := FCaptionBar.SearchEditKeyDown;
@@ -4136,8 +4329,13 @@ begin
       FreeAndNil(FCaptionBar.FSearchEdit);
     if FCaptionBar.FSearchEdit <> nil then
     begin
-      FCaptionBar.FSearchEdit.TextSettings.FontColor := FTheme.Colors[TFmrToken.SearchBoxText];
-      FCaptionBar.FSearchEdit.TextPrompt := FmrStr(TFmrStringId.SearchPromptLong);
+      FCaptionBar.FSearchEdit.TextSettings.FontColor := FCaptionTheme.Colors[TFmrToken.SearchBoxText];
+      FCaptionBar.FSearchEdit.TextSettings.Font.Size := FTheme.Metrics.EffectiveTabFontSize;
+      // Office 2024: "Search" (the long "Tell me what you want to do" of older versions otherwise)
+      if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+        FCaptionBar.FSearchEdit.TextPrompt := FmrStr(TFmrStringId.SearchPrompt)
+      else
+        FCaptionBar.FSearchEdit.TextPrompt := FmrStr(TFmrStringId.SearchPromptLong);
     end;
     // Caption buttons when the ribbon draws the title bar.
     NeedButtons := FBarsInHost and (FFrame <> nil) and FFrame.Hooked and (FFrame.Mode <> TFmrFrameMode.NCStrip) and
@@ -4179,6 +4377,7 @@ begin
   Result.ContentHeight := M.ContentHeight;
   Result.RowHeight := M.SmallButtonHeight;
   Result.RowCount := 3;
+  Result.MaxRowGap := M.MaxRowGap;
   Result.GroupPaddingH := M.GroupPaddingH;
   Result.GroupSpacing := M.GroupSpacing;
   Result.ColumnSpacing := 2;
@@ -4275,9 +4474,11 @@ begin
   else
     Result := RectF(C.Left + PadH, C.Top + M.BodyPaddingV, C.Right - PadH,
       C.Top + M.BodyPaddingV + M.GroupPaddingTop + M.ContentHeight + M.GroupCaptionHeight);
-  // Room for the classic/simplified switch at the right end of the body.
+  // Room for the classic/simplified switch and the Office 2024 collapse chevron at the right end of the body.
   if FShowDisplayModeButton then
     Result.Right := Result.Right - 26;
+  if FShowCollapseButton and FTheme.Style.CollapseInBody then
+    Result.Right := Result.Right - 28;
 end;
 
 function TFmrRibbon.IsOrb: Boolean;
@@ -4357,12 +4558,170 @@ begin
   end;
 end;
 
-function TFmrRibbon.FrameActive: Boolean;
+{ focus effect }
+
+function TFmrRibbon.WantActive: Boolean;
+var
+  Form: TCommonCustomForm;
 begin
+  if (csDesigning in ComponentState) or not FShowInactiveState then
+    Exit(True);
   if FBarsInHost and (FFrame <> nil) and FFrame.Hooked then
     Result := FFrameState.Active
   else
+  begin
+    Form := OwnerForm;
+    Result := (Form = nil) or Form.Active;
+  end;
+  // Office keeps the caption active while its own menus are open: a popup that takes the keyboard (an editor of a
+  // group popup) deactivates the window for a moment, and FMX closes the popups when another window is activated.
+  if not Result and FmrPopupsAssigned and FmrPopups.IsOpen then
     Result := True;
+end;
+
+procedure TFmrRibbon.UpdateActiveState;
+var
+  Target: Boolean;
+  Form: TCommonCustomForm;
+begin
+  if FDestroying or (csDestroying in ComponentState) then
+    Exit;
+  Target := WantActive;
+  if Target = FActiveTarget then
+    Exit;
+  FActiveTarget := Target;
+  Form := OwnerForm;
+  if not FAnimateActivation or (Form = nil) or not Form.Visible or (csDesigning in ComponentState) then
+  begin
+    SetActiveLevel(Ord(Target));
+    Exit;
+  end;
+  FActiveFrom := FActiveLevel;
+  FActiveStart := TThread.GetTickCount;
+  if FActiveTimer = nil then
+  begin
+    FActiveTimer := TTimer.Create(nil);
+    FActiveTimer.Interval := 15;
+    FActiveTimer.OnTimer := ActiveTimerTick;
+  end;
+  FActiveTimer.Enabled := True;
+end;
+
+procedure TFmrRibbon.ActiveTimerTick(Sender: TObject);
+const
+  Duration = 170;
+var
+  T, Target: Single;
+begin
+  if FDestroying then
+  begin
+    FActiveTimer.Enabled := False;
+    Exit;
+  end;
+  T := Min(1, (TThread.GetTickCount - FActiveStart) / Duration);
+  // ease out
+  T := 1 - Sqr(1 - T);
+  Target := Ord(FActiveTarget);
+  if T >= 1 then
+  begin
+    FActiveTimer.Enabled := False;
+    SetActiveLevel(Target);
+  end
+  else
+    SetActiveLevel(FActiveFrom + (Target - FActiveFrom) * T);
+end;
+
+procedure TFmrRibbon.SetActiveLevel(const AValue: Single);
+var
+  Btn: TFmrRibbonCaptionButton;
+begin
+  if SameValue(FActiveLevel, AValue, 0.0001) then
+    Exit;
+  FActiveLevel := EnsureRange(AValue, 0, 1);
+  ApplyActiveLevel;
+  if FCaptionBar <> nil then
+  begin
+    FCaptionBar.Repaint;
+    for Btn in FCaptionBar.FButtons do
+      Btn.Repaint;
+    if FCaptionBar.FSearchEdit <> nil then
+      FCaptionBar.FSearchEdit.TextSettings.FontColor := FCaptionTheme.Colors[TFmrToken.SearchBoxText];
+  end;
+  if FTabBar <> nil then
+    FTabBar.Repaint;
+  if (FBody <> nil) and FTheme.Style.FloatingBody then
+    FBody.Repaint;
+end;
+
+function FmrMixFill(const AInactive, AActive: TFmrFill; const ALevel: Single): TFmrFill;
+begin
+  if ALevel >= 1 then
+    Result := AActive
+  else if ALevel <= 0 then
+    Result := AInactive
+  else if (AInactive.Kind = TFmrFillKind.Solid) and (AActive.Kind = TFmrFillKind.Solid) then
+    Result := TFmrFill.Solid(FmrBlend(AInactive.Color, AActive.Color, ALevel))
+  else if ALevel >= 0.5 then
+    Result := AActive
+  else
+    Result := AInactive;
+end;
+
+procedure TFmrRibbon.ApplyActiveLevel;
+var
+  B: TFmrTheme;
+  L: Single;
+  Dim, Glyph: TAlphaColor;
+
+  procedure Mix(const ATheme: TFmrTheme; const ATarget, AInactive, AActive: TFmrToken);
+  begin
+    ATheme.Fills[ATarget] := FmrMixFill(B.Fills[AInactive], B.Fills[AActive], L);
+  end;
+
+  procedure MixColor(const ATheme: TFmrTheme; const ATarget: TFmrToken; const AInactive: TAlphaColor);
+  begin
+    ATheme.Fills[ATarget] := FmrMixFill(TFmrFill.Solid(AInactive), B.Fills[ATarget], L);
+  end;
+
+begin
+  B := FBarThemeBase;
+  if (B = nil) or (FBarTheme = nil) or (FCaptionTheme = nil) then
+    Exit;
+  L := FActiveLevel;
+  { tab row: its fill follows the caption when they are one surface; tab captions take TabTextInactive }
+  FBarTheme.Assign(B);
+  Mix(FBarTheme, TFmrToken.CaptionFill, TFmrToken.CaptionFillInactive, TFmrToken.CaptionFill);
+  FBarTheme.Fills[TFmrToken.CaptionFillInactive] := FBarTheme.Fills[TFmrToken.CaptionFill];
+  if B.Style.ColoredCaption or (B.Fills[TFmrToken.TabRowFill].MainColor = B.Fills[TFmrToken.CaptionFill].MainColor) then
+    Mix(FBarTheme, TFmrToken.TabRowFill, TFmrToken.CaptionFillInactive, TFmrToken.TabRowFill);
+  Mix(FBarTheme, TFmrToken.TabText, TFmrToken.TabTextInactive, TFmrToken.TabText);
+  if B.Style.AppButton = TFmrAppButtonShape.TextTab then
+    Mix(FBarTheme, TFmrToken.AppButtonText, TFmrToken.TabTextInactive, TFmrToken.AppButtonText);
+  { caption row: the tab row look plus its content dimmed to CaptionTextInactive (title, quick access toolbar,
+    search box, window buttons) }
+  FCaptionTheme.Assign(FBarTheme);
+  Dim := B.Colors[TFmrToken.CaptionTextInactive];
+  Mix(FCaptionTheme, TFmrToken.CaptionText, TFmrToken.CaptionTextInactive, TFmrToken.CaptionText);
+  FCaptionTheme.Fills[TFmrToken.CaptionTextInactive] := FCaptionTheme.Fills[TFmrToken.CaptionText];
+  Glyph := B.Colors[TFmrToken.CaptionButtonGlyph];
+  if B.Style.Family = TFmrThemeFamily.Office2024 then
+    MixColor(FCaptionTheme, TFmrToken.CaptionButtonGlyph, Dim)
+  else
+    MixColor(FCaptionTheme, TFmrToken.CaptionButtonGlyph, FmrWithAlpha(Glyph, 0.45 * TAlphaColorRec(Glyph).A / 255));
+  MixColor(FCaptionTheme, TFmrToken.GlyphTint, Dim);
+  MixColor(FCaptionTheme, TFmrToken.ButtonText, Dim);
+  MixColor(FCaptionTheme, TFmrToken.ButtonArrow, Dim);
+  MixColor(FCaptionTheme, TFmrToken.ToggleSwitchBorder, Dim);
+  MixColor(FCaptionTheme, TFmrToken.ToggleSwitchThumb, Dim);
+  MixColor(FCaptionTheme, TFmrToken.SearchBoxText, Dim);
+  MixColor(FCaptionTheme, TFmrToken.SearchBoxPrompt, Dim);
+  Mix(FCaptionTheme, TFmrToken.SearchBoxFill, TFmrToken.SearchBoxFillInactive, TFmrToken.SearchBoxFill);
+end;
+
+procedure TFmrRibbon.ActivateHandler(const Sender: TObject; const M: TMessage);
+begin
+  if not FDestroying and (M is TFormActivateMessage) and (TFormActivateMessage(M).Value = OwnerForm) then
+    UpdateActiveState;
 end;
 
 function TFmrRibbon.ContextColor(const AGroup: TFmrRibbonContextGroup): TAlphaColor;
@@ -4391,8 +4750,9 @@ var
   I: Integer;
   Caption: string;
   LeftScroll, RightScroll: TFmrSysButtonElement;
-  TotalW: Single;
+  TotalW, TB: Single;
   R: TRectF;
+  V: TFmrItemView;
 begin
   M := FPainter.Metrics;
   H := FTabBar.Height;
@@ -4408,9 +4768,14 @@ begin
     end
     else
     begin
-      B := Max(54, FPainter.TextWidth(FAppButton.DisplayCaption) + 2 * M.TabPaddingH + 6);
+      B := Max(54, FPainter.TextWidth(FAppButton.DisplayCaption, M.EffectiveTabFontSize) + 2 * M.TabPaddingH + 6);
+      if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+        // "File" is a plain tab (Word: its caption 16 dp from the edge, the next tab 23 dp after it)
+        B := Ceil(FPainter.TextWidth(FAppButton.DisplayCaption, M.EffectiveTabFontSize) + 25);
       FAppElement.Bounds := RectF(2, 1, 2 + B, H);
-      X := 2 + B + M.TabSpacing + 2;
+      X := 2 + B + M.TabSpacing;
+      if FTheme.Style.Family <> TFmrThemeFamily.Office2024 then
+        X := X + 2;
     end;
   end;
   RightX := W - 2;
@@ -4430,15 +4795,37 @@ begin
       TFmrSysButtonKind.TabScrollRight:
         RightScroll := E;
     end;
+  // Tab area toolbar (Comments, Share) at the right end, right to left.
+  if FTabToolViews.Count > 0 then
+  begin
+    if FTabSysElements.Count <= 2 then
+      RightX := W - 13
+    else
+      RightX := RightX - 4;
+    TB := H - 6;
+    for I := FTabToolViews.Count - 1 downto 0 do
+    begin
+      V := FTabToolViews[I];
+      if not FTabAreaToolbar.Visible or not V.Link.IsVisible then
+      begin
+        V.Hide;
+        Continue;
+      end;
+      B := V.MeasureWidth(TFmrViewLevel.Small);
+      V.Place(RectF(RightX - B, Round((H - TB) / 2), RightX, Round((H - TB) / 2) + TB), TFmrViewLevel.Small,
+        TFmrLayoutSegment.None);
+      RightX := RightX - B - 4;
+      if V.Link.BeginGroup then
+        RightX := RightX - 6;
+    end;
+  end;
   SetLength(Full, FTabElements.Count);
   SetLength(Mins, FTabElements.Count);
   for I := 0 to FTabElements.Count - 1 do
   begin
     Caption := FmrStripAccel(FTabElements[I].FTab.DisplayCaption);
-    if FTheme.Style.UppercaseTabs then
-      Caption := Caption.ToUpper;
-    Full[I] := Ceil(FPainter.TextWidth(Caption) + 2 * M.TabPaddingH);
-    Mins[I] := Ceil(Min(Full[I], FPainter.TextWidth(Caption) + 10));
+    Full[I] := Ceil(FPainter.TabCaptionWidth(Caption) + 2 * M.TabPaddingH);
+    Mins[I] := Ceil(Min(Full[I], FPainter.TabCaptionWidth(Caption) + 10));
   end;
   Avail := RightX - X - 4;
   Widths := FmrLayoutTabs(Full, Mins, Avail, FTabsFit);
@@ -4554,7 +4941,8 @@ var
   Segs: TList<TRectF>;
   SysKind: TFmrSysButtonKind;
   SysE: TFmrSysButtonElement;
-  SysW: Single;
+  SysW, S, SH, Y, GlyphW: Single;
+  V: TFmrItemView;
 begin
   M := FPainter.Metrics;
   W := FCaptionBar.Width;
@@ -4563,16 +4951,23 @@ begin
   X := 6;
   if IsOrb then
     X := OrbRect(0).Right + 6;
+  // Application icon at the left end (Office: 16 dp from the edge, the window menu on a click).
+  FIconRect := TRectF.Empty;
+  if not IsOrb and not FApplicationIcon.IsEmpty(GetThemeImages) then
+  begin
+    FIconRect := RectF(16, Round(Top + (M.CaptionHeight - 16) / 2), 32, Round(Top + (M.CaptionHeight - 16) / 2) + 16);
+    X := FIconRect.Right + 12;
+  end;
   // Caption buttons from the right: close, maximize, minimize (created in that order). They are real controls: in
   // a right-to-left ribbon they get mirrored bounds (on the left, like Windows).
   RightX := W;
   for Btn in FCaptionBar.FButtons do
   begin
-    RightX := RightX - CaptionButtonWidth;
+    RightX := RightX - M.CaptionButtonWidth;
     if EffectiveRightToLeft then
-      Btn.SetBounds(W - RightX - CaptionButtonWidth, Top, CaptionButtonWidth, M.CaptionHeight)
+      Btn.SetBounds(W - RightX - M.CaptionButtonWidth, Top, M.CaptionButtonWidth, M.CaptionHeight)
     else
-      Btn.SetBounds(RightX, Top, CaptionButtonWidth, M.CaptionHeight);
+      Btn.SetBounds(RightX, Top, M.CaptionButtonWidth, M.CaptionHeight);
   end;
   // Display options, then the "..." of the auto-hidden ribbon, left of the window buttons.
   for SysKind in [TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow] do
@@ -4580,13 +4975,34 @@ begin
       if SysE.Kind = SysKind then
       begin
         if FCaptionBar.FButtons.Count > 0 then
-          SysW := CaptionButtonWidth
+          SysW := M.CaptionButtonWidth
         else
           SysW := Round(M.CaptionHeight + 8);
         RightX := RightX - SysW;
         SysE.Bounds := RectF(RightX, Top, RightX + SysW, CH);
         SysE.Visible := True;
       end;
+  // Caption toolbar (account picture...) left of them, right to left.
+  if FCaptionToolViews.Count > 0 then
+  begin
+    RightX := RightX - 6;
+    S := M.QATButtonSize;
+    for I := FCaptionToolViews.Count - 1 downto 0 do
+    begin
+      V := FCaptionToolViews[I];
+      if not FCaptionToolbar.Visible or not V.Link.IsVisible then
+      begin
+        V.Hide;
+        Continue;
+      end;
+      SysW := V.MeasureWidth(TFmrViewLevel.Small);
+      V.Place(RectF(RightX - SysW, Round(Top + (M.CaptionHeight - S) / 2), RightX,
+        Round(Top + (M.CaptionHeight - S) / 2) + S), TFmrViewLevel.Small, TFmrLayoutSegment.None);
+      RightX := RightX - SysW - 2;
+      if V.Link.BeginGroup then
+        RightX := RightX - 6;
+    end;
+  end;
   // quick access toolbar above the ribbon
   if FQAT.Visible and (FQAT.Position = TFmrQATPosition.AboveRibbon) then
   begin
@@ -4639,7 +5055,10 @@ begin
   // search box
   if FShowSearchBox then
   begin
-    SW := Min(360, Max(150, (RightX - X) * 0.36));
+    SW := Min(M.SearchBoxWidth, Max(150, (RightX - X) * 0.36));
+    SH := M.SearchBoxHeight;
+    if SH <= 0 then
+      SH := M.CaptionHeight - 8;
     SX := Round((W - SW) / 2);
     if SX < X + 30 then
       SX := X + 30;
@@ -4649,13 +5068,19 @@ begin
         SX := Round(FContextHeaders[I].Value.Right + 12);
     if SX + SW > RightX - 8 then
       SW := Max(60, RightX - 8 - SX);
-    FCaptionBar.FSearchRect := RectF(SX, Top + 4, SX + SW, CH - 4);
+    Y := Round(Top + (M.CaptionHeight - SH) / 2);
+    FCaptionBar.FSearchRect := RectF(SX, Y, SX + SW, Y + SH);
+    // The glyph takes the left of the box (wider in Office 2024), the edit the rest.
+    if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+      GlyphW := 38
+    else
+      GlyphW := 24;
     if FCaptionBar.FSearchEdit <> nil then
     begin
       if EffectiveRightToLeft then
-        FCaptionBar.FSearchEdit.SetBounds(W - (SX + 24) - (SW - 28), Top + 4, SW - 28, M.CaptionHeight - 8)
+        FCaptionBar.FSearchEdit.SetBounds(W - (SX + GlyphW) - (SW - GlyphW - 4), Y, SW - GlyphW - 4, SH)
       else
-        FCaptionBar.FSearchEdit.SetBounds(SX + 24, Top + 4, SW - 28, M.CaptionHeight - 8);
+        FCaptionBar.FSearchEdit.SetBounds(SX + GlyphW, Y, SW - GlyphW - 4, SH);
       FCaptionBar.FSearchEdit.Visible := SW > 60;
     end;
     RightX := SX - 8;
@@ -4672,6 +5097,13 @@ begin
     (OwnerForm.BorderStyle = TFmxFormBorderStyle.None)) then
   begin
     TW := FPainter.TextWidth(Title, M.CaptionFontSize) + 16;
+    if FTheme.Style.LeadingTitle and (FContextHeaders = nil) then
+    begin
+      // Office 2024: the title follows the quick access toolbar.
+      if RightX - 4 - (X + 20) > 30 then
+        FCaptionBar.FTitleRect := RectF(X + 20, Top, Min(X + 20 + TW, RightX - 4), CH);
+      Exit;
+    end;
     Free := RectF(X, Top, RightX - 4, CH);
     SetLength(Spans, Length(FContextHeaders));
     for I := 0 to High(FContextHeaders) do
@@ -4722,6 +5154,8 @@ procedure TFmrRibbon.ArrangeBody;
 var
   V: TFmrItemView;
   E: TFmrElement;
+  Card: TRectF;
+  Collapse: TFmrSysButtonElement;
 begin
   FBody.Tracker.Reset;
   for E in FBodyElements do
@@ -4748,6 +5182,16 @@ begin
     ArrangeBodyClassic(GroupAreaRect);
   if FShowDisplayModeButton and not (csDesigning in ComponentState) then
     AddDisplayModeButton(GroupAreaRect);
+  if FShowCollapseButton and FTheme.Style.CollapseInBody then
+  begin
+    // Office 2024: the collapse chevron in the bottom right corner of the card.
+    Card := BodyCardRect;
+    Collapse := TFmrSysButtonElement.Create(FBody);
+    Collapse.FRibbon := Self;
+    Collapse.FKind := TFmrSysButtonKind.CollapseRibbon;
+    Collapse.Bounds := RectF(Card.Right - 30, Card.Bottom - 21, Card.Right - 6, Card.Bottom - 1);
+    FBodyElements.Add(Collapse);
+  end;
   if FKeyTipLevel = TFmrKeyTipLevel.Tab then
     BuildKeyTips(TFmrKeyTipLevel.Tab);
 end;
@@ -4995,6 +5439,8 @@ begin
   end;
   if FAppMenuTracking or FAppMenuCovering or (FApplicationMenu is TControl) then
     UpdateApplicationMenuState;
+  // Popups closed while the window was inactive, a form activated without a message for us...
+  UpdateActiveState;
   if not (csDesigning in ComponentState) then
     for V in FBodyViews.ToArray + FQATViews.ToArray do
       if V.Visible and (V.Item <> nil) and (V.Item.Action <> nil) then
@@ -5044,6 +5490,7 @@ begin
       HideKeyTips;
     if FScreenTips <> nil then
       FScreenTips.Cancel;
+    UpdateActiveState;
   end;
 end;
 
@@ -5068,6 +5515,8 @@ begin
     InvalidateStructure;
     UpdateHeights;
   end;
+  FFrameState := State;
+  UpdateActiveState;
 end;
 
 procedure TFmrRibbon.LanguageHandler(const Sender: TObject; const M: TMessage);

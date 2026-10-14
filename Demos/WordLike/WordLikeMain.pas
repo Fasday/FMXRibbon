@@ -16,13 +16,17 @@ unit WordLikeMain;
 /// tools\GenForm (it builds the form in code with WordLikeBuild.pas and saves it with WriteComponent +
 /// ObjectBinaryToText); this unit only declares the published fields and the event handlers the .fmx refers to.
 ///
+/// The default look is Word 2024: the Office 2024 theme that follows the light/dark mode of Windows ("System"; View
+/// tab > Office Theme, Options page), the Dwm frame with the caption over Mica (Options page: FullNC).
+///
 /// Command line (for screenshots):
-///   /theme=<name> /accent=RRGGBB /lang=ru /frame=fullnc|dwm|ncstrip /backdrop=mica|acrylic /zoom=N /tab=N
+///   /theme=<name>|system /accent=RRGGBB /lang=ru /frame=fullnc|dwm|ncstrip /backdrop=mica|acrylic /zoom=N /tab=N
 ///   /backstage[=N] (open the backstage view on tab N) /select (select a paragraph: contextual tabs)
 ///   /find=<text> /simplified /touch /qatbelow /open=styles|themes|accent|table|shapes|symbols|fontcolor|
 ///   minitoolbar|context|customize|keytips /fresh (ignore saved settings and layout) /nosave
-///   /docdir=<folder> (folder of Save As) /width=N /height=N /dumpfmx=<file> (the loaded form written back to text)
-///   /dump=<file> (TFmrRibbon.DebugDump)
+///   /docdir=<folder> (folder of Save As) /width=N /height=N /pos=X,Y /maximized /dumpfmx=<file> (the loaded form
+///   written back to text) /dump=<file> (TFmrRibbon.DebugDump) /activelook (keep the active caption of a window
+///   started in the background) /topmost
 
 interface
 
@@ -125,6 +129,12 @@ type
     spIndentLeft: TFmrSpinItem;
     spIndentRight: TFmrSpinItem;
     stSelInfo: TFmrStaticItem;
+    chkAutoSave: TFmrCheckItem;
+    btnFormatPainter: TFmrButtonItem;
+    btnThemeLight: TFmrButtonItem;
+    btnThemeDarkGray: TFmrButtonItem;
+    btnThemeDark: TFmrButtonItem;
+    btnThemeSystem: TFmrButtonItem;
     { backstage }
     bsInfo: TFmrBackstageTab;
     bsNew: TFmrBackstageTab;
@@ -167,7 +177,10 @@ type
     spWords: TFmrStatusBarPanel;
     spChars: TFmrStatusBarPanel;
     spLanguage: TFmrStatusBarPanel;
+    spAccessibility: TFmrStatusBarPanel;
     spMessage: TFmrStatusBarPanel;
+    spDisplay: TFmrStatusBarPanel;
+    spFocus: TFmrStatusBarPanel;
     spView: TFmrStatusBarPanel;
     spZoom: TFmrStatusBarPanel;
     { form }
@@ -181,6 +194,12 @@ type
     procedure PrintClick(Sender: TObject);
     procedure UndoClick(Sender: TObject);
     procedure RedoClick(Sender: TObject);
+    procedure UndoAllClick(Sender: TObject);
+    procedure AutoSaveClick(Sender: TObject);
+    /// <summary>Commands of the Word layout the demo only acknowledges in the status bar.</summary>
+    procedure CommandClick(Sender: TObject);
+    procedure FormatPainterClick(Sender: TObject);
+    procedure OfficeThemeClick(Sender: TObject);
     { Home }
     procedure PasteClick(Sender: TObject);
     procedure PasteTextClick(Sender: TObject);
@@ -325,6 +344,19 @@ type
     FNoSave: Boolean;
     FThemeMsgId: TMessageSubscriptionId;
     FStartActions: TStringList;
+    /// <summary>'System' (Office 2024 Light or Dark like the Windows apps) or the name of a theme.</summary>
+    FThemeChoice: string;
+    FSystemLight: Boolean;
+    FTimerTicks: Integer;
+    FFormatPainter: TDocFont;
+    function SystemUsesLightTheme: Boolean;
+    function ResolvedTheme: string;
+    /// <summary>Picks a theme ('System' follows the light or dark mode of Windows).</summary>
+    procedure ChooseTheme(const AChoice: string);
+    /// <summary>Color of automatic (black) text on the page: white on the dark page of Office 2024 Dark.</summary>
+    function AutoTextColor: TAlphaColor;
+    function IsOffice2024: Boolean;
+    function CaptionTransparent: Boolean;
     { state and formatting }
     function CurrentState: TDocState;
     procedure RestoreState(const AState: TDocState);
@@ -394,8 +426,9 @@ implementation
 {$ENDIF}
 
 uses
-  System.IOUtils, System.IniFiles, System.StrUtils, System.Character, FMX.Platform, FMX.Printer,
-  FMR.Ribbon.Views, FMR.Ribbon.Strings, WordLikeData, WordLikeLang;
+  System.IOUtils, System.IniFiles, System.StrUtils, System.Character, {$IFDEF MSWINDOWS}System.Win.Registry,
+  {$ENDIF}FMX.Platform, FMX.Printer, FMR.Ribbon.Views, FMR.Ribbon.Strings, WordLikeData,
+  WordLikeLang;
 
 const
   PointToDp = 96 / 72;
@@ -528,6 +561,12 @@ begin
   Result := Result + sLineBreak + Border('└', '┴', '┘');
 end;
 
+/// <summary>'#RRGGBB' of a color (SVG).</summary>
+function ColorHex(const AColor: TAlphaColor): string;
+begin
+  Result := '#' + IntToHex(AColor and $FFFFFF, 6);
+end;
+
 procedure FillRoundRect(const ACanvas: TCanvas; const ARect: TRectF; const AColor: TAlphaColor;
   const ARadius: Single = 0);
 begin
@@ -556,6 +595,8 @@ begin
   FPageSize := PageSizes[1];
   FPageColor := TAlphaColors.White;
   FDocName := 'Document1';
+  FThemeChoice := 'System';
+  FSystemLight := SystemUsesLightTheme;
   FSettingsDir := TPath.Combine(TPath.GetHomePath, 'FMRWrite');
   FDocDir := TPath.Combine(TPath.GetDocumentsPath, 'FMR Write');
   ParseCommandLine;
@@ -595,9 +636,11 @@ begin
       end;
   end;
 
-  // command line overrides
+  // command line overrides; without them the saved choice or the light/dark mode of Windows
   if FStartActions.Values['theme'] <> '' then
-    ApplyTheme(FStartActions.Values['theme'], FAccent);
+    ChooseTheme(FStartActions.Values['theme'])
+  else if not SameText(Ribbon1.Theme, ResolvedTheme) then
+    ApplyTheme(ResolvedTheme, FAccent);
   if FStartActions.Values['accent'] <> '' then
     ApplyTheme(Ribbon1.Theme, TAlphaColor($FF000000 or Cardinal(StrToIntDef('$' + FStartActions.Values['accent'],
       0))));
@@ -623,6 +666,21 @@ begin
     Width := StrToIntDef(FStartActions.Values['width'], Width);
   if FStartActions.Values['height'] <> '' then
     Height := StrToIntDef(FStartActions.Values['height'], Height);
+  if FStartActions.Values['pos'] <> '' then
+  begin
+    // /pos=X,Y: window position in dp (screenshots of a window placed mostly outside the visible desktop)
+    Position := TFormPosition.Designed;
+    Left := StrToIntDef(FStartActions.Values['pos'].Split([','])[0], Left);
+    Top := StrToIntDef((FStartActions.Values['pos'] + ',').Split([','])[1], Top);
+  end;
+  if FStartActions.IndexOf('maximized') >= 0 then
+    WindowState := TWindowState.wsMaximized;
+  // screenshots of a window started in the background: the active look of the caption row
+  if FStartActions.IndexOf('activelook') >= 0 then
+    Ribbon1.ShowInactiveState := False;
+  // screenshots: on top of other windows (an occluded window is not painted by the Direct2D canvas)
+  if FStartActions.IndexOf('topmost') >= 0 then
+    FormStyle := TFormStyle.StayOnTop;
   if FStartActions.Values['tab'] <> '' then
   begin
     I := StrToIntDef(FStartActions.Values['tab'], 0);
@@ -639,7 +697,7 @@ begin
   ResetHistory;
   UpdateCaption;
   UpdateStatus;
-  SetMessage(L('Ready', 'Готово'));
+  SetMessage('');
   if FStartActions.Count > 0 then
     TThread.ForceQueue(nil, RunStartActions, 900);
 end;
@@ -1066,8 +1124,8 @@ begin
     Memo.TextSettings.Font.Family := AFont.Family;
     Memo.TextSettings.Font.Size := Max(4, AFont.Size * PointToDp * FZoom / 100);
     Memo.TextSettings.Font.Style := AFont.Style;
-    if (AFont.Color = TAlphaColors.Null) or (AFont.Color = 0) then
-      Memo.TextSettings.FontColor := TAlphaColors.Black
+    if (AFont.Color = TAlphaColors.Null) or (AFont.Color = 0) or (AFont.Color = TAlphaColors.Black) then
+      Memo.TextSettings.FontColor := AutoTextColor
     else
       Memo.TextSettings.FontColor := AFont.Color;
     Memo.TextSettings.HorzAlign := FAlign;
@@ -1080,7 +1138,11 @@ procedure TWordLikeForm.UpdateFormatUI;
 begin
   FUpdatingUI := True;
   try
-    cbFontName.Text := FFont.Family;
+    // Word shows the theme font of the body text this way.
+    if SameText(FFont.Family, 'Aptos') then
+      cbFontName.Text := L('Aptos (Body)', 'Aptos (Основной текст)')
+    else
+      cbFontName.Text := FFont.Family;
     cbFontSize.Text := FormatFloat('0.#', FFont.Size);
     btnBold.Down := TFontStyle.fsBold in FFont.Style;
     btnItalic.Down := TFontStyle.fsItalic in FFont.Style;
@@ -1129,6 +1191,9 @@ begin
   if FUpdatingUI or (Trim(cbFontName.Text) = '') then
     Exit;
   FFont.Family := Trim(cbFontName.Text);
+  // "Aptos (Body)": the family before the bracket
+  if FFont.Family.Contains(' (') then
+    FFont.Family := FFont.Family.Substring(0, FFont.Family.IndexOf(' ('));
   ApplyFormat;
   SetMessage(L('Font: ', 'Шрифт: ') + FFont.Family);
 end;
@@ -1423,33 +1488,47 @@ procedure TWordLikeForm.StylesDrawItem(Sender: TObject; const ACanvas: TCanvas; 
   var AHandled: Boolean);
 var
   St: TWriteStyle;
-  R: TRectF;
-  TextColor, SampleColor: TAlphaColor;
+  Cell, R: TRectF;
+  SampleColor: TAlphaColor;
+  Caption: string;
+  State: TCanvasSaveState;
+  Align: TTextAlign;
 begin
+  // Like the quick styles of Word 2024: a white cell with a sample of the style and its name below it, in every
+  // theme (the selection frame around the cell is drawn by the gallery).
   St := WriteStyles[EnsureRange(AEntry.Tag, 0, High(WriteStyles))];
-  if TFmrGalleryDrawState.InRibbon in AState then
-    TextColor := APainter.ButtonTextColor(TFmrPartState.Normal)
-  else
-    TextColor := APainter.Theme.Colors[TFmrToken.MenuItemText];
+  Cell := ARect;
+  Cell.Inflate(-3, -3);
+  ACanvas.Fill.Kind := TBrushKind.Solid;
+  ACanvas.Fill.Color := TAlphaColors.White;
+  ACanvas.FillRect(Cell, 0, 0, [], 1);
   SampleColor := St.Color;
   if SampleColor = 0 then
-    SampleColor := TextColor
-  else if APainter.Theme.Style.Dark then
-    SampleColor := FmrLighten(SampleColor, 0.45);
-  R := ARect;
-  R.Inflate(-3, -2);
-  ACanvas.Font.Family := St.Family;
-  ACanvas.Font.Size := Min(St.Size + 2, 20);
-  ACanvas.Font.Style := St.Style;
-  ACanvas.Fill.Kind := TBrushKind.Solid;
-  ACanvas.Fill.Color := SampleColor;
-  ACanvas.FillText(RectF(R.Left, R.Top, R.Right, R.Bottom - 16), St.Sample, False, 1, [], TTextAlign.Center,
-    TTextAlign.Center);
-  APainter.TextEx(ACanvas, RectF(R.Left, R.Bottom - 17, R.Right, R.Bottom), AEntry.Caption, TextColor,
-    TTextAlign.Center, TTextAlign.Center, APainter.Metrics.FontSize - 1, False, False);
+    SampleColor := TAlphaColors.Black;
+  State := ACanvas.SaveState;
+  try
+    ACanvas.IntersectClipRect(Cell);
+    ACanvas.Font.Family := St.Family;
+    ACanvas.Font.Size := Min(St.Size * 1.25, 32);
+    ACanvas.Font.Style := St.Style;
+    ACanvas.Fill.Color := SampleColor;
+    R := RectF(Cell.Left + 2, Cell.Top + 1, Cell.Right + 40, Cell.Bottom - 15);
+    ACanvas.FillText(R, L('AaBbCcDd', 'АаБбВвГг'), False, 1, [], TTextAlign.Leading, TTextAlign.Center);
+  finally
+    ACanvas.RestoreState(State);
+  end;
+  Caption := AEntry.Caption;
+  if St.Para then
+    Caption := '¶ ' + Caption;
+  // centered when it fits, cut with an ellipsis otherwise (Word)
+  if APainter.TextWidth(Caption, APainter.Metrics.FontSize - 0.5) <= Cell.Width - 2 then
+    Align := TTextAlign.Center
+  else
+    Align := TTextAlign.Leading;
+  APainter.TextEx(ACanvas, RectF(Cell.Left + 1, Cell.Bottom - 16, Cell.Right - 1, Cell.Bottom), Caption, $FF595959,
+    Align, TTextAlign.Center, APainter.Metrics.FontSize - 0.5, False, False);
   AHandled := True;
 end;
-
 procedure TWordLikeForm.StylesHotTrack(Sender: TObject; const AEntry: TFmrGalleryEntry);
 begin
   // Live preview: the style under the mouse is shown on the document; nil restores the applied format.
@@ -1927,7 +2006,10 @@ begin
       W := AreaW - 32;
     end;
     X := Round((AreaW - W) / 2);
-    Y := Top + 20;
+    if IsOffice2024 then
+      Y := Top + 27
+    else
+      Y := Top + 20;
     // a whole sheet when it fits (small zoom), otherwise the page runs below the bottom edge (the memo scrolls)
     H := S.cy * Z * K;
     if H > AreaH - Y - 20 then
@@ -1935,6 +2017,9 @@ begin
     Page.SetBounds(X, Y, W, H);
     if FViewMode = TViewMode.Read then
       Page.Fill.Color := $FFF8F1E3
+    else if AutoTextColor = TAlphaColors.White then
+      // Office 2024 Dark: a dark page with light text, like the dark mode of Word
+      Page.Fill.Color := $FF262626
     else
       Page.Fill.Color := FPageColor;
     Page.Stroke.Kind := TBrushKind.Solid;
@@ -1947,8 +2032,15 @@ begin
     begin
       Page.Stroke.Thickness := 1;
       Page.Stroke.Color := $FFD4D4D4;
+      // Word 2024: a thin gray border instead of a shadow
+      if IsOffice2024 then
+        if Ribbon1.Painter.Theme.Style.Dark or (FmrLuminance(Ribbon1.Painter.Theme.Colors[TFmrToken.CaptionFill]) < 0.2)
+        then
+          Page.Stroke.Color := $FF8C8C8C
+        else
+          Page.Stroke.Color := $FFC6C6C6;
     end;
-    PageShadow.Enabled := True;
+    PageShadow.Enabled := not IsOffice2024;
     Memo.Margins.Rect := RectF(M.Left * Z * K, M.Top * Z, M.Right * Z * K, 4);
   end;
   Watermark.TextSettings.Font.Size := 88 * Z;
@@ -2066,9 +2158,10 @@ end;
 procedure TWordLikeForm.FillThemeGallery;
 const
   FamilyNames: array [TFmrThemeFamily] of string = ('Office 2007', 'Office 2010', 'Office 2013', 'Office 2016',
-    'Office 365', 'Windows 11');
-  FamilyOrder: array [0..5] of TFmrThemeFamily = (TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent,
-    TFmrThemeFamily.Office2016, TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2010, TFmrThemeFamily.Office2007);
+    'Office 365', 'Windows 11', 'Office 2024');
+  FamilyOrder: array [0..6] of TFmrThemeFamily = (TFmrThemeFamily.Office2024, TFmrThemeFamily.Office365,
+    TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2016, TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2010,
+    TFmrThemeFamily.Office2007);
 var
   Family: TFmrThemeFamily;
   G: TFmrGalleryGroup;
@@ -2152,7 +2245,7 @@ end;
 
 procedure TWordLikeForm.ThemeItemClick(Sender: TObject; const AEntry: TFmrGalleryEntry);
 begin
-  ApplyTheme(AEntry.Hint, FAccent);
+  ChooseTheme(AEntry.Hint);
   SetMessage(L('Theme: ', 'Тема: ') + AEntry.Caption);
 end;
 
@@ -2214,12 +2307,34 @@ begin
   if T = nil then
     Exit;
   Dark := T.Style.Dark or (FmrLuminance(T.Colors[TFmrToken.BodyFill]) < 0.3);
-  if Dark then
+  DocArea.Fill.Kind := TBrushKind.Solid;
+  if T.Style.Family = TFmrThemeFamily.Office2024 then
+  begin
+    // Word 2024: the document lies on the backdrop (Mica) or on the flat color of the caption.
+    if CaptionTransparent then
+    begin
+      // the backdrop shows through (Dark Gray lays a nearly opaque gray over it)
+      if T.Fills[TFmrToken.CaptionBackdropFill].IsVisible then
+        DocArea.Fill.Color := T.Colors[TFmrToken.CaptionBackdropFill]
+      else
+        DocArea.Fill.Kind := TBrushKind.None;
+    end
+    else
+      DocArea.Fill.Color := T.Colors[TFmrToken.CaptionFill];
+  end
+  else if Dark then
     DocArea.Fill.Color := FmrDarken(T.Colors[TFmrToken.BodyFill], 0.35)
   else if T.Style.Family in [TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010] then
     DocArea.Fill.Color := FmrBlend(T.Colors[TFmrToken.BodyFill], $FFB0B0B0, 0.35)
   else
     DocArea.Fill.Color := $FFE6E6E6;
+  // Office 2024: the colored Paste icon of Word (an orange clipboard under a page in the colors of the theme).
+  if T.Style.Family = TFmrThemeFamily.Office2024 then
+    BarManager1.ItemByName('btnPaste').LargeGlyph.SvgSource := Format(SvgPasteFmt,
+      [ColorHex(T.Colors[TFmrToken.GlyphTint]), ColorHex(T.Colors[TFmrToken.BodyFill])])
+  else
+    BarManager1.ItemByName('btnPaste').LargeGlyph.SvgSource := '';
+  ApplyFormat;
   FindPanel.Fill.Color := T.Colors[TFmrToken.StatusBarFill];
   FindPanel.Stroke.Color := T.Colors[TFmrToken.StatusBarSeparator];
   TextColor := T.Colors[TFmrToken.StatusBarText];
@@ -2233,6 +2348,139 @@ begin
   LayoutPage;
 end;
 
+function TWordLikeForm.SystemUsesLightTheme: Boolean;
+{$IFDEF MSWINDOWS}
+var
+  Reg: TRegistry;
+{$ENDIF}
+begin
+  Result := True;
+  {$IFDEF MSWINDOWS}
+  // TRegistry starts at HKEY_CURRENT_USER.
+  Reg := TRegistry.Create;
+  try
+    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Themes\Personalize') and
+      Reg.ValueExists('AppsUseLightTheme') then
+      Result := Reg.ReadInteger('AppsUseLightTheme') <> 0;
+  finally
+    Reg.Free;
+  end;
+  {$ENDIF}
+end;
+
+function TWordLikeForm.ResolvedTheme: string;
+begin
+  if SameText(FThemeChoice, 'System') or not TFmrTheme.ThemeExists(FThemeChoice) then
+  begin
+    if FSystemLight then
+      Result := 'Office2024Light'
+    else
+      Result := 'Office2024Dark';
+  end
+  else
+    Result := FThemeChoice;
+end;
+
+procedure TWordLikeForm.ChooseTheme(const AChoice: string);
+begin
+  if SameText(AChoice, 'System') then
+  begin
+    FThemeChoice := 'System';
+    FSystemLight := SystemUsesLightTheme;
+  end
+  else if TFmrTheme.ThemeExists(AChoice) then
+    FThemeChoice := AChoice
+  else
+    Exit;
+  ApplyTheme(ResolvedTheme, FAccent);
+end;
+
+procedure TWordLikeForm.OfficeThemeClick(Sender: TObject);
+begin
+  if (FUndo = nil) or FUpdatingUI then
+    Exit;
+  case TComponent(Sender).Tag of
+    0: ChooseTheme('Office2024Light');
+    1: ChooseTheme('Office2024DarkGray');
+    2: ChooseTheme('Office2024Dark');
+  else
+    ChooseTheme('System');
+  end;
+  SetMessage(L('Theme: ', 'Тема: ') + TFmrTheme.ThemeDisplayName(Ribbon1.Theme));
+end;
+
+function TWordLikeForm.IsOffice2024: Boolean;
+begin
+  Result := (Ribbon1.Painter <> nil) and (Ribbon1.Painter.Theme.Style.Family = TFmrThemeFamily.Office2024);
+end;
+
+function TWordLikeForm.CaptionTransparent: Boolean;
+begin
+  // Dwm frame with a system backdrop: what the window leaves transparent shows Mica.
+  Result := (Frame1.Mode = TFmrFrameMode.Dwm) and (Frame1.Backdrop <> TFmrFrameBackdrop.None) and Frame1.Hooked;
+end;
+
+function TWordLikeForm.AutoTextColor: TAlphaColor;
+begin
+  if IsOffice2024 and Ribbon1.Painter.Theme.Style.Dark and (FPageColor = TAlphaColors.White) and
+    (FViewMode <> TViewMode.Read) then
+    Result := TAlphaColors.White
+  else
+    Result := TAlphaColors.Black;
+end;
+
+procedure TWordLikeForm.CommandClick(Sender: TObject);
+var
+  S: string;
+begin
+  if Sender is TFmrBarItem then
+    S := FmrStripAccel(TFmrBarItem(Sender).Caption)
+  else
+    S := '';
+  if (Sender is TFmrBarItem) and (TFmrBarItem(Sender).ScreenTip.Header <> '') and (Length(S) < 3) then
+    S := TFmrBarItem(Sender).ScreenTip.Header;
+  SetMessage(L('Command: ', 'Команда: ') + S);
+end;
+
+procedure TWordLikeForm.AutoSaveClick(Sender: TObject);
+begin
+  if FUndo = nil then
+    Exit;
+  if chkAutoSave.Checked then
+  begin
+    SetMessage(L('AutoSave is on', 'Автосохранение включено'));
+    if FFileName <> '' then
+      SaveToFile(FFileName);
+  end
+  else
+    SetMessage(L('AutoSave is off', 'Автосохранение выключено'));
+end;
+
+procedure TWordLikeForm.FormatPainterClick(Sender: TObject);
+begin
+  if FUndo = nil then
+    Exit;
+  // The format of the text is taken now and applied by the next click (the demo has one format per document).
+  if btnFormatPainter.Down then
+  begin
+    FFormatPainter := FFont;
+    SetMessage(L('Format Painter: click again to apply the format', 'Формат по образцу: щелкните еще раз'));
+  end
+  else
+  begin
+    FFont := FFormatPainter;
+    ApplyFormat;
+    UpdateFormatUI;
+    SetMessage(L('Format applied', 'Формат применен'));
+  end;
+end;
+
+procedure TWordLikeForm.UndoAllClick(Sender: TObject);
+begin
+  while FUndo.Count > 0 do
+    UndoClick(nil);
+end;
+
 procedure TWordLikeForm.FillOptionCombos;
 var
   I: Integer;
@@ -2240,6 +2488,9 @@ begin
   cbOptTheme.BeginUpdate;
   try
     cbOptTheme.Items.Clear;
+    // First: like Word, the light or dark mode of Windows (Office 2024 Light / Dark).
+    cbOptTheme.Items.Add(L('Use system setting (Office 2024 Light / Dark)',
+      'Использовать системный параметр (Office 2024 светлая / черная)'));
     for I := 0 to High(FThemeNames) do
       cbOptTheme.Items.Add(TFmrTheme.ThemeDisplayName(FThemeNames[I]));
   finally
@@ -2249,10 +2500,10 @@ begin
   for I := 0 to High(WriteAccents) do
     cbOptAccent.Items.Add(L(WriteAccents[I].Name, WriteAccents[I].NameRu));
   cbOptFrame.Items.Clear;
-  cbOptFrame.Items.Add(L('FullNC - caption and tabs in the non-client area',
-    'FullNC - заголовок и вкладки в неклиентской области'));
-  cbOptFrame.Items.Add(L('Dwm - caption in the client area (Mica/Acrylic)',
-    'Dwm - заголовок в клиентской области (Mica/Acrylic)'));
+  cbOptFrame.Items.Add(L('Real non-client area (FullNC): caption and tabs in the non-client area',
+    'Настоящая неклиентская область (FullNC): заголовок и вкладки в NC-области'));
+  cbOptFrame.Items.Add(L('Mica (Dwm): caption over the Mica backdrop, like Word',
+    'Mica (Dwm): заголовок поверх подложки Mica, как в Word'));
   cbOptFrame.Items.Add(L('NCStrip - system title bar, tabs below it',
     'NCStrip - системный заголовок, вкладки под ним'));
   cbOptBackdrop.Items.Clear;
@@ -2279,7 +2530,25 @@ begin
     Exit;
   FUpdatingUI := True;
   try
-    cbOptTheme.ItemIndex := IndexText(Ribbon1.Theme, FThemeNames);
+    if SameText(FThemeChoice, 'System') then
+      cbOptTheme.ItemIndex := 0
+    else
+      cbOptTheme.ItemIndex := IndexText(Ribbon1.Theme, FThemeNames) + 1;
+    if SameText(FThemeChoice, 'System') then
+      btnThemeSystem.Down := True
+    else if SameText(FThemeChoice, 'Office2024Light') then
+      btnThemeLight.Down := True
+    else if SameText(FThemeChoice, 'Office2024DarkGray') then
+      btnThemeDarkGray.Down := True
+    else if SameText(FThemeChoice, 'Office2024Dark') then
+      btnThemeDark.Down := True
+    else
+    begin
+      btnThemeLight.Down := False;
+      btnThemeDarkGray.Down := False;
+      btnThemeDark.Down := False;
+      btnThemeSystem.Down := False;
+    end;
     cbOptAccent.ItemIndex := 0;
     for I := 1 to High(WriteAccents) do
       if WriteAccents[I].Color = FAccent then
@@ -2323,7 +2592,10 @@ begin
   if (AIndex < 0) or (AIndex > High(FrameModes)) then
     Exit;
   if FrameModes[AIndex] <> TFmrFrameMode.Dwm then
-    Frame1.Backdrop := TFmrFrameBackdrop.None;
+    Frame1.Backdrop := TFmrFrameBackdrop.None
+  else if Frame1.Backdrop = TFmrFrameBackdrop.None then
+    // the Dwm mode of the demo is the Word look: the caption over Mica
+    Frame1.Backdrop := TFmrFrameBackdrop.Mica;
   Frame1.Mode := FrameModes[AIndex];
 end;
 
@@ -2339,16 +2611,25 @@ begin
   if I < 0 then
     Exit;
   if Sender = cbOptTheme then
-    ApplyTheme(FThemeNames[I], FAccent)
+  begin
+    if I = 0 then
+      ChooseTheme('System')
+    else
+      ChooseTheme(FThemeNames[I - 1]);
+  end
   else if Sender = cbOptAccent then
     ApplyTheme(Ribbon1.Theme, WriteAccents[I].Color)
   else if Sender = cbOptFrame then
-    SetFrameMode(I)
+  begin
+    SetFrameMode(I);
+    ApplyThemeColors;
+  end
   else if Sender = cbOptBackdrop then
   begin
     if I > 0 then
       SetFrameMode(1);
     Frame1.Backdrop := Backdrops[I];
+    ApplyThemeColors;
   end
   else if Sender = cbOptLanguage then
     SetLanguage(IfThen(I = 1, 'ru', 'en'));
@@ -2588,7 +2869,7 @@ begin
     Ribbon1.EndStructureUpdate;
     BarManager1.EndUpdate;
   end;
-  spLanguage.Text := L('English (United States)', 'Русский (Россия)');
+  spLanguage.Text := L('English (United States)', 'русский');
   FillRecent;
   FUpdatingUI := True;
   try
@@ -2619,7 +2900,20 @@ begin
 end;
 
 procedure TWordLikeForm.UpdateCaption;
+var
+  N: string;
 begin
+  // A new unsaved document is named in the language of the interface (Document1 / Документ1).
+  if FFileName = '' then
+  begin
+    N := '';
+    if FDocName.StartsWith('Document') then
+      N := FDocName.Substring(Length('Document'))
+    else if FDocName.StartsWith('Документ') then
+      N := FDocName.Substring(Length('Документ'));
+    if (N <> '') and (StrToIntDef(N, -1) >= 0) then
+      FDocName := L('Document', 'Документ') + N;
+  end;
   Caption := FDocName + ' - FMR Write';
 end;
 
@@ -2633,7 +2927,7 @@ begin
   Pages := Max(1, (Lines + 39) div 40);
   Line := Memo.CaretPosition.Line;
   spPage.Text := Format(L('Page %d of %d', 'Страница %d из %d'), [Min(Pages, Line div 40 + 1), Pages]);
-  spWords.Text := Format(L('%d words', 'Слов: %d'), [WordCount(S)]);
+  spWords.Text := Format(L('%d words', 'Число слов: %d'), [WordCount(S)]);
   spChars.Text := Format(L('%d characters', 'Знаков: %d'), [Length(S.Replace(sLineBreak, ''))]);
   FShownVersion := FTextVersion;
 end;
@@ -2654,12 +2948,22 @@ var
 begin
   if FUndo = nil then
     Exit;
+  // "Use system setting": follow a switch of the light/dark mode of Windows (checked every 2 s).
+  Inc(FTimerTicks);
+  if (FTimerTicks mod 13 = 0) and SameText(FThemeChoice, 'System') and (SystemUsesLightTheme <> FSystemLight) then
+    ChooseTheme('System');
   if BackstageView1.IsOpen then
     Exit;
   // Contextual tabs follow the selection of the document (Office shows Picture Tools the same way).
   HasSelection := Memo.SelLength > 0;
   if ctxSelection.Visible <> HasSelection then
     ctxSelection.Visible := HasSelection;
+  // Cut and Copy need a selection (Word disables them).
+  if BarManager1.ItemByName('btnCut').Enabled <> HasSelection then
+  begin
+    BarManager1.ItemByName('btnCut').Enabled := HasSelection;
+    BarManager1.ItemByName('btnCopy').Enabled := HasSelection;
+  end;
   Key := Format('%d:%d:%d', [Memo.SelStart, Memo.SelLength, FTextVersion]);
   if HasSelection and (Key <> FLastSelKey) then
     UpdateSelectionInfo;
@@ -3085,13 +3389,15 @@ begin
   Ini := TMemIniFile.Create(TPath.Combine(FSettingsDir, 'settings.ini'), TEncoding.UTF8);
   try
     FAccent := TAlphaColor(StrToInt64Def('$' + Ini.ReadString('Window', 'Accent', '0'), 0));
-    S := Ini.ReadString('Window', 'Theme', Ribbon1.Theme);
-    if TFmrTheme.ThemeExists(S) then
-      ApplyTheme(S, FAccent);
+    // Keys of the Word 2024 version: the older Theme/Frame keys (Office 365, FullNC) are not taken over.
+    S := Ini.ReadString('Window', 'Theme2024', 'System');
+    if SameText(S, 'System') or TFmrTheme.ThemeExists(S) then
+      FThemeChoice := S;
+    ApplyTheme(ResolvedTheme, FAccent);
     SetLanguage(Ini.ReadString('Window', 'Language', 'en'));
-    SetFrameMode(Ini.ReadInteger('Window', 'Frame', 0));
-    I := Ini.ReadInteger('Window', 'Backdrop', 0);
-    if (I > 0) and (I <= High(Backdrops)) and (Frame1.Mode = TFmrFrameMode.Dwm) then
+    SetFrameMode(Ini.ReadInteger('Window', 'Frame2024', 1));
+    I := Ini.ReadInteger('Window', 'Backdrop2024', 1);
+    if (I >= 0) and (I <= High(Backdrops)) and (Frame1.Mode = TFmrFrameMode.Dwm) then
       Frame1.Backdrop := Backdrops[I];
     FZoom := EnsureRange(Ini.ReadInteger('Window', 'Zoom', 100), 10, 500);
     FRecent.Clear;
@@ -3114,11 +3420,11 @@ var
 begin
   Ini := TMemIniFile.Create(TPath.Combine(FSettingsDir, 'settings.ini'), TEncoding.UTF8);
   try
-    Ini.WriteString('Window', 'Theme', Ribbon1.Theme);
+    Ini.WriteString('Window', 'Theme2024', FThemeChoice);
     Ini.WriteString('Window', 'Accent', IntToHex(FAccent, 8));
     Ini.WriteString('Window', 'Language', FLanguage);
-    Ini.WriteInteger('Window', 'Frame', Max(0, cbOptFrame.ItemIndex));
-    Ini.WriteInteger('Window', 'Backdrop', Max(0, cbOptBackdrop.ItemIndex));
+    Ini.WriteInteger('Window', 'Frame2024', Max(0, cbOptFrame.ItemIndex));
+    Ini.WriteInteger('Window', 'Backdrop2024', Max(0, cbOptBackdrop.ItemIndex));
     Ini.WriteInteger('Window', 'Zoom', FZoom);
     Ini.EraseSection('Recent');
     for I := 0 to FRecent.Count - 1 do

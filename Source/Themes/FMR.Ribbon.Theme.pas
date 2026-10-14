@@ -26,14 +26,15 @@ type
   /// <summary>Every color or fill a ribbon part is painted with.</summary>
   TFmrToken = (
     { window frame and caption }
-    CaptionFill, CaptionFillInactive, CaptionText, CaptionTextInactive, CaptionButtonGlyph, CaptionButtonHotFill,
+    CaptionFill, CaptionFillInactive, CaptionBackdropFill, CaptionText, CaptionTextInactive, CaptionButtonGlyph,
+    CaptionButtonHotFill,
     CaptionButtonPressedFill, CloseButtonHotFill, CloseButtonPressedFill, CloseButtonHotGlyph, FrameBorder,
     FrameBorderInactive,
     { application button }
     AppButtonFill, AppButtonHotFill, AppButtonPressedFill, AppButtonText, AppButtonBorder,
     { tabs }
-    TabRowFill, TabText, TabTextHot, TabTextActive, TabTextDisabled, TabHotFill, TabActiveFill, TabActiveBorder,
-    TabActiveIndicator, TabSeparator,
+    TabRowFill, TabText, TabTextHot, TabTextActive, TabTextDisabled, TabTextInactive, TabHotFill, TabActiveFill,
+    TabActiveBorder, TabActiveIndicator, TabSeparator,
     { body and groups }
     BodyFill, BodyBorder, BodyShadow, GroupFill, GroupHotFill, GroupBorder, GroupCaptionFill, GroupCaptionText,
     GroupSeparator, GroupLauncherGlyph, GroupCollapsedFill, GroupCollapsedHotFill,
@@ -63,9 +64,12 @@ type
     { status bar }
     StatusBarFill, StatusBarText, StatusBarSeparator, StatusBarItemHotFill,
     { search box in the caption }
-    SearchBoxFill, SearchBoxHotFill, SearchBoxBorder, SearchBoxText, SearchBoxPrompt,
+    SearchBoxFill, SearchBoxHotFill, SearchBoxFillInactive, SearchBoxBorder, SearchBoxText, SearchBoxPrompt,
     { mini toolbar and radial menu }
     MiniToolbarFill, MiniToolbarBorder, RadialFill, RadialBorder, RadialSectorHotFill, RadialText,
+    { accent filled "primary" buttons (Office "Share"), toggle switches }
+    PrimaryButtonFill, PrimaryButtonHotFill, PrimaryButtonPressedFill, PrimaryButtonText, ToggleSwitchFill,
+    ToggleSwitchBorder, ToggleSwitchThumb, ToggleSwitchThumbOn,
     { misc }
     Accent, FocusBorder);
 
@@ -95,7 +99,7 @@ type
     function MainColor: TAlphaColor;
   end;
 
-  TFmrThemeFamily = (Office2007, Office2010, Office2013, Office2016, Office365, Fluent);
+  TFmrThemeFamily = (Office2007, Office2010, Office2013, Office2016, Office365, Fluent, Office2024);
 
   TFmrTabShape = (
     /// <summary>Office 2007: rounded top corners, glass fill.</summary>
@@ -137,6 +141,18 @@ type
     UppercaseTabs: Boolean;
     /// <summary>Gradients with a glass highlight (Office 2007).</summary>
     Glossy: Boolean;
+    /// <summary>Drop-down and scroll arrows are thin stroked chevrons instead of filled triangles (Office 2024).
+    /// </summary>
+    ChevronArrows: Boolean;
+    /// <summary>The caption of the active tab is bold; tabs are as wide as their bold caption (Office 2024).
+    /// </summary>
+    BoldActiveTab: Boolean;
+    /// <summary>The window title follows the quick access toolbar instead of being centered (Office 2024).
+    /// </summary>
+    LeadingTitle: Boolean;
+    /// <summary>The collapse button is a chevron in the bottom right corner of the body instead of a button of the
+    /// tab row (Office 2024).</summary>
+    CollapseInBody: Boolean;
   end;
 
   /// <summary>Sizes in dp at 100 % scale (FMX scales them).</summary>
@@ -178,6 +194,29 @@ type
     StatusBarHeight: Single;
     /// <summary>Multiplier of interactive sizes in touch mode.</summary>
     TouchScale: Single;
+    /// <summary>Font size of the tab captions; 0 = FontSize.</summary>
+    TabFontSize: Single;
+    /// <summary>Thickness of the accent line under the active tab (Underline tabs) and its distance from the bottom
+    /// of the tab row.</summary>
+    TabIndicatorHeight: Single;
+    TabIndicatorOffset: Single;
+    /// <summary>Width of the window buttons (minimize, maximize, close) drawn by the ribbon.</summary>
+    CaptionButtonWidth: Single;
+    /// <summary>Largest width of the search box in the caption row; its height (0 = caption height - 8).</summary>
+    SearchBoxWidth: Single;
+    SearchBoxHeight: Single;
+    /// <summary>Largest space between the rows of a column with fewer rows than the content holds (the rows are
+    /// spread over the content height up to this gap, then top-aligned); 0 = no limit.</summary>
+    MaxRowGap: Single;
+    /// <summary>Font size of the status bar; 0 = FontSize.</summary>
+    StatusBarFontSize: Single;
+    /// <summary>Distance of the vertical separator lines between groups from the top and the bottom of the group.
+    /// </summary>
+    GroupSeparatorInsetTop: Single;
+    GroupSeparatorInsetBottom: Single;
+    /// <summary>Effective sizes: the size field, or the size it falls back to when it is 0.</summary>
+    function EffectiveTabFontSize: Single;
+    function EffectiveStatusBarFontSize: Single;
     /// <summary>Body height (content + caption + paddings) of the classic layout.</summary>
     function BodyHeight: Single;
   end;
@@ -264,12 +303,14 @@ const
 
   { well-known accent colors (Office applications) }
   FmrAccentWord = TAlphaColor($FF2B579A);
-  FmrAccentExcel = TAlphaColor($FF217346);
-  FmrAccentPowerPoint = TAlphaColor($FFB7472A);
+  FmrAccentExcel = TAlphaColor($FF107C41);
+  FmrAccentPowerPoint = TAlphaColor($FFC43E1C);
   FmrAccentOutlook = TAlphaColor($FF0072C6);
   FmrAccentOneNote = TAlphaColor($FF80397B);
   FmrAccentAccess = TAlphaColor($FFA4373A);
   FmrAccentFluent = TAlphaColor($FF0067C0);
+  /// <summary>Word blue of the Microsoft 365 / Office 2024 look (default accent of the Office 2024 themes).</summary>
+  FmrAccentWord2024 = TAlphaColor($FF185ABD);
 
 { color helpers }
 
@@ -282,6 +323,10 @@ function FmrWithAlpha(const AColor: TAlphaColor; const AAlpha: Single): TAlphaCo
 function FmrLuminance(const AColor: TAlphaColor): Single;
 /// <summary>Black or white, whichever reads better on ABackground.</summary>
 function FmrContrastText(const ABackground: TAlphaColor): TAlphaColor;
+/// <summary>A lighter shade of a brand color for dark backgrounds, like the color ramps of Microsoft 365: ALevel 1
+/// (Word #185ABD -> #598FEC), 2 (-> #82ABF1), 3 (-> #AEC6F0). Fixed OKLCH lightness per level, the hue of the
+/// accent, its chroma limited per level.</summary>
+function FmrAccentShade(const AAccent: TAlphaColor; const ALevel: Integer): TAlphaColor;
 
 implementation
 
@@ -347,6 +392,68 @@ begin
     Result := TAlphaColors.White
   else
     Result := TAlphaColor($FF1F1F1F);
+end;
+
+function FmrAccentShade(const AAccent: TAlphaColor; const ALevel: Integer): TAlphaColor;
+const
+  // OKLCH lightness and largest chroma of each level (fitted to the Word and Excel ramps)
+  LevelL: array [1..3] of Single = (0.656, 0.740, 0.828);
+  LevelC: array [1..3] of Single = (0.150, 0.112, 0.068);
+
+  function ToLinear(const V: Byte): Double;
+  var
+    C: Double;
+  begin
+    C := V / 255;
+    if C <= 0.04045 then
+      Result := C / 12.92
+    else
+      Result := Power((C + 0.055) / 1.055, 2.4);
+  end;
+
+  function ToByte(const V: Double): Byte;
+  var
+    C: Double;
+  begin
+    if V <= 0.0031308 then
+      C := 12.92 * V
+    else
+      C := 1.055 * Power(V, 1 / 2.4) - 0.055;
+    Result := Round(EnsureRange(C, 0, 1) * 255);
+  end;
+
+var
+  Src, Res: TAlphaColorRec;
+  R, G, B, L, M, S, A, BB, Chroma, Hue: Double;
+  Level: Integer;
+begin
+  Level := EnsureRange(ALevel, 1, 3);
+  Src := TAlphaColorRec(AAccent);
+  R := ToLinear(Src.R);
+  G := ToLinear(Src.G);
+  B := ToLinear(Src.B);
+  L := Power(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B, 1 / 3);
+  M := Power(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B, 1 / 3);
+  S := Power(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B, 1 / 3);
+  A := 1.9779984951 * L - 2.4285922050 * M + 0.4505937099 * S;
+  BB := 0.0259040371 * L + 0.7827717662 * M - 0.8086757660 * S;
+  Chroma := Min(Sqrt(A * A + BB * BB), LevelC[Level]);
+  Hue := ArcTan2(BB, A);
+  A := Chroma * Cos(Hue);
+  BB := Chroma * Sin(Hue);
+  L := LevelL[Level];
+  // OKLab -> linear sRGB
+  R := L + 0.3963377774 * A + 0.2158037573 * BB;
+  G := L - 0.1055613458 * A - 0.0638541728 * BB;
+  B := L - 0.0894841775 * A - 1.2914855480 * BB;
+  R := R * R * R;
+  G := G * G * G;
+  B := B * B * B;
+  Res.A := Src.A;
+  Res.R := ToByte(4.0767416621 * R - 3.3077115913 * G + 0.2309699292 * B);
+  Res.G := ToByte(-1.2684380046 * R + 2.6097574011 * G - 0.3413193965 * B);
+  Res.B := ToByte(-0.0041960863 * R - 0.7034186147 * G + 1.7076147010 * B);
+  Result := TAlphaColor(Res);
 end;
 
 { TFmrThemeChangedMessage }
@@ -451,6 +558,22 @@ end;
 function TFmrThemeMetrics.BodyHeight: Single;
 begin
   Result := BodyPaddingV * 2 + GroupPaddingTop + ContentHeight + GroupCaptionHeight;
+end;
+
+function TFmrThemeMetrics.EffectiveTabFontSize: Single;
+begin
+  if TabFontSize > 0 then
+    Result := TabFontSize
+  else
+    Result := FontSize;
+end;
+
+function TFmrThemeMetrics.EffectiveStatusBarFontSize: Single;
+begin
+  if StatusBarFontSize > 0 then
+    Result := StatusBarFontSize
+  else
+    Result := FontSize;
 end;
 
 { TFmrTheme }
@@ -610,7 +733,14 @@ begin
   begin
     FMetrics.FontFamily := TFontObject(Res).Font.Family;
     if TFontObject(Res).Font.Size > 0 then
+    begin
+      // Sizes derived from the font size keep their difference to it.
+      if FMetrics.TabFontSize > 0 then
+        FMetrics.TabFontSize := FMetrics.TabFontSize + TFontObject(Res).Font.Size - FMetrics.FontSize;
+      if FMetrics.StatusBarFontSize > 0 then
+        FMetrics.StatusBarFontSize := FMetrics.StatusBarFontSize + TFontObject(Res).Font.Size - FMetrics.FontSize;
       FMetrics.FontSize := TFontObject(Res).Font.Size;
+    end;
     Inc(Result);
   end;
 end;

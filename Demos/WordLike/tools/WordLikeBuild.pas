@@ -250,9 +250,11 @@ begin
   F.OnClose := F.FormClose;
   F.OnDestroy := F.FormDestroy;
 
-  // non-visual components
+  // non-visual components; the frame paints the caption over a Mica backdrop, like Word 2024
   F.Frame1 := TFmrFormFrame.Create(F);
   F.Frame1.Name := 'Frame1';
+  F.Frame1.Mode := TFmrFrameMode.Dwm;
+  F.Frame1.Backdrop := TFmrFrameBackdrop.Mica;
   PlaceNonVisual(F.Frame1, 400, 520);
   BuildImages;
   M := TFmrBarManager.Create(F);
@@ -282,10 +284,9 @@ begin
   R.Parent := F;
   R.BarManager := M;
   R.Frame := F.Frame1;
-  R.Theme := 'Office365Colorful';
+  R.Theme := 'Office2024Light';
   R.ShowSearchBox := True;
-  R.ShowDisplayModeButton := True;
-  R.ShowDisplayOptionsButton := True;
+  R.ApplicationIcon.SvgSource := SvgAppIcon;
   R.OnSearch := F.RibbonSearch;
   R.OnDisplayModeChanged := F.RibbonDisplayModeChanged;
   R.ApplicationButton.ScreenTip.Header := 'File';
@@ -376,16 +377,25 @@ end;
 
 procedure TBuilder.BuildItems;
 var
-  Save, Undo, Redo: TFmrButtonItem;
+  Save, Undo, Redo, B: TFmrButtonItem;
+  AutoSave: TFmrCheckItem;
+  Account: TFmrAvatarItem;
+  Info: TFmrStaticItem;
 begin
-  { quick access toolbar and file commands }
+  { quick access toolbar and file commands: AutoSave (a toggle switch), Save, Undo with its menu, Redo }
+  AutoSave := Check('chkAutoSave', 'AutoSave', False, F.AutoSaveClick);
+  AutoSave.CheckStyle := TFmrCheckStyle.ToggleSwitch;
+  AutoSave.Category := 'File';
+  Tip(AutoSave, 'AutoSave', 'Save the document on every change (a Save of the demo when it has a file name).');
   Save := Btn('btnSave', 'Save', FmrGlyphSave, F.SaveClick);
   Save.ShortCut := scCtrl or Ord('S');
   Save.Category := 'File';
   Tip(Save, 'Save (Ctrl+S)', 'Save the document. A new document opens Save As in the backstage view.');
-  Undo := Btn('btnUndo', 'Undo', FmrGlyphUndo, F.UndoClick);
+  Undo := Btn('btnUndo', 'Undo', FmrGlyphUndo, F.UndoClick, TFmrButtonStyle.Split);
   Undo.ShortCut := scCtrl or Ord('Z');
   Undo.Category := 'File';
+  Undo.DropDownLinks.AddItem(Btn('btnUndoAll', 'Undo All Changes', 0, F.UndoAllClick));
+  M.ItemByName('btnUndoAll').Category := 'File';
   Redo := Btn('btnRedo', 'Redo', FmrGlyphRedo, F.RedoClick);
   Redo.ShortCut := scCtrl or Ord('Y');
   Redo.Category := 'File';
@@ -395,9 +405,37 @@ begin
   M.ItemByName('btnNew').ShortCut := scCtrl or Ord('N');
   M.ItemByName('btnOpen').ShortCut := scCtrl or Ord('O');
   M.ItemByName('btnPrint').ShortCut := scCtrl or Ord('P');
+  R.QuickAccessToolbar.AddItem(AutoSave);
   R.QuickAccessToolbar.AddItem(Save);
   R.QuickAccessToolbar.AddItem(Undo);
   R.QuickAccessToolbar.AddItem(Redo);
+
+  { caption row, right end: the account picture with its menu }
+  Account := TFmrAvatarItem(M.CreateItem(TFmrAvatarItem, 'btnAccount'));
+  Account.Caption := 'Account';
+  Account.Initials := 'FW';
+  Account.Color := $FFA4262C;
+  Account.ButtonStyle := TFmrButtonStyle.DropDown;
+  Account.Category := 'File';
+  Tip(Account, 'FMR Write user', 'The account of the document (a demo menu).');
+  Info := TFmrStaticItem(M.CreateItem(TFmrStaticItem, 'btnAccountName'));
+  Info.Caption := 'FMR Write user';
+  Account.DropDownLinks.AddItem(Info);
+  Account.DropDownLinks.AddItem(Btn('btnAccountSwitch', 'Switch account', $E748, F.CommandClick), True);
+  R.CaptionToolbar.AddItem(Account);
+
+  { tab row, right end: Comments (hidden, like in the reference) and the accent "Share" button }
+  B := Btn('btnComments', 'Comments', FmrGlyphComment, F.CommandClick);
+  B.Category := 'File';
+  R.TabAreaToolbar.AddItem(B).ViewLevels := [TFmrViewLevel.SmallWithText];
+  R.TabAreaToolbar.ItemLinks[0].Visible := False;
+  B := Btn('btnShare', 'Share', $E72D, F.CommandClick, TFmrButtonStyle.Split);
+  B.Primary := True;
+  B.Category := 'File';
+  Tip(B, 'Share', 'Invite others to work on the document together.');
+  B.DropDownLinks.AddItem(Btn('btnShareLink', 'Copy Link', FmrGlyphLink, F.CommandClick));
+  B.DropDownLinks.AddItem(Btn('btnShareCopy', 'Send a Copy', $E724, F.CommandClick));
+  R.TabAreaToolbar.AddItem(B).ViewLevels := [TFmrViewLevel.SmallWithText];
 
   BuildHome;
   BuildInsert;
@@ -410,15 +448,17 @@ procedure TBuilder.BuildHome;
 var
   T: TFmrRibbonTab;
   G: TFmrRibbonGroup;
-  B, ChangeCase: TFmrButtonItem;
+  B, ChangeCase, Spacing: TFmrButtonItem;
   FontName: TFmrFontNameItem;
   FontSize: TFmrComboItem;
-  FontColor: TFmrColorGalleryItem;
+  FontColor, Highlight: TFmrColorGalleryItem;
+  Shading: TFmrColorItem;
   Styles: TFmrRibbonGalleryItem;
   E: TFmrGalleryEntry;
   GG: TFmrGalleryGroup;
   I: Integer;
 begin
+  // The Home tab of Word 2024: Clipboard, Font and Paragraph in two rows, the Styles gallery, Editing, Add-ins.
   T := Tab('tabHome', 'Home', 'H');
 
   { Clipboard }
@@ -435,23 +475,28 @@ begin
   B := Btn('btnCut', 'Cut', FmrGlyphCut, F.CutClick);
   B.KeyTip := 'X';
   Tip(B, 'Cut (Ctrl+X)', 'Remove the selection and put it on the clipboard.');
-  Link(G, B);
+  Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
   B := Btn('btnCopy', 'Copy', FmrGlyphCopy, F.CopyClick);
   B.KeyTip := 'C';
   Tip(B, 'Copy (Ctrl+C)', 'Put a copy of the selection on the clipboard.');
-  Link(G, B);
+  Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
+  B := Btn('btnFormatPainter', 'Format Painter', FmrGlyphFormatPainter, F.FormatPainterClick,
+    TFmrButtonStyle.Check);
+  B.KeyTip := 'FP';
+  Tip(B, 'Format Painter', 'Copy the formatting of the selection and apply it to other text.');
+  Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
   B := Btn('btnSelectAll', 'Select All', FmrGlyphSelect, F.SelectAllClick);
   B.KeyTip := 'SA';
   G.ShowDialogLauncher := True;
   G.DialogLauncherKeyTip := 'FO';
   G.OnDialogLauncherClick := F.ClipboardLauncherClick;
 
-  { Font }
+  { Font: the font and its size, sizes and case in the first row; styles, scripts and colors in the second }
   G := Group(T, 'grpFont', 'Font');
   FontName := TFmrFontNameItem(M.CreateItem(TFmrFontNameItem, 'cbFontName'));
   FontName.Caption := 'Font';
-  FontName.Text := 'Calibri';
-  FontName.Width := 140;
+  FontName.Text := 'Aptos (Body)';
+  FontName.Width := 112;
   FontName.KeyTip := 'FF';
   FontName.OnChange := F.FontNameChange;
   Tip(FontName, 'Font', 'Pick a new font for the document.');
@@ -461,8 +506,8 @@ begin
   FontSize.Editable := True;
   for I in [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72] do
     FontSize.Items.Add(IntToStr(I));
-  FontSize.Text := '11';
-  FontSize.Width := 54;
+  FontSize.Text := '12';
+  FontSize.Width := 62;
   FontSize.KeyTip := 'FS';
   FontSize.OnChange := F.FontSizeChange;
   Tip(FontSize, 'Font Size', 'Change the size of the text.');
@@ -491,6 +536,10 @@ begin
   M.ItemByName('btnCaseLower').Glyph.GlyphCode := $E8D2;
   M.ItemByName('btnCaseLower').LargeGlyph.GlyphCode := $E8D2;
   Link(G, ChangeCase, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  B := Btn('btnClearFormatting', 'Clear Formatting', FmrGlyphClearFormatting, F.ClearFormattingClick);
+  B.KeyTip := 'E';
+  Tip(B, 'Clear All Formatting', 'Remove all the formatting: back to the Normal style.');
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
   B := Btn('btnBold', 'Bold', FmrGlyphBold, F.FontStyleClick, TFmrButtonStyle.Check);
   B.ShortCut := scCtrl or Ord('B');
   B.KeyTip := '1';
@@ -510,6 +559,30 @@ begin
   B.KeyTip := '4';
   Tip(B, 'Strikethrough', 'Cross something out by drawing a line through it.');
   Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
+  B := Btn('btnSubscript', 'x₂', 0, F.CommandClick, TFmrButtonStyle.Check);
+  B.GroupIndex := 21;
+  B.AllowAllUp := True;
+  B.KeyTip := '5';
+  Tip(B, 'Subscript (Ctrl+=)', 'Type very small letters just below the line of text.');
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
+  B := Btn('btnSuperscript', 'x²', 0, F.CommandClick, TFmrButtonStyle.Check);
+  B.GroupIndex := 21;
+  B.AllowAllUp := True;
+  B.KeyTip := '6';
+  Tip(B, 'Superscript (Ctrl+Shift++)', 'Type very small letters just above the line of text.');
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
+  B := Btn('btnTextEffects', 'Text Effects and Typography', FmrGlyphWordArt, nil, TFmrButtonStyle.DropDown);
+  B.KeyTip := 'FT';
+  B.DropDownLinks.AddItem(M.ItemByName('btnClearFormatting'));
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  Highlight := TFmrColorGalleryItem(M.CreateItem(TFmrColorGalleryItem, 'clrHighlight'));
+  Highlight.Caption := 'Text Highlight Color';
+  Highlight.KeyTip := 'I';
+  Highlight.Glyph.GlyphCode := FmrGlyphHighlight;
+  Highlight.Color := TAlphaColors.Yellow;
+  Highlight.OnClick := F.CommandClick;
+  Tip(Highlight, 'Text Highlight Color', 'Make the text look like it was marked with a highlighter pen.');
+  Link(G, Highlight, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
   FontColor := TFmrColorGalleryItem(M.CreateItem(TFmrColorGalleryItem, 'clrFontColor'));
   FontColor.Caption := 'Font Color';
   FontColor.KeyTip := 'FC';
@@ -518,24 +591,29 @@ begin
   FontColor.OnClick := F.FontColorClick;
   FontColor.OnPreview := F.FontColorPreview;
   Tip(FontColor, 'Font Color', 'Change the color of the text. Point at a color to preview it.');
-  Link(G, FontColor, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
-  B := Btn('btnClearFormatting', 'Clear Formatting', FmrGlyphClearFormatting, F.ClearFormattingClick);
-  B.KeyTip := 'E';
-  Tip(B, 'Clear All Formatting', 'Remove all the formatting: back to the Normal style.');
-  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  Link(G, FontColor, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
   G.ShowDialogLauncher := True;
   G.DialogLauncherKeyTip := 'FN';
   G.OnDialogLauncherClick := F.FontLauncherClick;
 
-  { Paragraph }
+  { Paragraph: lists, indents, sort and marks; alignment, spacing, shading and borders }
   G := Group(T, 'grpParagraph', 'Paragraph');
-  B := Btn('btnBullets', 'Bullets', FmrGlyphBullets, F.BulletsClick);
+  B := Btn('btnBullets', 'Bullets', FmrGlyphBullets, F.BulletsClick, TFmrButtonStyle.Split);
   B.KeyTip := 'U';
   Tip(B, 'Bullets', 'Start a bulleted list (or remove the bullets of the selected lines).');
+  B.DropDownLinks.AddItem(Btn('btnBulletDot', '•  Bullet', 0, F.BulletsClick));
+  B.DropDownLinks.AddItem(Btn('btnBulletDash', '–  Dash', 0, F.BulletsClick));
+  M.ItemByName('btnBulletDash').Tag := 1;
   Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
-  B := Btn('btnNumbering', 'Numbering', FmrGlyphNumbering, F.NumberingClick);
+  B := Btn('btnNumbering', 'Numbering', FmrGlyphNumbering, F.NumberingClick, TFmrButtonStyle.Split);
   B.KeyTip := 'N';
   Tip(B, 'Numbering', 'Start a numbered list (or remove the numbers of the selected lines).');
+  B.DropDownLinks.AddItem(Btn('btnNumber1', '1.  2.  3.', 0, F.NumberingClick));
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
+  B := Btn('btnMultilevel', 'Multilevel List', FmrGlyphMultilevel, F.CommandClick, TFmrButtonStyle.DropDown);
+  B.KeyTip := 'M';
+  B.DropDownLinks.AddItem(M.ItemByName('btnBulletDot'));
+  B.DropDownLinks.AddItem(M.ItemByName('btnNumber1'));
   Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
   B := Btn('btnIndentDec', 'Decrease Indent', FmrGlyphIndentDecrease, F.IndentClick);
   B.Tag := -1;
@@ -548,6 +626,12 @@ begin
   B := Btn('btnSort', 'Sort', FmrGlyphSort, F.SortClick);
   B.KeyTip := 'SO';
   Tip(B, 'Sort', 'Sort the selected lines alphabetically.');
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  B := Btn('btnShowMarks', 'Show/Hide', 0, F.CommandClick, TFmrButtonStyle.Check);
+  SetPath(B.Glyph, 'M18,4 L18,5.6 L16.4,5.6 L16.4,20 L14.8,20 L14.8,5.6 L12.8,5.6 L12.8,20 L11.2,20 L11.2,12.4 ' +
+    'A4.2,4.2 0 0 1 11.2,4 Z');
+  B.KeyTip := '8';
+  Tip(B, 'Show/Hide ¶ (Ctrl+*)', 'Show paragraph marks and other hidden formatting symbols.');
   Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
   for I := 0 to 3 do
   begin
@@ -565,8 +649,30 @@ begin
     else
       Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
   end;
+  Spacing := Btn('btnLineSpacing', 'Line and Paragraph Spacing', FmrGlyphLineSpacing, nil, TFmrButtonStyle.DropDown);
+  Spacing.KeyTip := 'K';
+  for I := 0 to 3 do
+    Radio(Spacing, Pick(['btnSpacing10', 'btnSpacing115', 'btnSpacing15', 'btnSpacing20'], I),
+      Pick(['1.0', '1.15', '1.5', '2.0'], I), 22, I, I = 1, F.CommandClick);
+  Link(G, Spacing, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  Shading := TFmrColorItem(M.CreateItem(TFmrColorItem, 'clrShading'));
+  Shading.Caption := 'Shading';
+  Shading.KeyTip := 'H';
+  Shading.Glyph.GlyphCode := FmrGlyphShading;
+  Shading.Color := TAlphaColors.Null;
+  Shading.AutomaticColor := TAlphaColors.Null;
+  Shading.OnClick := F.CommandClick;
+  Link(G, Shading, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  B := Btn('btnBorders', 'Borders', FmrGlyphBorders, F.CommandClick, TFmrButtonStyle.Split);
+  B.KeyTip := 'B';
+  B.DropDownLinks.AddItem(Btn('btnBorderBottom', 'Bottom Border', FmrGlyphBorders, F.CommandClick));
+  B.DropDownLinks.AddItem(Btn('btnBorderNone', 'No Border', 0, F.CommandClick));
+  Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
+  G.ShowDialogLauncher := True;
+  G.DialogLauncherKeyTip := 'PG';
+  G.OnDialogLauncherClick := F.FontLauncherClick;
 
-  { Styles }
+  { Styles: white cells with a sample and the name, like Word }
   G := Group(T, 'grpStyles', 'Styles');
   G.ReductionPriority := -1;
   Styles := TFmrRibbonGalleryItem(M.CreateItem(TFmrRibbonGalleryItem, 'galStyles'));
@@ -574,10 +680,10 @@ begin
   Styles.KeyTip := 'L';
   SetPath(Styles.Glyph, PathStyle);
   SetPath(Styles.LargeGlyph, PathStyle);
-  Styles.ItemWidth := 80;
-  Styles.ItemHeight := 62;
+  Styles.ItemWidth := 72;
+  Styles.ItemHeight := 56;
   Styles.MinColumns := 2;
-  Styles.MaxColumns := 6;
+  Styles.MaxColumns := 16;
   Styles.DropDownColumns := 6;
   Styles.ShowGroupHeaders := False;
   Tip(Styles, 'Styles', 'Choose a style for the document. Point at a style to preview it.');
@@ -593,20 +699,39 @@ begin
   Styles.OnItemClick := F.StylesItemClick;
   Styles.DropDownLinks.AddItem(M.ItemByName('btnClearFormatting'));
   Link(G, Styles);
+  G.ShowDialogLauncher := True;
+  G.DialogLauncherKeyTip := 'FY';
+  G.OnDialogLauncherClick := F.FontLauncherClick;
 
   { Editing }
   G := Group(T, 'grpEditing', 'Editing');
-  B := Btn('btnFind', 'Find', FmrGlyphFind, F.FindClick);
+  B := Btn('btnFind', 'Find', FmrGlyphFind, F.FindClick, TFmrButtonStyle.Split);
   B.ShortCut := scCtrl or Ord('F');
   B.KeyTip := 'FD';
   Tip(B, 'Find (Ctrl+F)', 'Find text in the document.');
+  B.DropDownLinks.AddItem(Btn('btnAdvancedFind', 'Advanced Find...', FmrGlyphFind, F.FindClick));
+  B.DropDownLinks.AddItem(Btn('btnGoTo', 'Go To...', $E8AD, F.CommandClick));
   Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
   B := Btn('btnReplace', 'Replace', FmrGlyphReplace, F.ReplaceClick);
   B.ShortCut := scCtrl or Ord('H');
   B.KeyTip := 'R';
   Tip(B, 'Replace (Ctrl+H)', 'Search for text and replace it.');
   Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
-  Link(G, M.ItemByName('btnSelectAll'), [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
+  B := Btn('btnSelect', 'Select', FmrGlyphSelect, nil, TFmrButtonStyle.DropDown);
+  B.KeyTip := 'SL';
+  B.DropDownLinks.AddItem(M.ItemByName('btnSelectAll'));
+  B.DropDownLinks.AddItem(Btn('btnSelectSimilar', 'Select Text with Similar Formatting', 0, F.CommandClick));
+  M.ItemByName('btnSelectSimilar').Enabled := False;
+  Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
+
+  { Add-ins }
+  G := Group(T, 'grpAddins', 'Add-ins');
+  B := Btn('btnAddins', 'Add-ins', 0, F.CommandClick, TFmrButtonStyle.Default, True);
+  B.Glyph.SvgSource := SvgAddins;
+  B.LargeGlyph.SvgSource := SvgAddins;
+  B.KeyTip := 'Y2';
+  Tip(B, 'Add-ins', 'Find add-ins for Word and manage them.');
+  Link(G, B, [TFmrViewLevel.Large]);
 end;
 
 procedure TBuilder.BuildInsert;
@@ -906,6 +1031,14 @@ begin
   Themes.OnDrawItem := F.ThemeDrawItem;
   Themes.OnItemClick := F.ThemeItemClick;
   Link(G, Themes);
+  // The Office themes of Word 2024 and "use the system setting" (light or dark like the Windows apps).
+  B := Btn('btnOfficeTheme', 'Office Theme', $E790, nil, TFmrButtonStyle.DropDown, True);
+  B.KeyTip := 'OT';
+  Tip(B, 'Office Theme', 'Office 2024 Light, Dark Gray or Dark, or the light or dark mode of Windows.');
+  for I := 0 to 3 do
+    Radio(B, Pick(['btnThemeLight', 'btnThemeDarkGray', 'btnThemeDark', 'btnThemeSystem'], I),
+      Pick(['Light', 'Dark Gray', 'Dark', 'Use System Setting'], I), 23, I, I = 3, F.OfficeThemeClick);
+  Link(G, B, [TFmrViewLevel.Large]);
   Accent := TFmrRibbonGalleryItem(M.CreateItem(TFmrRibbonGalleryItem, 'galAccent'));
   Accent.Caption := 'Accent';
   Accent.KeyTip := 'AC';
@@ -1400,14 +1533,18 @@ begin
   SB.Parent := F;
   SB.BarManager := M;
   SB.ThemeProvider := R;
+  // The status bar of Word 2024: page, words, language, accessibility; display settings, focus, views, zoom.
   Panel('spPage', TFmrStatusPanelKind.Text, 'Page 1 of 1').Hint := 'Page number in the document';
   Panel('spWords', TFmrStatusPanelKind.Text, '0 words').OnClick := F.StatusWordsClick;
   F.spWords.Hint := 'Word count. Click for details.';
-  Panel('spChars', TFmrStatusPanelKind.Text, '0 characters');
+  Panel('spChars', TFmrStatusPanelKind.Text, '0 characters').Visible := False;
   Panel('spLanguage', TFmrStatusPanelKind.Text, 'English (United States)').OnClick := F.StatusLanguageClick;
-  F.spLanguage.Glyph.GlyphCode := $E774;
   F.spLanguage.Hint := 'Click to switch the user interface language (English / Russian)';
-  Panel('spMessage', TFmrStatusPanelKind.Text, 'Ready').Stretch := True;
+  Panel('spAccessibility', TFmrStatusPanelKind.Text, 'Accessibility: Good to go').Glyph.GlyphCode := $E776;
+  Panel('spMessage', TFmrStatusPanelKind.Text, '').Stretch := True;
+  Panel('spDisplay', TFmrStatusPanelKind.Text, 'Display Settings', TFmrStatusPanelSide.Right).Glyph.GlyphCode :=
+    $E7F4;
+  Panel('spFocus', TFmrStatusPanelKind.Text, 'Focus', TFmrStatusPanelSide.Right).Glyph.GlyphCode := $E740;
   Panel('spView', TFmrStatusPanelKind.ViewButtons, '', TFmrStatusPanelSide.Right).OnViewChange :=
     F.StatusViewChange;
   Panel('spZoom', TFmrStatusPanelKind.ZoomSlider, '', TFmrStatusPanelSide.Right).OnZoomChange := F.StatusZoomChange;
@@ -1520,8 +1657,8 @@ begin
   Memo.Align := TAlignLayout.Client;
   Memo.Margins.Rect := RectF(96, 96, 96, 4);
   Memo.StyledSettings := [];
-  Memo.TextSettings.Font.Family := 'Calibri';
-  Memo.TextSettings.Font.Size := 11 * 96 / 72;
+  Memo.TextSettings.Font.Family := 'Aptos';
+  Memo.TextSettings.Font.Size := 12 * 96 / 72;
   Memo.TextSettings.FontColor := TAlphaColors.Black;
   Memo.WordWrap := True;
   Memo.HideSelectionOnExit := False;

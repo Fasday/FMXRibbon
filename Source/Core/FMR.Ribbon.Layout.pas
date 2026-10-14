@@ -62,6 +62,9 @@ type
     /// <summary>A column with fewer rows than RowCount spreads them evenly over the height; otherwise they are
     /// top-aligned.</summary>
     DistributeRows: Boolean;
+    /// <summary>Largest gap between the rows of such a column; with a larger gap the rows are top-aligned with
+    /// this gap (Office 2024: two rows below each other at the top). 0 = no limit.</summary>
+    MaxRowGap: Single;
     { simplified (single line) layout }
     SimplifiedHeight: Single;
     SimplifiedItemSpacing: Single;
@@ -310,6 +313,7 @@ begin
   Result.DialogLauncherWidth := 16;
   Result.MinGroupWidth := 24;
   Result.DistributeRows := True;
+  Result.MaxRowGap := 0;
   Result.SimplifiedHeight := 32;
   Result.SimplifiedItemSpacing := 2;
   Result.SimplifiedSeparatorWidth := 9;
@@ -593,6 +597,8 @@ var
         Gap := Max(0, (M.ContentHeight - RowCount * M.RowHeight) / (RowCount + 1))
       else
         Gap := 0;
+      if (M.MaxRowGap > 0) and (Gap > M.MaxRowGap) then
+        Gap := M.MaxRowGap;
       for R := 0 to RowsInColumn - 1 do
       begin
         Y := Gap + R * (M.RowHeight + Gap);

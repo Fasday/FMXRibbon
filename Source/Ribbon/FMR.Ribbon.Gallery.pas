@@ -892,6 +892,11 @@ begin
     begin
       FInRibbon := True;
       FColumns := Cols;
+      // Office 2024: one row of cells at the top of the content (like the top-aligned rows, MaxRowGap below the
+      // top) instead of a gallery as tall as the group.
+      if (Metrics.MaxRowGap > 0) and (FItemSize.Height + 2 * GalleryFramePad + Metrics.MaxRowGap < ABounds.Height) then
+        Bounds := RectF(ABounds.Left, ABounds.Top + Metrics.MaxRowGap, ABounds.Right,
+          ABounds.Top + Metrics.MaxRowGap + FItemSize.Height + 2 * GalleryFramePad);
       RebuildGrid;
       if not WasInRibbon then
         EnsureSelectedVisible;

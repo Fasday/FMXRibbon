@@ -21,13 +21,13 @@ type
   TWriteStyle = record
     Name: string;
     NameRu: string;
-    Sample: string;
     Family: string;
     Size: Single;
     Style: TFontStyles;
     Color: TAlphaColor;
+    /// <summary>A paragraph style (the gallery shows a pilcrow before its name).</summary>
+    Para: Boolean;
   end;
-
   TWriteShape = record
     Name: string;
     Path: string;
@@ -48,29 +48,34 @@ type
   end;
 
 const
-  WriteStyles: array [0..11] of TWriteStyle = (
-    (Name: 'Normal'; NameRu: 'Обычный'; Sample: 'AaBbCcDd'; Family: 'Calibri'; Size: 11; Style: []; Color: 0),
-    (Name: 'No Spacing'; NameRu: 'Без интервала'; Sample: 'AaBbCcDd'; Family: 'Segoe UI'; Size: 10; Style: [];
-      Color: 0),
-    (Name: 'Heading 1'; NameRu: 'Заголовок 1'; Sample: 'AaBbCc'; Family: 'Calibri Light'; Size: 16; Style: [];
-      Color: $FF2F5496),
-    (Name: 'Heading 2'; NameRu: 'Заголовок 2'; Sample: 'AaBbCcD'; Family: 'Calibri Light'; Size: 13;
-      Style: [TFontStyle.fsBold]; Color: $FF2F5496),
-    (Name: 'Title'; NameRu: 'Название'; Sample: 'AaB'; Family: 'Calibri Light'; Size: 26; Style: []; Color: 0),
-    (Name: 'Subtitle'; NameRu: 'Подзаголовок'; Sample: 'AaBbCcD'; Family: 'Calibri'; Size: 11; Style: [];
-      Color: $FF5A5A5A),
-    (Name: 'Emphasis'; NameRu: 'Выделение'; Sample: 'AaBbCcDd'; Family: 'Calibri'; Size: 11;
-      Style: [TFontStyle.fsItalic]; Color: 0),
-    (Name: 'Strong'; NameRu: 'Строгий'; Sample: 'AaBbCcDd'; Family: 'Calibri'; Size: 11;
-      Style: [TFontStyle.fsBold]; Color: 0),
-    (Name: 'Quote'; NameRu: 'Цитата'; Sample: 'AaBbCcDd'; Family: 'Georgia'; Size: 11;
-      Style: [TFontStyle.fsItalic]; Color: $FF404040),
-    (Name: 'Intense Quote'; NameRu: 'Выделенная цитата'; Sample: 'AaBbCcDd'; Family: 'Georgia'; Size: 12;
-      Style: [TFontStyle.fsBold, TFontStyle.fsItalic]; Color: $FF4472C4),
-    (Name: 'Code'; NameRu: 'Код'; Sample: 'AaBb{}'; Family: 'Consolas'; Size: 10; Style: []; Color: $FF1E5C2E),
-    (Name: 'Book Title'; NameRu: 'Название книги'; Sample: 'AaBbCcDd'; Family: 'Cambria'; Size: 12;
-      Style: [TFontStyle.fsBold, TFontStyle.fsItalic]; Color: 0));
-
+  /// <summary>The quick styles of Word 2024 (Aptos), in the order of its Styles gallery.</summary>
+  WriteStyles: array [0..15] of TWriteStyle = (
+    (Name: 'Normal'; NameRu: 'Обычный'; Family: 'Aptos'; Size: 12; Style: []; Color: 0; Para: True),
+    (Name: 'No Spacing'; NameRu: 'Без интервала'; Family: 'Aptos'; Size: 12; Style: []; Color: 0; Para: True),
+    (Name: 'Heading 1'; NameRu: 'Заголовок 1'; Family: 'Aptos Display'; Size: 20; Style: []; Color: $FF0F4761;
+      Para: False),
+    (Name: 'Heading 2'; NameRu: 'Заголовок 2'; Family: 'Aptos Display'; Size: 16; Style: []; Color: $FF0F4761;
+      Para: False),
+    (Name: 'Title'; NameRu: 'Заголовок'; Family: 'Aptos Display'; Size: 28; Style: []; Color: 0; Para: False),
+    (Name: 'Subtitle'; NameRu: 'Подзаголовок'; Family: 'Aptos'; Size: 14; Style: []; Color: $FF595959; Para: False),
+    (Name: 'Subtle Emphasis'; NameRu: 'Слабое выделение'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsItalic];
+      Color: $FF404040; Para: False),
+    (Name: 'Emphasis'; NameRu: 'Выделение'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsItalic]; Color: 0;
+      Para: False),
+    (Name: 'Intense Emphasis'; NameRu: 'Сильное выделение'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsItalic];
+      Color: $FF0F4761; Para: False),
+    (Name: 'Strong'; NameRu: 'Строгий'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsBold]; Color: 0; Para: False),
+    (Name: 'Quote'; NameRu: 'Цитата 2'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsItalic]; Color: $FF404040;
+      Para: False),
+    (Name: 'Intense Quote'; NameRu: 'Выделенная цитата'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsItalic];
+      Color: $FF0F4761; Para: False),
+    (Name: 'Subtle Reference'; NameRu: 'Слабая ссылка'; Family: 'Aptos'; Size: 12; Style: []; Color: $FF5A5A5A;
+      Para: False),
+    (Name: 'Intense Reference'; NameRu: 'Сильная ссылка'; Family: 'Aptos'; Size: 12; Style: [TFontStyle.fsBold];
+      Color: $FF0F4761; Para: False),
+    (Name: 'Book Title'; NameRu: 'Название книги'; Family: 'Aptos'; Size: 12;
+      Style: [TFontStyle.fsBold, TFontStyle.fsItalic]; Color: 0; Para: False),
+    (Name: 'List Paragraph'; NameRu: 'Абзац списка'; Family: 'Aptos'; Size: 12; Style: []; Color: 0; Para: True));
   WriteShapes: array [0..14] of TWriteShape = (
     (Name: 'Square'; Path: 'M4,4 L20,4 L20,20 L4,20 Z'; Text: '■'),
     (Name: 'Hollow Square'; Path: 'M4,4 L20,4 L20,20 L4,20 Z M6,6 L6,18 L18,18 L18,6 Z'; Text: '□'),
@@ -125,12 +130,32 @@ const
   WriteAccents: array [0..7] of TWriteAccent = (
     (Name: 'Theme default'; NameRu: 'По умолчанию'; Color: 0),
     (Name: 'Word'; NameRu: 'Word'; Color: $FF2B579A),
-    (Name: 'Excel'; NameRu: 'Excel'; Color: $FF217346),
-    (Name: 'PowerPoint'; NameRu: 'PowerPoint'; Color: $FFB7472A),
+    (Name: 'Excel'; NameRu: 'Excel'; Color: $FF107C41),
+    (Name: 'PowerPoint'; NameRu: 'PowerPoint'; Color: $FFC43E1C),
     (Name: 'Outlook'; NameRu: 'Outlook'; Color: $FF0072C6),
     (Name: 'OneNote'; NameRu: 'OneNote'; Color: $FF80397B),
     (Name: 'Access'; NameRu: 'Access'; Color: $FFA4373A),
     (Name: 'Fluent'; NameRu: 'Fluent'; Color: $FF0067C0));
+
+  /// <summary>Icon of the caption row: a page with a blue "W" tile (in the colors of the Word icon).</summary>
+  SvgAppIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+    '<rect x="8" y="3" width="22" height="26" rx="2" fill="#41A5EE"/>' +
+    '<rect x="8" y="10" width="22" height="7" fill="#2B7CD3"/><rect x="8" y="17" width="22" height="7" fill="#185ABD"/>' +
+    '<path d="M8 24h22v3a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z" fill="#103F91"/>' +
+    '<rect x="2" y="8" width="16" height="16" rx="2" fill="#185ABD"/>' +
+    '<path d="M4.6 12h2.1l1.3 6.1 1.5-6.1h1.5l1.5 6.1 1.3-6.1h2.1l-2.4 9h-1.7L10 15.1 8.7 21H7z" fill="#fff"/></svg>';
+  /// <summary>Paste: an orange clipboard under a page; Format arguments: the line color of the page and of the
+  /// clip, the fill of the page (the body of the theme).</summary>
+  SvgPasteFmt = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+    '<path d="M8.5 6.5H5.5v21h9" fill="none" stroke="#E8A33D" stroke-width="1.6"/>' +
+    '<path d="M17.5 6.5h3v5" fill="none" stroke="#E8A33D" stroke-width="1.6"/>' +
+    '<rect x="9" y="3.8" width="8" height="4.4" rx="1" fill="none" stroke="%0:s" stroke-width="1.3"/>' +
+    '<rect x="14.6" y="12.6" width="13" height="16" fill="%1:s" stroke="%0:s" stroke-width="1.3"/></svg>';
+  /// <summary>Add-ins: an orange-red frame with four squares (the Office add-ins icon).</summary>
+  SvgAddins = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g fill="none" stroke="#D83B01" ' +
+    'stroke-width="1.6"><rect x="3.8" y="3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.4" ' +
+    'height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"/><rect x="7.8" y="16.8" width="7.4" ' +
+    'height="7.4"/><rect x="16.8" y="16.8" width="7.4" height="7.4"/></g></svg>';
 
   PathTable = 'M3,4 L8,4 L8,8 L3,8 Z M9.5,4 L14.5,4 L14.5,8 L9.5,8 Z M16,4 L21,4 L21,8 L16,8 Z ' +
     'M3,10 L8,10 L8,14 L3,14 Z M9.5,10 L14.5,10 L14.5,14 L9.5,14 Z M16,10 L21,10 L21,14 L16,14 Z ' +

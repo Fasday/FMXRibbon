@@ -265,6 +265,39 @@ type
     property Visible: Boolean read FVisible write SetVisible default True;
   end;
 
+  /// <summary>Links shown by the ribbon in a fixed place outside the groups: the right end of the caption row
+  /// (account picture, coauthoring...) or of the tab row (Comments, Share), like the tab area toolbars of other
+  /// ribbons. The items are painted as toolbar buttons (glyph only, or glyph and caption when the link's ViewLevels
+  /// contain SmallWithText).</summary>
+  TFmrRibbonItemBar = class(TInterfacedPersistent, IFmrItemLinksOwner)
+  private
+    [Weak] FOwner: TComponent;
+    FItemLinks: TFmrItemLinks;
+    FVisible: Boolean;
+    FDestroying: Boolean;
+    procedure SetItemLinks(const Value: TFmrItemLinks);
+    procedure SetVisible(const Value: Boolean);
+    function ReadyOwner(out AOwner: IFmrRibbonStructureOwner): Boolean;
+    procedure Changed;
+    { IFmrItemLinksOwner }
+    procedure LinksChanged(const ALinks: TFmrItemLinks);
+    procedure LinkItemChanged(const ALink: TFmrItemLink; const AChange: TFmrItemChange);
+    procedure LinkRemoving(const ALink: TFmrItemLink);
+  protected
+    function GetOwner: TPersistent; override;
+  public
+    /// <summary>AOwner: the ribbon (implements IFmrRibbonStructureOwner).</summary>
+    constructor Create(const AOwner: TComponent);
+    destructor Destroy; override;
+    procedure Assign(Source: TPersistent); override;
+    /// <summary>Adds a link to AItem (ABeginGroup: a gap before it); returns the link.</summary>
+    function AddItem(const AItem: TFmrBarItem; const ABeginGroup: Boolean = False): TFmrItemLink;
+    property Owner: TComponent read FOwner;
+  published
+    property ItemLinks: TFmrItemLinks read FItemLinks write SetItemLinks;
+    property Visible: Boolean read FVisible write SetVisible default True;
+  end;
+
   /// <summary>Helpers over the structure of an owner (designer drag and drop, customization, merging).</summary>
   TFmrRibbonStructure = class
   public
@@ -957,6 +990,99 @@ begin
 end;
 
 procedure TFmrRibbonQuickAccessToolbar.SetVisible(const Value: Boolean);
+begin
+  if FVisible <> Value then
+  begin
+    FVisible := Value;
+    Changed;
+  end;
+end;
+
+{ TFmrRibbonItemBar }
+
+constructor TFmrRibbonItemBar.Create(const AOwner: TComponent);
+begin
+  inherited Create;
+  FOwner := AOwner;
+  FVisible := True;
+  FItemLinks := TFmrItemLinks.Create(Self);
+end;
+
+destructor TFmrRibbonItemBar.Destroy;
+begin
+  FDestroying := True;
+  FreeAndNil(FItemLinks);
+  inherited;
+end;
+
+function TFmrRibbonItemBar.GetOwner: TPersistent;
+begin
+  Result := FOwner;
+end;
+
+procedure TFmrRibbonItemBar.Assign(Source: TPersistent);
+begin
+  if Source is TFmrRibbonItemBar then
+  begin
+    FVisible := TFmrRibbonItemBar(Source).FVisible;
+    FItemLinks.Assign(TFmrRibbonItemBar(Source).FItemLinks);
+    Changed;
+  end
+  else
+    inherited;
+end;
+
+function TFmrRibbonItemBar.ReadyOwner(out AOwner: IFmrRibbonStructureOwner): Boolean;
+begin
+  Result := not FDestroying and (FOwner <> nil) and not IsBusy(FOwner) and
+    Supports(FOwner, IFmrRibbonStructureOwner, AOwner);
+end;
+
+procedure TFmrRibbonItemBar.Changed;
+var
+  O: IFmrRibbonStructureOwner;
+begin
+  if ReadyOwner(O) then
+    O.StructureObjectChanged(Self, TFmrItemChange.Layout);
+end;
+
+function TFmrRibbonItemBar.AddItem(const AItem: TFmrBarItem; const ABeginGroup: Boolean): TFmrItemLink;
+begin
+  Result := nil;
+  if AItem <> nil then
+    Result := FItemLinks.AddItem(AItem, ABeginGroup);
+end;
+
+procedure TFmrRibbonItemBar.LinksChanged(const ALinks: TFmrItemLinks);
+var
+  O: IFmrRibbonStructureOwner;
+begin
+  if ReadyOwner(O) then
+    O.LinksChanged(Self, ALinks);
+end;
+
+procedure TFmrRibbonItemBar.LinkItemChanged(const ALink: TFmrItemLink; const AChange: TFmrItemChange);
+var
+  O: IFmrRibbonStructureOwner;
+begin
+  if ReadyOwner(O) then
+    O.LinkItemChanged(ALink, AChange);
+end;
+
+procedure TFmrRibbonItemBar.LinkRemoving(const ALink: TFmrItemLink);
+var
+  O: IFmrRibbonStructureOwner;
+begin
+  if ReadyOwner(O) then
+    O.LinkRemoving(ALink);
+end;
+
+procedure TFmrRibbonItemBar.SetItemLinks(const Value: TFmrItemLinks);
+begin
+  FItemLinks.Assign(Value);
+end;
+
+procedure TFmrRibbonItemBar.SetVisible(const Value: Boolean);
 begin
   if FVisible <> Value then
   begin

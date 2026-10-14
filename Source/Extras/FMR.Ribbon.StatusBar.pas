@@ -137,6 +137,11 @@ type
     function Painter: TFmrRibbonPainter;
     function Theme: TFmrTheme;
     function FontSize: Single;
+    { view buttons: Office 2024 has wider buttons over the full height, without gaps }
+    function ViewW: Single;
+    function ViewGap: Single;
+    function ViewInset: Single;
+    function PadH: Single;
     function TextColor: TAlphaColor;
     function EffectiveBevel: TFmrStatusPanelBevel;
     function IsClickable: Boolean;
@@ -467,7 +472,40 @@ end;
 
 function TFmrStatusBarPanel.FontSize: Single;
 begin
-  Result := Theme.Metrics.FontSize;
+  Result := Theme.Metrics.EffectiveStatusBarFontSize;
+end;
+
+function TFmrStatusBarPanel.ViewW: Single;
+begin
+  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+    Result := 40
+  else
+    Result := ViewButtonWidth;
+end;
+
+function TFmrStatusBarPanel.ViewGap: Single;
+begin
+  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+    Result := 0
+  else
+    Result := ViewButtonGap;
+end;
+
+function TFmrStatusBarPanel.PadH: Single;
+begin
+  // Office 2024 leaves more room between the texts of the status bar
+  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+    Result := 11
+  else
+    Result := PanelPaddingH;
+end;
+
+function TFmrStatusBarPanel.ViewInset: Single;
+begin
+  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+    Result := 0
+  else
+    Result := 1;
 end;
 
 function TFmrStatusBarPanel.TextColor: TAlphaColor;
@@ -793,7 +831,7 @@ begin
   case FKind of
     TFmrStatusPanelKind.Text:
       begin
-        Result := PanelPaddingH * 2;
+        Result := PadH * 2;
         if not FGlyph.IsEmpty(Images) then
         begin
           Result := Result + GlyphSize;
@@ -831,7 +869,7 @@ begin
         for V := Low(TFmrStatusView) to High(TFmrStatusView) do
           if V in FViews then
             Inc(N);
-        Result := 4 + N * ViewButtonWidth + Max(0, N - 1) * ViewButtonGap + 4;
+        Result := 4 + N * ViewW + Max(0, N - 1) * ViewGap + 4;
       end;
   else
     Result := 60;
@@ -906,8 +944,8 @@ begin
         for V := Low(TFmrStatusView) to High(TFmrStatusView) do
           if V in FViews then
           begin
-            FViewRects[V] := RectF(X, 1, X + ViewButtonWidth, R.Height - 1);
-            X := X + ViewButtonWidth + ViewButtonGap;
+            FViewRects[V] := RectF(X, ViewInset, X + ViewW, R.Height - ViewInset);
+            X := X + ViewW + ViewGap;
           end
           else
             FViewRects[V] := TRectF.Empty;
@@ -1181,6 +1219,15 @@ begin
   Hot := Theme.Fills[TFmrToken.StatusBarItemHotFill];
   Rad := Min(Theme.Metrics.ButtonRadius, 3);
   C := Hot.MainColor;
+  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  begin
+    // Office 2024: the active view is a plain square of the hot color, no frame
+    if APressed or (AChecked and AHot) then
+      Painter.Fill(Canvas, R, TFmrFill.Solid(FmrBlend(C, TextColor, 0.08)), 0, [], AbsoluteOpacity)
+    else if AChecked or AHot then
+      Painter.Fill(Canvas, R, Hot, 0, [], AbsoluteOpacity);
+    Exit;
+  end;
   if APressed then
     Painter.Fill(Canvas, R, TFmrFill.Solid(FmrBlend(C, TextColor, 0.18)), Rad, [], AbsoluteOpacity)
   else if AChecked and AHot then
@@ -1228,7 +1275,7 @@ begin
   Hot := IsClickable and (FHotPart = TFmrStatusPart.Body);
   if Hot then
     PaintPartFill(RectF(R.Left, R.Top + 1, R.Right, R.Bottom - 1), True, FPressedPart = TFmrStatusPart.Body, False);
-  R.Inflate(-PanelPaddingH, 0);
+  R.Inflate(-PadH, 0);
   if not FGlyph.IsEmpty(Images) then
   begin
     G := RectF(R.Left, R.CenterPoint.Y - GlyphSize / 2, R.Left + GlyphSize, R.CenterPoint.Y + GlyphSize / 2);

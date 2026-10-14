@@ -236,6 +236,37 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   description: `Docs\DESIGNTIME.md`, "Phase B". `ActiveTab` is published and settable, `TabAtScreenPoint` is kept.
 - **Diagnostics**: `DebugDump` (parts, elements and bounds as text; the demo writes it with `/dump=`).
 
+## Office 2024: caption row and tab row extras, focus effect
+
+- **Caption row and tab row toolbars** (like the tab area toolbars of other ribbons): `CaptionToolbar` (links at the
+  right end of the caption row, left of the window buttons: the account picture) and `TabAreaToolbar` (links at the
+  right end of the tab row: Comments, Share), both `TFmrRibbonItemBar` (`ItemLinks`, `Visible`; `AddItem`). Their
+  views are toolbar views (`TFmrViewPlace.Toolbar`) hosted by the caption bar and the tab bar: glyph only, or glyph
+  and caption when the link's `ViewLevels` contain `SmallWithText`; they take key tips at the top level and are
+  `Client` for the frame hit test.
+- **`ApplicationIcon`** (`TFmrImageSource`, an SVG keeps its colors): 16 dp icon at the left end of the caption row,
+  the window menu on a click (`SysMenu` hit test).
+- **Items for them** (`FMR.Bars.Items`, painted by `TFmrButtonView`): `TFmrCheckItem.CheckStyle = ToggleSwitch`
+  (caption then a Windows 11 switch: the Office "AutoSave"), `TFmrButtonItem.Primary` (filled with the accent in
+  every state: "Share"; a split primary button is one shape), `TFmrAvatarItem` (initials in a colored circle,
+  `Initials`, `Color`; a drop-down button for the account menu). New painter methods: `DrawToggleSwitch`,
+  `DrawPrimaryButton`, `DrawAvatar`, `TabCaptionWidth`.
+- **Layout of the Office 2024 themes** (style switches and metrics in `Docs\STYLES.md`): the title follows the quick
+  access toolbar (`LeadingTitle`), the search box is centered with its own size, the window buttons are 48 dp wide,
+  tabs are as wide as their bold caption, the collapse button is a chevron in the bottom right corner of the card
+  (a pin in the body of a collapsed ribbon), two-row groups keep their rows at the top (`MaxRowGap`), an in-ribbon
+  gallery is one row of cells at the top of its group, the area around the card and the caption are transparent
+  over Mica (or `CaptionBackdropFill`).
+- **Focus effect.** The ribbon follows the active state of its window: the frame state (`TFmrFrameStateMessage`,
+  `IFmrFrameStateAware`) when the bars are in a hooked frame, `TFormActivateMessage`/`TFormDeactivateMessage`
+  otherwise; it stays active while one of its popups is open (an editor of a popup may deactivate the window for a
+  moment; FMX closes the popups when another window is activated, and the next idle check makes the caption
+  inactive). The transition takes about 170 ms (`AnimateActivation`, `ActiveLevel`): the base bar theme is blended
+  into the tab row theme (caption and tab row fills, `TabTextInactive`) and the caption row theme (title, quick access
+  toolbar, caption toolbar, search box and window buttons fade to `CaptionTextInactive`, `SearchBoxFillInactive`).
+  The caption row has its own painter for that. `ShowInactiveState = False` keeps the active look. Checked on
+  WordLike in White and Dark Gray against Word (`shots\cmp\cmp_LightInactive_*.png`, `cmp_DarkGrayInactive_*.png`).
+
 ## Galleries, application menu, mini toolbar, radial menu
 
 Built on the extension points above, in their own units (full description: `Docs\GALLERIES.md`):
@@ -279,9 +310,10 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
   (`Docs\CUSTOMIZATION.md`, `Docs\ACCESSIBILITY.md`, their own lists of known issues).
 - Font preview in the font combo.
 - Alt+letter pressed together (without releasing Alt) does not jump to a tab; press and release Alt, then the letter.
-- No animations (popups, minimized body, backstage slide is the backstage's own).
-- While an editor of a popup has the keyboard, the owner form shows the inactive caption (Windows activated the popup
-  window; FMX does not close the popups).
+- No animations (popups, minimized body, backstage slide is the backstage's own) apart from the focus effect of the
+  caption row.
+- While an editor of a popup has the keyboard, Windows activated the popup window; the ribbon keeps its active look
+  while its popups are open, the DWM border of the window still shows the inactive state.
 
 ### Design time and follow-up fixes (phase B)
 
@@ -335,3 +367,11 @@ The desktop may be shared with other windows, so the scripts do not rely on the 
 
 Example: `.\tools\drive.ps1 -Arguments "/theme=Office365White /frame=fullnc" -Out shots\x.png
 -Actions "key:alt;wait:500;key:H;wait:500;shot:home"`.
+
+Screenshots without disturbing somebody who works at the desktop: `drive.ps1 -NoCursor` (posted mouse messages, the
+real cursor stays) and the demo switches `/pos=X,Y` (RibbonBasic, WordLike: the window mostly outside the visible
+desktop, PrintWindow still renders it), `/topmost` (an occluded window is not painted by the Direct2D canvas: the
+visible strip of it must stay on top) and `/activelook` (`ShowInactiveState = False`: a window started in the
+background keeps the active caption). `drive.ps1 ... -Actions "post:0x86,1,0"` posts `WM_NCACTIVATE` (Dwm mode: the
+active look; in FullNC Windows corrects it to inactive). `tools\sidebyside.ps1` puts the same region of two
+screenshots one above the other (the Word 2024 comparisons in `shots\cmp\cmp_*.png`).

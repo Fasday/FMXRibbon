@@ -83,13 +83,14 @@ action's `OnUpdate` (the ribbon should call it for visible items on idle, like F
 
 | Item | Notes |
 |---|---|
-| `TFmrButtonItem` | `ButtonStyle` Default/Check/DropDown/Split, `Down`, `GroupIndex` (radio within the manager), `AllowAllUp`, `DropDownLinks`, `OnDropDown` (fill the menu lazily) |
+| `TFmrButtonItem` | `ButtonStyle` Default/Check/DropDown/Split, `Down`, `GroupIndex` (radio within the manager), `AllowAllUp`, `DropDownLinks`, `OnDropDown` (fill the menu lazily), `Primary` (accent filled: Office "Share") |
+| `TFmrAvatarItem` | button with `Initials` in a `Color` circle (the account picture of the caption row) |
 | `TFmrSubItem` | `ItemLinks` = sub menu, `OnPopup` |
 | `TFmrSeparatorItem` | layout kind `Separator`; in menus a caption makes it a header |
 | `TFmrStaticItem` | label, `Alignment`, `Width` |
 | `TFmrControlItem` | hosts an existing `TControl` (one parent → one link shows it at a time) |
 | `TFmrEditItem`, `TFmrComboItem`, `TFmrSpinItem`, `TFmrTrackBarItem`, `TFmrFontNameItem` | data only; the ribbon creates an FMX control per link and syncs on `TFmrItemChange.Value`; editor changes made by the user must be written back to the item (which notifies the other links) |
-| `TFmrCheckItem` | painted check box, radio with `GroupIndex` |
+| `TFmrCheckItem` | painted check box, radio with `GroupIndex`; `CheckStyle = ToggleSwitch`: caption and a Windows 11 switch (Office "AutoSave") |
 | `TFmrColorItem` | split button with `Color`, automatic/no color/more colors options |
 | `TFmrGalleryItem` | `Groups` → `Items` (entries with caption, glyph, hint, description), `MinColumns`/`MaxColumns` (in-ribbon), `DropDownColumns/Rows`, `ItemWidth/Height`, `ShowInRibbon`, `AllowFilter`, `SelectedIndex`/`SelectedEntry` (follows its entry), `ClickEntry` → `OnItemClick`, `HotTrack(entry or nil)` → `OnHotTrack` (live preview; nil = revert) |
 
@@ -134,6 +135,9 @@ notifications listed above. `Tests\FMR.Tests.Fakes.pas` (`TFakeRibbon`) is a com
   tab is active calls `SetActiveTab(nil)`: the ribbon then picks another tab.
 - `TFmrRibbonQuickAccessToolbar`: `ItemLinks`, `Position`, `Visible`, `ShowCustomizeButton`, `AddItem` (no
   duplicates), `RemoveItem`, `ContainsItem`.
+- `TFmrRibbonItemBar`: `ItemLinks`, `Visible`, `AddItem` - links the ribbon shows in a fixed place outside the groups
+  (`TFmrRibbon.CaptionToolbar`, `TabAreaToolbar`); reports like the QAT (`LinksChanged(Self, ...)`,
+  `StructureObjectChanged`).
 - `TFmrRibbonStructure`: `Tabs`, `Tab`, `TabCount`, `ContextGroups`, `AllGroups`, `FindTab`/`FindGroup`/
   `FindContextGroup`, `CreateTab`/`CreateGroup`/`CreateContextGroup` (owned by the form, like the designer),
   `MoveTab`, `MoveGroup` (also between tabs), `MoveLink`, `CopyLink`, `TabIndexToChildIndex`. Tab indexes count
@@ -149,7 +153,8 @@ height/count (3), paddings, spacings, separator width, launcher width.
 
 **Arrangement of one group.** Links flow left to right in columns. A Large link or a gallery takes a full-height
 column. Small links (SmallWithText/Small) stack in a column of up to `RowCount` rows; a column with fewer rows spreads
-them evenly (`DistributeRows`). A link with `ButtonGroup = Member` continues the row of the previous link (button
+them evenly (`DistributeRows`), with `MaxRowGap` > 0 at most that far apart and top-aligned (Office 2024: two rows
+at the top of a three-row group). A link with `ButtonGroup = Member` continues the row of the previous link (button
 groups, editors side by side); on such a link `BeginGroup` starts a new segment of the row (gap
 `SegmentSpacing`) instead of a new column. `BeginGroup` on any other link and separator links end the column and
 draw a separator (never at the start or the end). Group width = max(content + 2 × padding, caption + 2 × padding

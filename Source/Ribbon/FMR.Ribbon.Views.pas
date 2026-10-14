@@ -190,6 +190,9 @@ type
     function IsSplit: Boolean;
     function IsWholeDropDown: Boolean;
     function IsCheckBox: Boolean;
+    function IsToggleSwitch: Boolean;
+    function IsPrimary: Boolean;
+    function IsAvatar: Boolean;
     function IsStatic: Boolean;
     function ShowsText: Boolean;
     function Glyph(const ALarge: Boolean): TFmrImageSource;
@@ -200,7 +203,8 @@ type
     function ArrowRect: TRectF;
     procedure PaintBackground(const ACanvas: TCanvas);
     procedure PaintSegmentFrame(const ACanvas: TCanvas);
-    procedure PaintGlyph(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState);
+    procedure PaintGlyph(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState;
+      const ATint: TAlphaColor = 0);
   protected
     function PartState(const APart: TFmrElementPart): TFmrPartState; override;
   public
@@ -285,6 +289,11 @@ implementation
 
 uses
   {$IFDEF MSWINDOWS}Winapi.Windows, {$ENDIF}FMX.Platform, FMX.Menus, FMR.Ribbon.BiDi;
+
+const
+  /// <summary>Track of the toggle switch of check items with CheckStyle = ToggleSwitch (Windows 11 size).</summary>
+  ToggleSwitchWidth = 40;
+  ToggleSwitchHeight = 20;
 
 var
   GViewRegistry: TList<TPair<TFmrBarItemClass, TFmrItemViewClass>>;
@@ -735,6 +744,21 @@ begin
   Result := Item is TFmrCheckItem;
 end;
 
+function TFmrButtonView.IsToggleSwitch: Boolean;
+begin
+  Result := (Item is TFmrCheckItem) and (TFmrCheckItem(Item).CheckStyle = TFmrCheckStyle.ToggleSwitch);
+end;
+
+function TFmrButtonView.IsPrimary: Boolean;
+begin
+  Result := (Item is TFmrButtonItem) and TFmrButtonItem(Item).Primary;
+end;
+
+function TFmrButtonView.IsAvatar: Boolean;
+begin
+  Result := Item is TFmrAvatarItem;
+end;
+
 function TFmrButtonView.IsStatic: Boolean;
 begin
   Result := Item is TFmrStaticItem;
@@ -742,9 +766,14 @@ end;
 
 function TFmrButtonView.ShowsText: Boolean;
 begin
+  if IsAvatar then
+    Exit(False);
   case ViewPlace of
     TFmrViewPlace.Toolbar:
-      Result := not HasGlyph and not IsCheckBox;
+      // A toolbar shows the caption of a toggle switch, of an item without a glyph, and of a link that asks for it
+      // (ViewLevels with SmallWithText: "Share", "Comments" in the tab row).
+      Result := (not HasGlyph and not IsCheckBox) or IsToggleSwitch or
+        ((Link <> nil) and (TFmrViewLevel.SmallWithText in Link.ViewLevels) and (Caption <> ''));
   else
     Result := (Level <> TFmrViewLevel.Small) or (not HasGlyph and not IsCheckBox);
   end;
@@ -815,13 +844,29 @@ begin
   end;
   if ViewPlace = TFmrViewPlace.Toolbar then
   begin
+    if IsAvatar then
+      Exit(M.QATButtonSize + 8);
+    if IsToggleSwitch then
+    begin
+      Result := ToggleSwitchWidth + 2 * Pad;
+      if Caption <> '' then
+        Result := Result + Painter.TextWidth(Caption) + 8;
+      Exit(Ceil(Result));
+    end;
     if ShowsText then
-      Result := Painter.TextWidth(Caption) + 2 * Pad
+    begin
+      Result := Painter.TextWidth(Caption) + 2 * Pad;
+      if HasGlyph then
+        Result := Result + M.SmallGlyphSize + 4;
+    end
     else
       Result := M.QATButtonSize;
-    if HasArrow then
+    // A captioned split button ("Share") keeps the whole arrow part after its text.
+    if HasArrow and ShowsText and IsSplit then
+      Result := Result + ArrowAreaWidth
+    else if HasArrow then
       Result := Result + 10;
-    Exit;
+    Exit(Ceil(Result));
   end;
   case ALevel of
     TFmrViewLevel.Large:
@@ -838,7 +883,9 @@ begin
     TFmrViewLevel.SmallWithText:
       begin
         Result := Pad;
-        if IsCheckBox then
+        if IsToggleSwitch then
+          Result := Result + ToggleSwitchWidth + 8
+        else if IsCheckBox then
           Result := Result + 13 + 5
         else if HasGlyph then
           Result := Result + M.SmallGlyphSize + 4;
@@ -847,7 +894,9 @@ begin
       end;
   else
     begin
-      if IsCheckBox then
+      if IsToggleSwitch then
+        Result := ToggleSwitchWidth + 2 * Pad
+      else if IsCheckBox then
         Result := 13 + 2 * Pad
       else if HasGlyph then
         Result := M.SmallGlyphSize + 2 * Pad + 2
@@ -994,6 +1043,18 @@ var
   F, B: TFmrToken;
   Rad: Single;
 begin
+  if IsAvatar or IsToggleSwitch then
+    Exit;
+  if IsPrimary then
+  begin
+    // Accent filled in every state; a split button is one filled shape (Office "Share").
+    MainState := PartState(TFmrElementPart.Main);
+    ArrowState := PartState(TFmrElementPart.DropDown);
+    if ArrowState in [TFmrPartState.Hot, TFmrPartState.Pressed] then
+      MainState := ArrowState;
+    Painter.DrawPrimaryButton(ACanvas, Bounds, MainState);
+    Exit;
+  end;
   if IsStatic or IsCheckBox then
   begin
     // Check items show the hot state over the whole row, like buttons.
@@ -1039,11 +1100,13 @@ begin
     Painter.DrawButton(ACanvas, Bounds, S, Corners);
 end;
 
-procedure TFmrButtonView.PaintGlyph(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState);
+procedure TFmrButtonView.PaintGlyph(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState;
+  const ATint: TAlphaColor);
 var
   G: TFmrImageSource;
   Opacity: Single;
   Bar: TRectF;
+  Tint: TAlphaColor;
 begin
   G := Glyph(R.Width > Metrics.SmallGlyphSize + 1);
   if G = nil then
@@ -1054,7 +1117,10 @@ begin
     Opacity := 1;
   if (G.EffectiveKind in [TFmrImageKind.Glyph, TFmrImageKind.Path]) or G.Recolor then
     Opacity := 1;
-  FmrDrawImage(ACanvas, G, R, Opacity, Painter.GlyphTint(AState), Images);
+  Tint := ATint;
+  if Tint = 0 then
+    Tint := Painter.GlyphTint(AState);
+  FmrDrawImage(ACanvas, G, R, Opacity, Tint, Images);
   if Item is TFmrColorItem then
   begin
     Bar := RectF(R.Left, R.Bottom - R.Height * 0.2, R.Right, R.Bottom + 1);
@@ -1091,7 +1157,32 @@ begin
     ArrowColor := Painter.Theme.Colors[TFmrToken.ButtonTextDisabled]
   else
     ArrowColor := Painter.Theme.Colors[TFmrToken.ButtonArrow];
+  if IsPrimary then
+  begin
+    TextColor := Painter.Theme.Colors[TFmrToken.PrimaryButtonText];
+    ArrowColor := TextColor;
+  end;
   R := Bounds;
+
+  if IsAvatar then
+  begin
+    Painter.DrawAvatar(ACanvas, R, TFmrAvatarItem(Item).Initials, TFmrAvatarItem(Item).Color, S);
+    PaintFocus(ACanvas);
+    Exit;
+  end;
+
+  if IsToggleSwitch then
+  begin
+    // Caption first, then the switch (Office "AutoSave").
+    CheckR := RectF(R.Right - Pad - ToggleSwitchWidth, Round(R.CenterPoint.Y - ToggleSwitchHeight / 2),
+      R.Right - Pad, Round(R.CenterPoint.Y - ToggleSwitchHeight / 2) + ToggleSwitchHeight);
+    if Caption <> '' then
+      Painter.TextEx(ACanvas, RectF(R.Left + Pad, R.Top, CheckR.Left - 8, R.Bottom), Caption, TextColor,
+        TTextAlign.Leading, TTextAlign.Center, 0, False, False);
+    Painter.DrawToggleSwitch(ACanvas, CheckR, IsChecked, S);
+    PaintFocus(ACanvas);
+    Exit;
+  end;
 
   if IsStatic then
   begin
@@ -1146,6 +1237,17 @@ begin
           GlyphR.Offset(Round(R.CenterPoint.X - M.SmallGlyphSize / 2), Round(R.CenterPoint.Y - M.SmallGlyphSize / 2));
         PaintGlyph(ACanvas, GlyphR, S);
         X := GlyphR.Right;
+      end
+      else if HasGlyph then
+      begin
+        // Glyph and caption ("Share" in the tab row)
+        GlyphR := RectF(0, 0, M.SmallGlyphSize, M.SmallGlyphSize);
+        GlyphR.Offset(Round(X), Round(R.CenterPoint.Y - M.SmallGlyphSize / 2));
+        if IsPrimary then
+          PaintGlyph(ACanvas, GlyphR, S, TextColor)
+        else
+          PaintGlyph(ACanvas, GlyphR, S);
+        X := GlyphR.Right + 4;
       end;
     end
     else if IsCheckBox then
@@ -1164,7 +1266,7 @@ begin
     if ShowsText then
     begin
       TextR := RectF(X, R.Top, R.Right - ArrowAreaWidth - Pad + 2, R.Bottom);
-      if ViewPlace = TFmrViewPlace.Toolbar then
+      if (ViewPlace = TFmrViewPlace.Toolbar) and not IsSplit then
         TextR.Right := R.Right - Pad;
       Painter.TextEx(ACanvas, TextR, Caption, TextColor, TTextAlign.Leading, TTextAlign.Center, 0, False, False);
     end;

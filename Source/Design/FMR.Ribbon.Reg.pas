@@ -40,7 +40,7 @@ begin
   RegisterNoIcon([TFmrRibbonTab, TFmrRibbonGroup, TFmrRibbonContextGroup, TFmrButtonItem, TFmrSubItem,
     TFmrSeparatorItem, TFmrStaticItem, TFmrControlItem, TFmrEditItem, TFmrComboItem, TFmrSpinItem,
     TFmrTrackBarItem, TFmrFontNameItem, TFmrCheckItem, TFmrColorItem, TFmrGalleryItem, TFmrRibbonGalleryItem,
-    TFmrColorGalleryItem]);
+    TFmrColorGalleryItem, TFmrAvatarItem]);
 
   // TFmrFormFrame is a plain TComponent: show it for FireMonkey forms only.
   GroupDescendentsWith(TFmrFormFrame, FMX.Controls.TControl);

@@ -20,6 +20,8 @@ type
     [TearDown] procedure TearDown;
     [Test] procedure TextReadsOnItsFill;
     [Test] procedure UnknownNameGivesDefaultTheme;
+    [Test] procedure Office2024AccentRamp;
+    [Test] procedure Office2024Themes;
   end;
 
 /// Color of ATop (with alpha) painted over the opaque ABase.
@@ -133,6 +135,13 @@ begin
         2.5);
       CheckPair(T, 'gallery scroll', TFmrToken.GalleryScrollGlyph, TFmrToken.GalleryScrollFill, TFmrToken.BodyFill,
         2.5);
+      CheckPair(T, 'inactive tab text', TFmrToken.TabTextInactive, TFmrToken.TabRowFill, TFmrToken.TabRowFill);
+      CheckPair(T, 'primary button', TFmrToken.PrimaryButtonText, TFmrToken.PrimaryButtonFill,
+        TFmrToken.PrimaryButtonFill);
+      CheckPair(T, 'hot primary button', TFmrToken.PrimaryButtonText, TFmrToken.PrimaryButtonHotFill,
+        TFmrToken.PrimaryButtonHotFill);
+      CheckPair(T, 'toggle switch thumb', TFmrToken.ToggleSwitchThumbOn, TFmrToken.ToggleSwitchFill,
+        TFmrToken.ToggleSwitchFill, 2);
     finally
       T.Free;
     end;
@@ -153,6 +162,55 @@ begin
   finally
     T.Free;
     D.Free;
+  end;
+end;
+
+procedure TThemeTests.Office2024AccentRamp;
+
+  function Near(const A, B: TAlphaColor; const ATolerance: Integer): Boolean;
+  begin
+    Result := (Abs(TAlphaColorRec(A).R - TAlphaColorRec(B).R) <= ATolerance) and
+      (Abs(TAlphaColorRec(A).G - TAlphaColorRec(B).G) <= ATolerance) and
+      (Abs(TAlphaColorRec(A).B - TAlphaColorRec(B).B) <= ATolerance);
+  end;
+
+begin
+  // The light brand shades of Microsoft 365 (measured on Word and Excel, Black and Dark Gray themes).
+  Assert.IsTrue(Near(FmrAccentShade(FmrAccentWord2024, 1), $FF598FEC, 8), 'Word 1');
+  Assert.IsTrue(Near(FmrAccentShade(FmrAccentWord2024, 2), $FF82ABF1, 8), 'Word 2');
+  Assert.IsTrue(Near(FmrAccentShade(FmrAccentWord2024, 3), $FFAEC6F0, 8), 'Word 3');
+  Assert.IsTrue(Near(FmrAccentShade(FmrAccentExcel, 2), $FF60BD82, 18), 'Excel 2');
+  Assert.IsTrue(Near(FmrAccentShade(FmrAccentExcel, 3), $FFA0D8B9, 12), 'Excel 3');
+end;
+
+procedure TThemeTests.Office2024Themes;
+var
+  N: string;
+  T: TFmrTheme;
+begin
+  for N in ['Office2024Light', 'Office2024DarkGray', 'Office2024Dark'] do
+  begin
+    Assert.IsTrue(TFmrTheme.ThemeExists(N), N);
+    T := TFmrTheme.CreateTheme(N);
+    try
+      Assert.AreEqual(Ord(TFmrThemeFamily.Office2024), Ord(T.Style.Family), N);
+      Assert.IsTrue(T.Style.BoldActiveTab and T.Style.ChevronArrows and T.Style.TransparentCaption, N);
+      // only the caption content dims when the window is inactive: tabs keep their color
+      Assert.AreEqual(T.Colors[TFmrToken.TabText], T.Colors[TFmrToken.TabTextInactive], N);
+      Assert.AreNotEqual(T.Colors[TFmrToken.CaptionText], T.Colors[TFmrToken.CaptionTextInactive], N);
+      Assert.AreEqual(48.0, Double(T.Metrics.CaptionHeight), 0.01, N);
+      Assert.AreEqual(30.0, Double(T.Metrics.TabRowHeight), 0.01, N);
+    finally
+      T.Free;
+    end;
+  end;
+  // White: the active tab line is the "Share" fill x 0.9 (Word #185ABD -> #1651AA)
+  T := TFmrTheme.CreateTheme('Office2024Light');
+  try
+    Assert.AreEqual(TAlphaColor($FF185ABD), T.Colors[TFmrToken.PrimaryButtonFill]);
+    Assert.AreEqual(TAlphaColor($FF1651AA), T.Colors[TFmrToken.TabActiveIndicator]);
+  finally
+    T.Free;
   end;
 end;
 

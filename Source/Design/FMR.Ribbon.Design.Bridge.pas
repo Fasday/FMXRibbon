@@ -281,6 +281,7 @@ begin
     Info(TFmrSpinItem, 'Spin Edit', 'Spin', $ECE7),
     Info(TFmrTrackBarItem, 'Track Bar', 'TrackBar', $E9E9),
     Info(TFmrFontNameItem, 'Font Name', 'FontName', $E8D2),
+    Info(TFmrAvatarItem, 'Account Picture (initials)', 'Avatar', $E77B),
     Info(TFmrControlItem, 'Control Container', 'Control', $E737)];
 end;
 

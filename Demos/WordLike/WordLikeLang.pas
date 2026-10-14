@@ -141,6 +141,32 @@ const
     ('lblReplace', 'Заменить на'), ('edReplace', 'Новый текст'), ('btnReplaceOne', 'Заменить'),
     ('btnReplaceAll', 'Заменить все'));
 
+  /// Components of the Word 2024 layout (caption row, tab row, the 2024 Home tab, status bar).
+  Texts2024: array [0..45] of array [0..1] of string = (
+    ('chkAutoSave', 'Автосохранение'), ('btnUndoAll', 'Отменить все изменения'),
+    ('btnAccount', 'Учетная запись'), ('btnAccountName', 'Пользователь FMR Write'),
+    ('btnAccountSwitch', 'Сменить учетную запись'), ('btnShare', 'Общий доступ'),
+    ('btnShare#d', 'Пригласить других к совместной работе над документом.'), ('btnShareLink', 'Копировать ссылку'),
+    ('btnShareCopy', 'Отправить копию'), ('btnComments', 'Примечания'),
+    ('btnFormatPainter', 'Формат по образцу'),
+    ('btnFormatPainter#d', 'Скопировать форматирование выделенного фрагмента и применить его к другому.'),
+    ('btnSubscript#d', 'Подстрочный знак: очень маленькие буквы ниже строки.'),
+    ('btnSuperscript#d', 'Надстрочный знак: очень маленькие буквы над строкой.'),
+    ('btnTextEffects', 'Текстовые эффекты и оформление'), ('clrHighlight', 'Цвет выделения текста'),
+    ('btnMultilevel', 'Многоуровневый список'), ('btnShowMarks', 'Отобразить все знаки'),
+    ('btnLineSpacing', 'Интервал между строками и абзацами'), ('btnSpacing10', '1,0'), ('btnSpacing115', '1,15'),
+    ('btnSpacing15', '1,5'), ('btnSpacing20', '2,0'), ('clrShading', 'Заливка'), ('btnBorders', 'Границы'),
+    ('btnSelect', 'Выделить'), ('btnSelectSimilar', 'Выделить текст с похожим форматированием'),
+    ('btnAdvancedFind', 'Расширенный поиск...'), ('btnGoTo', 'Перейти...'),
+    ('grpAddins', 'Надстройки'), ('btnAddins', 'Надстройки'),
+    ('btnAddins#d', 'Найти надстройки для Word и управлять ими.'),
+    ('btnOfficeTheme', 'Тема Office'), ('btnThemeLight', 'Светлая'), ('btnThemeDarkGray', 'Темно-серая'),
+    ('btnThemeDark', 'Черная'), ('btnThemeSystem', 'Использовать системный параметр'),
+    ('spAccessibility', 'Специальные возможности: все в порядке'), ('spDisplay', 'Параметры отображения'),
+    ('spFocus', 'Фокусировка'), ('btnAlignLeft', 'Выровнять по левому краю'), ('btnAlignCenter', 'По центру'),
+    ('btnAlignRight', 'Выровнять по правому краю'), ('btnJustify', 'По ширине'), ('btnBullets', 'Маркеры'),
+    ('btnNumbering', 'Нумерация'));
+
 var
   Table: TDictionary<string, string>;
 
@@ -153,6 +179,8 @@ begin
     Table := TDictionary<string, string>.Create;
     for I := 0 to High(Texts) do
       Table.AddOrSetValue(Texts[I][0].ToLower, Texts[I][1]);
+    for I := 0 to High(Texts2024) do
+      Table.AddOrSetValue(Texts2024[I][0].ToLower, Texts2024[I][1]);
   end;
   Result := Table.TryGetValue(AKey.ToLower, AText);
 end;
