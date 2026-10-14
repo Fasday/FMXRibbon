@@ -121,6 +121,7 @@ Screenshots in `shots\linux\final\<name>\` (not committed; `tools\linux-run.ps1`
 | Key tips (`ShowKeyTipsNow`; keyboard input is not available headless) | shown | `keytips` |
 | Font name list from fontconfig (213 families), theme font resolved to Noto Sans | OK, opens in < 2 s | `fontlist` (status bar text) |
 | Integrated title bar with a stand-in frame service and `FMXWAYLAND_CSD=0` | OK (drawing; move/resize need the real service) | `titlebar-preview` |
+| Integrated title bar with the real service (FMXWayland `windowframe` branch): no FMXWayland title bar, the window at the program's size (1180x640), states from the listener, popups | OK | `nc_light`, `nc_dark_cover`, `nc_365c` (the pictures at the top) |
 | Showcase demo (Word template, backstage helper controls, status bar, navigation list), Office 365 Black | OK | `showcase` |
 | Output scale 2 (buffers 2x, icons and text sharp) | OK | `scale2` |
 | Windows: 171 tests, Win64/Win32 builds, packages Win32/Win64 (+ Linux64 runtime) | pass | `bin\Win64\Debug\FmrRibbonTests.exe`, `tools\build-packages.ps1` |
@@ -300,8 +301,8 @@ desktop (dark caption).
 **Test it before FMXWayland has it:** `RibbonBasic /waylandframe=preview` registers a stand-in service
 (`Demos\RibbonBasic\RibbonBasicWayland.pas`; minimize/maximize through FMX, move/resize/menu logged); with
 `FMXWAYLAND_CSD=0` (`tools\linux-run.ps1 -CsdOff`) the window shows exactly the integrated title bar
-(`titlebar-preview` above). Once FMXWayland registers the real service, remove the switch from the command line: the
-frame finds the service and attaches by itself.
+Once FMXWayland registers the real service, remove the switch from the command line: the frame finds the service
+and attaches by itself (as with the `windowframe` branch in the pictures at the top).
 
 ### Other suggestions for FMXWayland (seen while porting)
 
