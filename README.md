@@ -39,6 +39,23 @@ Office 2007 application menu, quick access toolbar, key tips, screen tips, user 
 - **Localization** EN/RU (`FmrSetLanguage('ru')`), **UI Automation** provider, works with the stock FMX canvas and
   with FastCanvas (a Direct3D 11/12 GPU canvas).
 
+## Themes
+
+The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 10 of the 18 built-in themes. The theme is switched at run time with`TFmrRibbon.Theme`; `AccentColor` recolors any of them. Regenerate the pictures with `tools\theme-shots.ps1`.
+
+| | |
+|---|---|
+| ![Office 365 Colorful](Docs/images/themes/Office365Colorful.png) | ![Office 365 White](Docs/images/themes/Office365White.png) |
+| `Office365Colorful` — Office 365 Colorful | `Office365White` — Office 365 White |
+| ![Office 365 Black](Docs/images/themes/Office365Black.png) | ![Office 2016 Colorful](Docs/images/themes/Office2016Colorful.png) |
+| `Office365Black` — Office 365 Black | `Office2016Colorful` — Office 2016 Colorful |
+| ![Office 2013 White](Docs/images/themes/Office2013White.png) | ![Office 2010 Blue](Docs/images/themes/Office2010Blue.png) |
+| `Office2013White` — Office 2013 White | `Office2010Blue` — Office 2010 Blue |
+| ![Office 2007 Blue](Docs/images/themes/Office2007Blue.png) | ![Office 2007 Black](Docs/images/themes/Office2007Black.png) |
+| `Office2007Blue` — Office 2007 Blue | `Office2007Black` — Office 2007 Black |
+| ![Windows 11 Light](Docs/images/themes/FluentLight.png) | ![Windows 11 Dark](Docs/images/themes/FluentDark.png) |
+| `FluentLight` — Windows 11 Light | `FluentDark` — Windows 11 Dark |
+
 ## Requirements
 
 - Delphi 13 (RAD Studio 37.0) or newer, FireMonkey; Win64 and Win32.
