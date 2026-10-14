@@ -7,9 +7,6 @@
 
 [English version](README.md)
 
-> Проект не связан с Microsoft и не одобрен ею. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
-> Access, Windows и Fluent — товарные знаки группы компаний Microsoft. Названия тем описывают только визуальный стиль.
-
 ![FMR Notes (Demos\Notes) в виде по умолчанию: тема Modern 2024 Dark по тёмному режиму Windows, заголовок поверх Mica](Docs/images/fmr-notes.png)
 
 ## Главное
@@ -66,10 +63,6 @@
 | `GlassBlack` — Glass Black | `SoftLight` — Soft Light, в стиле Windows 11 |
 | ![Soft Dark](Docs/images/themes/SoftDark.png) |  |
 | `SoftDark` — Soft Dark |  |
-
-Названия тем первого выпуска (`Office365White`, `Office2024Light`, `FluentDark`…) продолжают работать как устаревшие
-псевдонимы: `TFmrRibbon.Theme := 'Office2024Light'` выбирает `Modern2024Light` и сохраняет новое имя, так что заново
-сохранённые формы получают новые названия (`Docs\STYLES.md`).
 
 ## Требования
 
@@ -194,6 +187,3 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 MIT, см. [LICENSE](LICENSE). Сторонние компоненты («FMR Icons» в `Assets\Fonts` — подмножество Fluent UI System Icons
 от Microsoft, MIT): [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Проект не связан с Microsoft и не одобрен ею. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
-Access, Windows и Fluent — товарные знаки группы компаний Microsoft. Названия тем описывают только визуальный стиль.

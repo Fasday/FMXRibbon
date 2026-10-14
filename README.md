@@ -8,10 +8,6 @@ the non-client area (`WM_NCCALCSIZE` / `WM_NCPAINT`) while holding ordinary FMX 
 
 [Русская версия](README.ru.md)
 
-> Not affiliated with or endorsed by Microsoft. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
-> Access, Windows and Fluent are trademarks of the Microsoft group of companies. Theme names describe a visual style
-> only.
-
 ![FMR Notes (Demos\Notes) in its default look: the Modern 2024 Dark theme following the dark mode of Windows, the caption over Mica](Docs/images/fmr-notes.png)
 
 ## Highlights
@@ -69,10 +65,6 @@ The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in the
 | `GlassBlack` — Glass Black | `SoftLight` — Soft Light, in the style of Windows 11 |
 | ![Soft Dark](Docs/images/themes/SoftDark.png) |  |
 | `SoftDark` — Soft Dark |  |
-
-The theme names of the first release (`Office365White`, `Office2024Light`, `FluentDark`…) still work as deprecated
-aliases: `TFmrRibbon.Theme := 'Office2024Light'` selects `Modern2024Light` and stores the new name, so forms saved
-again get the new names (`Docs\STYLES.md`).
 
 ## Requirements
 
@@ -197,7 +189,3 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 MIT, see [LICENSE](LICENSE). Third-party notices ("FMR Icons" in `Assets\Fonts`, a subset of Microsoft's Fluent UI
 System Icons, MIT): [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-Not affiliated with or endorsed by Microsoft. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
-Access, Windows and Fluent are trademarks of the Microsoft group of companies. Theme names describe a visual style
-only.
