@@ -71,7 +71,11 @@
 
 ## Linux
 
-![RibbonBasic в Linux](Docs/images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic в Linux: строка заголовка и вкладки ленты вместо заголовка окна](Docs/images/linux/ribbonbasic-office2024light.png)
+
+| | |
+|---|---|
+| ![Office 2024 Dark, выпадающая галерея](Docs/images/linux/gallery-dropdown.png) | ![Office 365 Colorful](Docs/images/linux/office365colorful.png) |
 
 FMR Ribbon работает в Linux на FMXWayland (нативная Wayland-платформа FMX без libfmux; канвас Skia):
 
@@ -82,9 +86,10 @@ FMR Ribbon работает в Linux на FMXWayland (нативная Wayland-�
 
 Программа ставит `GlobalUseSkia := True` и поставляется с `libsk4d.so` и `fonts/FmrFluentIcons.ttf` (build.ps1
 кладёт их рядом). Темы берут установленный UI-шрифт (Noto Sans, Cantarell, DejaVu Sans…), коды Segoe-иконок рисуются
-из встроенного шрифта, список шрифтов — из fontconfig. Лента стоит под заголовком окна FMXWayland (без второго
-заголовка); чтобы строка заголовка и вкладки ленты жили в заголовке окна, FMXWayland нужен небольшой сервис платформы,
-которого пока нет, — контракт `IFMXWaylandWindowFrame` и остальное описаны в `Docs\LINUX.md`.
+из встроенного шрифта, список шрифтов — из fontconfig. С сервисом рамки окна FMXWayland (`IFMXWaylandWindowFrame`,
+пока в его ветке `windowframe`, до слияния) строка заголовка и вкладки ленты встают на место заголовка окна, как на
+картинках выше (перемещение, изменение размера, разворачивание и меню окна делает композитор); без сервиса лента стоит
+под собственным заголовком FMXWayland. Подробности в `Docs\LINUX.md`.
 
 ## Установка
 

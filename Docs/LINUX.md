@@ -1,4 +1,4 @@
-# FMR Ribbon on Linux (FMXWayland)
+﻿# FMR Ribbon on Linux (FMXWayland)
 
 FMR Ribbon runs on Linux under FMXWayland, a native Wayland backend of FireMonkey written in Object Pascal that
 replaces Embarcadero's closed `libfmux` (GTK) — a separate MIT project of the same author; see its `README.md`. FMX draws with its Skia
@@ -6,12 +6,17 @@ canvas, windows and popups are Wayland `xdg_toplevel`/`xdg_popup` surfaces. Ever
 compiles with `dcclinux64`; `Demos\RibbonBasic` and `Demos\Showcase` build and run (checked on a headless Weston 14
 in WSL, screenshots below).
 
-![RibbonBasic on Linux under FMXWayland's title bar](images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](images/linux/ribbonbasic-office2024light.png)
 
 | | |
 |---|---|
-| ![Gallery drop-down as an xdg_popup](images/linux/gallery-dropdown.png) | ![Integrated title bar preview](images/linux/titlebar-preview.png) |
-| Insert > Cover Page: drop-down gallery (filter, groups, owner-drawn pages, commands, grip) — an `xdg_popup` | The integrated title bar (`/waylandframe=preview`, see [the frame contract](#the-window-frame-contract-ifmxwaylandwindowframe)) |
+| ![Office 2024 Dark, a drop-down gallery](images/linux/gallery-dropdown.png) | ![Office 365 Colorful](images/linux/office365colorful.png) |
+| Office 2024 Dark, Insert > Cover Page: the drop-down gallery is an `xdg_popup` | Office 365 Colorful |
+
+The pictures are frame dumps of a headless Weston (2026-10-14), with FMXWayland's `windowframe` branch: the
+ribbon draws the title bar through [the frame service](#the-window-frame-contract-ifmxwaylandwindowframe) (no
+`/waylandframe=preview`, no `FMXWAYLAND_CSD=0`). With FMXWayland's `main` (until the branch is merged) the
+ribbon sits under FMXWayland's own title bar.
 
 ## Requirements
 

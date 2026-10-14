@@ -72,7 +72,11 @@ The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in the
 
 ## Linux
 
-![RibbonBasic on Linux](Docs/images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](Docs/images/linux/ribbonbasic-office2024light.png)
+
+| | |
+|---|---|
+| ![Office 2024 Dark, a drop-down gallery](Docs/images/linux/gallery-dropdown.png) | ![Office 365 Colorful](Docs/images/linux/office365colorful.png) |
 
 FMR Ribbon runs on Linux on FMXWayland (a native Wayland platform for FMX without libfmux; Skia canvas):
 
@@ -83,9 +87,10 @@ FMR Ribbon runs on Linux on FMXWayland (a native Wayland platform for FMX withou
 
 The program sets `GlobalUseSkia := True` and ships `libsk4d.so` and `fonts/FmrFluentIcons.ttf` (build.ps1 copies
 them). Themes fall back to an installed UI font (Noto Sans, Cantarell, DejaVu Sans…), Segoe icon codes are drawn from
-the bundled icon font, the font list comes from fontconfig. The ribbon sits under FMXWayland's title bar (no second
-title); putting its caption and tab rows into the title bar needs a small platform service that FMXWayland does not
-have yet — the contract, `IFMXWaylandWindowFrame`, and the rest are in `Docs\LINUX.md`.
+the bundled icon font, the font list comes from fontconfig. With FMXWayland's window frame service
+(`IFMXWaylandWindowFrame`, in its `windowframe` branch until it is merged) the caption row and the tab row take the
+place of the title bar, as in the pictures above (the window is moved, resized, maximized and given its window menu
+by the compositor); without it the ribbon sits under FMXWayland's own title bar. Details in `Docs\LINUX.md`.
 
 ## Installation
 
