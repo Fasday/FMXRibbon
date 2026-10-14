@@ -276,10 +276,6 @@ const
   FmrGlyphHelp = $E897;
   FmrGlyphNew = $E8A5;
 
-  { old names }
-  FmrGlyphSmartArt = FmrGlyphDiagram deprecated 'Use FmrGlyphDiagram';
-  FmrGlyphWordArt = FmrGlyphTextEffects deprecated 'Use FmrGlyphTextEffects';
-
 implementation
 
 const

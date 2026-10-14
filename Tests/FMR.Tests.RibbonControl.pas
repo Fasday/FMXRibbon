@@ -24,7 +24,7 @@ type
     [TearDown] procedure TearDown;
     [Test] procedure CaptionRowGlyphsReadInEveryTheme;
     [Test] procedure UnknownThemeKeepsAWorkingTheme;
-    [Test] procedure OldThemeNameIsStoredAsTheNewName;
+    [Test] procedure ThemeNameIsStoredInItsRegisteredSpelling;
     [Test] procedure ManagerFreedBeforeRibbon;
     [Test] procedure RibbonFreedBeforeManager;
     [Test] procedure ManagerSetToNilAndBack;
@@ -110,17 +110,13 @@ begin
   Assert.IsNotNull(FRibbon.ThemeObject);
 end;
 
-procedure TRibbonControlTests.OldThemeNameIsStoredAsTheNewName;
+procedure TRibbonControlTests.ThemeNameIsStoredInItsRegisteredSpelling;
 begin
-  FRibbon.Theme := 'Office2024Light';
+  FRibbon.Theme := 'modern2024light';
   Assert.AreEqual('Modern2024Light', FRibbon.Theme);
   Assert.AreEqual('Modern2024Light', FRibbon.ThemeObject.Name);
-  FRibbon.Theme := 'fluentdark';
-  Assert.AreEqual('SoftDark', FRibbon.Theme);
   FRibbon.Theme := 'GlassBlue';
   Assert.AreEqual('GlassBlue', FRibbon.Theme);
-  FRibbon.Theme := 'Office365White';
-  Assert.AreEqual(FmrDefaultThemeName, FRibbon.Theme);
 end;
 
 procedure TRibbonControlTests.ManagerFreedBeforeRibbon;

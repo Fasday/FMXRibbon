@@ -16,8 +16,7 @@ unit FMR.Ribbon.Themes.Builtin;
 ///   ClassicBlue, ClassicSilver, ClassicBlack                    (in the style of Office 2010),
 ///   GlassBlue, GlassSilver, GlassBlack                          (in the style of Office 2007),
 ///   SoftLight, SoftDark                                         (in the style of Windows 11),
-///   Modern2024Light, Modern2024DarkGray, Modern2024Dark         (in the style of Microsoft 365, 2024),
-/// and the theme names of the first release as deprecated aliases (Aliases in FmrRegisterBuiltinThemes).
+///   Modern2024Light, Modern2024DarkGray, Modern2024Dark         (in the style of Microsoft 365, 2024).
 /// The palettes are our own, built from an accent color; the theme names describe a visual style only.
 
 interface
@@ -1452,21 +1451,6 @@ begin
 end;
 
 procedure FmrRegisterBuiltinThemes;
-const
-  // The theme names of the first release (deprecated); forms and settings that store them keep working.
-  Aliases: array [0..20, 0..1] of string = (
-    ('Office365Colorful', 'ModernColorful'), ('Office365White', 'ModernWhite'),
-    ('Office365DarkGray', 'ModernDarkGray'), ('Office365Black', 'ModernBlack'),
-    ('Office2016Colorful', 'BannerColorful'), ('Office2016White', 'BannerWhite'),
-    ('Office2016DarkGray', 'BannerDarkGray'),
-    ('Office2013White', 'FlatWhite'), ('Office2013LightGray', 'FlatLightGray'), ('Office2013DarkGray', 'FlatDarkGray'),
-    ('Office2010Blue', 'ClassicBlue'), ('Office2010Silver', 'ClassicSilver'), ('Office2010Black', 'ClassicBlack'),
-    ('Office2007Blue', 'GlassBlue'), ('Office2007Silver', 'GlassSilver'), ('Office2007Black', 'GlassBlack'),
-    ('FluentLight', 'SoftLight'), ('FluentDark', 'SoftDark'),
-    ('Office2024Light', 'Modern2024Light'), ('Office2024DarkGray', 'Modern2024DarkGray'),
-    ('Office2024Dark', 'Modern2024Dark'));
-var
-  I: Integer;
 begin
   TFmrTheme.RegisterTheme('ModernColorful', 'Modern Colorful', FmrAccentBlue, BuildModernColorful);
   TFmrTheme.RegisterTheme('ModernWhite', 'Modern White', FmrAccentBlue, BuildModernWhite);
@@ -1489,8 +1473,6 @@ begin
   TFmrTheme.RegisterTheme('Modern2024Light', 'Modern 2024 Light', FmrAccentCobalt, BuildModern2024Light);
   TFmrTheme.RegisterTheme('Modern2024DarkGray', 'Modern 2024 Dark Gray', FmrAccentCobalt, BuildModern2024DarkGray);
   TFmrTheme.RegisterTheme('Modern2024Dark', 'Modern 2024 Dark', FmrAccentCobalt, BuildModern2024Dark);
-  for I := Low(Aliases) to High(Aliases) do
-    TFmrTheme.RegisterThemeAlias(Aliases[I, 0], Aliases[I, 1]);
 end;
 
 initialization

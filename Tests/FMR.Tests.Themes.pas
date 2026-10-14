@@ -1,8 +1,7 @@
 unit FMR.Tests.Themes;
 
 /// Built-in themes: every text and glyph token reads on the fill it is painted on (contrast ratio, WCAG formula,
-/// translucent fills composed over their base); unknown theme names give the default theme; the theme names of the
-/// first release are aliases of the new ones.
+/// translucent fills composed over their base); unknown theme names give the default theme; theme names.
 
 interface
 
@@ -23,8 +22,7 @@ type
     [Test] procedure UnknownNameGivesDefaultTheme;
     [Test] procedure Modern2024AccentRamp;
     [Test] procedure Modern2024Themes;
-    [Test] procedure OldNamesAreAliases;
-    [Test] procedure ThemeNamesExcludeAliases;
+    [Test] procedure ThemeNames;
   end;
 
 /// Color of ATop (with alpha) painted over the opaque ABase.
@@ -218,52 +216,7 @@ begin
   end;
 end;
 
-procedure TThemeTests.OldNamesAreAliases;
-const
-  Pairs: array [0..20, 0..1] of string = (
-    ('Office365Colorful', 'ModernColorful'), ('Office365White', 'ModernWhite'),
-    ('Office365DarkGray', 'ModernDarkGray'), ('Office365Black', 'ModernBlack'),
-    ('Office2016Colorful', 'BannerColorful'), ('Office2016White', 'BannerWhite'),
-    ('Office2016DarkGray', 'BannerDarkGray'),
-    ('Office2013White', 'FlatWhite'), ('Office2013LightGray', 'FlatLightGray'), ('Office2013DarkGray', 'FlatDarkGray'),
-    ('Office2010Blue', 'ClassicBlue'), ('Office2010Silver', 'ClassicSilver'), ('Office2010Black', 'ClassicBlack'),
-    ('Office2007Blue', 'GlassBlue'), ('Office2007Silver', 'GlassSilver'), ('Office2007Black', 'GlassBlack'),
-    ('FluentLight', 'SoftLight'), ('FluentDark', 'SoftDark'),
-    ('Office2024Light', 'Modern2024Light'), ('Office2024DarkGray', 'Modern2024DarkGray'),
-    ('Office2024Dark', 'Modern2024Dark'));
-var
-  I: Integer;
-  OldTheme, NewTheme: TFmrTheme;
-begin
-  for I := Low(Pairs) to High(Pairs) do
-  begin
-    Assert.IsTrue(TFmrTheme.IsThemeAlias(Pairs[I, 0]), Pairs[I, 0]);
-    Assert.IsTrue(TFmrTheme.ThemeExists(Pairs[I, 0]), Pairs[I, 0]);
-    Assert.IsTrue(TFmrTheme.ThemeExists(Pairs[I, 1]), Pairs[I, 1]);
-    Assert.AreEqual(Pairs[I, 1], TFmrTheme.ResolveThemeName(Pairs[I, 0]), Pairs[I, 0]);
-    Assert.AreEqual(Pairs[I, 1], TFmrTheme.ResolveThemeName(Pairs[I, 0].ToLower), 'case: ' + Pairs[I, 0]);
-    Assert.AreEqual(TFmrTheme.ThemeDisplayName(Pairs[I, 1]), TFmrTheme.ThemeDisplayName(Pairs[I, 0]), Pairs[I, 0]);
-    Assert.AreEqual(TFmrTheme.DefaultAccent(Pairs[I, 1]), TFmrTheme.DefaultAccent(Pairs[I, 0]), Pairs[I, 0]);
-    // The old name builds the new theme (its name, its colors).
-    OldTheme := TFmrTheme.CreateTheme(Pairs[I, 0]);
-    NewTheme := TFmrTheme.CreateTheme(Pairs[I, 1]);
-    try
-      Assert.AreEqual(Pairs[I, 1], OldTheme.Name, Pairs[I, 0]);
-      Assert.AreEqual(Ord(NewTheme.Style.Family), Ord(OldTheme.Style.Family), Pairs[I, 0]);
-      Assert.AreEqual(NewTheme.Colors[TFmrToken.CaptionFill], OldTheme.Colors[TFmrToken.CaptionFill], Pairs[I, 0]);
-      Assert.AreEqual(NewTheme.Colors[TFmrToken.BodyFill], OldTheme.Colors[TFmrToken.BodyFill], Pairs[I, 0]);
-    finally
-      OldTheme.Free;
-      NewTheme.Free;
-    end;
-  end;
-  // Registered names resolve to their registered spelling; unknown names stay as they are.
-  Assert.AreEqual('GlassBlack', TFmrTheme.ResolveThemeName('glassblack'));
-  Assert.AreEqual('NoSuchTheme', TFmrTheme.ResolveThemeName('NoSuchTheme'));
-  Assert.IsFalse(TFmrTheme.IsThemeAlias('ModernWhite'));
-end;
-
-procedure TThemeTests.ThemeNamesExcludeAliases;
+procedure TThemeTests.ThemeNames;
 var
   N: string;
   Names: TArray<string>;
@@ -272,10 +225,12 @@ begin
   Assert.AreEqual(21, Integer(Length(Names)));
   for N in Names do
   begin
-    Assert.IsFalse(TFmrTheme.IsThemeAlias(N), N);
     Assert.IsFalse(N.StartsWith('Office', True) or N.StartsWith('Fluent', True), N);
     Assert.AreNotEqual('', TFmrTheme.ThemeDisplayName(N), N);
   end;
+  // Names are case-insensitive and resolve to their registered spelling; unknown names stay as they are.
+  Assert.AreEqual('GlassBlack', TFmrTheme.ResolveThemeName('glassblack'));
+  Assert.AreEqual('NoSuchTheme', TFmrTheme.ResolveThemeName('NoSuchTheme'));
   Assert.AreEqual('ModernWhite', FmrDefaultThemeName);
   Assert.IsTrue(TFmrTheme.ThemeExists(FmrDefaultThemeName));
 end;

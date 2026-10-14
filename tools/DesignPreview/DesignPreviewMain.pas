@@ -462,7 +462,7 @@ begin
   T := TFmrRibbonTemplate.Document;
   if Param('template', S) then
   begin
-    if SameText(S, 'spreadsheet') or SameText(S, 'excel') then
+    if SameText(S, 'spreadsheet') then
       T := TFmrRibbonTemplate.Spreadsheet
     else if SameText(S, 'simple') then
       T := TFmrRibbonTemplate.Simple
