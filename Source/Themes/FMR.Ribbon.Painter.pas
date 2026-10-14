@@ -139,6 +139,43 @@ type
     /// <summary>Gutter highlight of a checked menu item (Office 2007/2010 draw a box around the check mark).</summary>
     procedure DrawMenuCheckBackground(const ACanvas: TCanvas; const R: TRectF);
 
+    { additions for galleries, the application menu, the mini toolbar and the radial menu }
+    /// <summary>Resize grip band at the bottom of a drop-down gallery: dots in the bottom-right corner (ABoth) or a
+    /// row of dots in the middle (vertical resizing only).</summary>
+    procedure DrawResizeGrip(const ACanvas: TCanvas; const R: TRectF; const ABoth: Boolean);
+    /// <summary>Thin vertical scroll bar of drop-down galleries and panes.</summary>
+    procedure DrawThinScrollBar(const ACanvas: TCanvas; const ATrack, AThumb: TRectF; const AHot: Boolean);
+    /// <summary>Filter band of a drop-down gallery: the current filter caption with a drop-down arrow.</summary>
+    procedure DrawGalleryFilterBand(const ACanvas: TCanvas; const R: TRectF; const ACaption: string;
+      const AHot: Boolean);
+    /// <summary>Pin of a recent document: upright when pinned, lying when not.</summary>
+    procedure DrawPinGlyph(const ACanvas: TCanvas; const R: TRectF; const APinned: Boolean; const AColor: TAlphaColor);
+    /// <summary>Office 2007 application menu: outer frame (R) around the panel area (AInner) with the bands above and
+    /// below it.</summary>
+    procedure DrawAppMenuFrame(const ACanvas: TCanvas; const R, AInner: TRectF);
+    /// <summary>Background of the floating mini toolbar.</summary>
+    procedure DrawMiniToolbar(const ACanvas: TCanvas; const R: TRectF);
+    /// <summary>Radial menu disc: outer ring between ARing and AOuter (sub menu arrows), item area and the center
+    /// button of radius AInner.</summary>
+    procedure DrawRadialBackground(const ACanvas: TCanvas; const ACenter: TPointF; const AOuter, ARing,
+      AInner: Single);
+    /// <summary>Annular sector between the radii ARInner and AROuter; angles in degrees, 0 = right, clockwise.
+    /// </summary>
+    procedure DrawRadialSector(const ACanvas: TCanvas; const ACenter: TPointF; const ARInner, AROuter, AStart,
+      ASweep: Single; const AColor: TAlphaColor; const AOpacity: Single = 1);
+
+    { additions for display options, auto-hide, the simplified switch and the customization form }
+    /// <summary>Glyph of the "Ribbon Display Options" caption button (a window with an arrow pointing up).
+    /// </summary>
+    procedure DrawDisplayOptionsGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+    /// <summary>Stroked chevron (Office 365 switch between classic and simplified ribbon).</summary>
+    procedure DrawSwitchChevron(const ACanvas: TCanvas; const R: TRectF; const AUp: Boolean; const AColor: TAlphaColor);
+    /// <summary>Background of a caption-style button (display options, auto-hide "...") in a part state.</summary>
+    procedure DrawCaptionStyleButton(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState);
+    /// <summary>True when the canvas draws mirrored (right-to-left parts flip their canvas horizontally); the text
+    /// methods then draw unmirrored text and swap leading and trailing alignment.</summary>
+    class function IsMirrored(const ACanvas: TCanvas): Boolean; static;
+
     { state helpers }
     function ButtonTextColor(const AState: TFmrPartState): TAlphaColor;
     function GlyphTint(const AState: TFmrPartState): TAlphaColor;
@@ -161,6 +198,16 @@ begin
     Result := Round(AValue)
   else
     Result := Round(AValue * AScale) / AScale;
+end;
+
+function MirrorAlign(const AAlign: TTextAlign): TTextAlign; inline;
+begin
+  case AAlign of
+    TTextAlign.Leading: Result := TTextAlign.Trailing;
+    TTextAlign.Trailing: Result := TTextAlign.Leading;
+  else
+    Result := AAlign;
+  end;
 end;
 
 function FmrStrokeRect(const R: TRectF; const AThickness: Single): TRectF;
@@ -337,12 +384,26 @@ end;
 procedure TFmrRibbonPainter.Text(const ACanvas: TCanvas; const R: TRectF; const AText: string;
   const AColor: TAlphaColor; const AHAlign, AVAlign: TTextAlign; const ASize: Single; const ABold, AWordWrap: Boolean;
   const AOpacity: Single);
+var
+  Saved: TMatrix;
 begin
   if (AText = '') or (TAlphaColorRec(AColor).A = 0) or (R.Width <= 0) then
     Exit;
   PrepareFont(ACanvas.Font, ASize, ABold);
   ACanvas.Fill.Kind := TBrushKind.Solid;
   ACanvas.Fill.Color := AColor;
+  if IsMirrored(ACanvas) then
+  begin
+    // Right-to-left part: the text is flipped back inside its rectangle; the reading start is on the right.
+    Saved := ACanvas.Matrix;
+    ACanvas.MultiplyMatrix(TMatrix.CreateScaling(-1, 1) * TMatrix.CreateTranslation(R.Left + R.Right, 0));
+    try
+      ACanvas.FillText(R, AText, AWordWrap, AOpacity, [], MirrorAlign(AHAlign), AVAlign);
+    finally
+      ACanvas.SetMatrix(Saved);
+    end;
+    Exit;
+  end;
   if AWordWrap then
     ACanvas.FillText(R, AText, True, AOpacity, [], AHAlign, AVAlign)
   else
@@ -1017,9 +1078,13 @@ end;
 procedure TFmrRibbonPainter.TextEx(const ACanvas: TCanvas; const R: TRectF; const AText: string;
   const AColor: TAlphaColor; const AHAlign, AVAlign: TTextAlign; const ASize: Single; const ABold, AWordWrap: Boolean;
   const ATrimming: TTextTrimming; const AOpacity: Single);
+var
+  Mirrored: Boolean;
+  Saved: TMatrix;
 begin
   if (AText = '') or (TAlphaColorRec(AColor).A = 0) or (R.Width <= 0) or (R.Height <= 0) then
     Exit;
+  Mirrored := IsMirrored(ACanvas);
   PrepareFont(FFont, ASize, ABold);
   FLayout.BeginUpdate;
   try
@@ -1027,7 +1092,10 @@ begin
     FLayout.Text := AText;
     FLayout.WordWrap := AWordWrap;
     FLayout.Trimming := ATrimming;
-    FLayout.HorizontalAlign := AHAlign;
+    if Mirrored then
+      FLayout.HorizontalAlign := MirrorAlign(AHAlign)
+    else
+      FLayout.HorizontalAlign := AHAlign;
     FLayout.VerticalAlign := AVAlign;
     FLayout.Color := AColor;
     FLayout.Opacity := AOpacity;
@@ -1036,7 +1104,18 @@ begin
   finally
     FLayout.EndUpdate;
   end;
-  FLayout.RenderLayout(ACanvas);
+  if Mirrored then
+  begin
+    Saved := ACanvas.Matrix;
+    ACanvas.MultiplyMatrix(TMatrix.CreateScaling(-1, 1) * TMatrix.CreateTranslation(R.Left + R.Right, 0));
+    try
+      FLayout.RenderLayout(ACanvas);
+    finally
+      ACanvas.SetMatrix(Saved);
+    end;
+  end
+  else
+    FLayout.RenderLayout(ACanvas);
   FLayout.Opacity := 1;
 end;
 
@@ -1196,6 +1275,252 @@ begin
   begin
     Fill(ACanvas, R, TFmrToken.ButtonCheckedFill, FTheme.Metrics.ButtonRadius);
     Frame(ACanvas, R, TFmrToken.ButtonCheckedBorder, FTheme.Metrics.ButtonRadius);
+  end;
+end;
+
+{ display options, auto-hide, simplified switch, customization form }
+
+class function TFmrRibbonPainter.IsMirrored(const ACanvas: TCanvas): Boolean;
+begin
+  Result := (ACanvas <> nil) and (ACanvas.Matrix.m11 < 0);
+end;
+
+procedure TFmrRibbonPainter.DrawDisplayOptionsGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+var
+  C: TPointF;
+begin
+  C := R.CenterPoint;
+  C.X := Round(C.X);
+  C.Y := Round(C.Y);
+  Frame(ACanvas, RectF(C.X - 7, C.Y - 3, C.X + 7, C.Y + 7), AColor, 1);
+  Line(ACanvas, PointF(C.X - 6, C.Y - 0.5), PointF(C.X + 6, C.Y - 0.5), AColor);
+  FStroke.Kind := TBrushKind.Solid;
+  FStroke.Color := AColor;
+  FStroke.Thickness := 1;
+  FStroke.Cap := TStrokeCap.Flat;
+  ACanvas.DrawLine(PointF(C.X - 3, C.Y - 5), PointF(C.X, C.Y - 8), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X, C.Y - 8), PointF(C.X + 3, C.Y - 5), 1, FStroke);
+end;
+
+procedure TFmrRibbonPainter.DrawSwitchChevron(const ACanvas: TCanvas; const R: TRectF; const AUp: Boolean;
+  const AColor: TAlphaColor);
+var
+  C: TPointF;
+  D: Single;
+begin
+  C := R.CenterPoint;
+  C.X := Round(C.X) + 0.5;
+  C.Y := Round(C.Y) + 0.5;
+  if AUp then
+    D := -1
+  else
+    D := 1;
+  FStroke.Kind := TBrushKind.Solid;
+  FStroke.Color := AColor;
+  FStroke.Thickness := 1.3;
+  FStroke.Cap := TStrokeCap.Round;
+  FStroke.Join := TStrokeJoin.Round;
+  ACanvas.DrawLine(PointF(C.X - 4.5, C.Y - 2.25 * D), PointF(C.X, C.Y + 2.25 * D), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X, C.Y + 2.25 * D), PointF(C.X + 4.5, C.Y - 2.25 * D), 1, FStroke);
+  FStroke.Cap := TStrokeCap.Flat;
+end;
+
+procedure TFmrRibbonPainter.DrawCaptionStyleButton(const ACanvas: TCanvas; const R: TRectF;
+  const AState: TFmrPartState);
+begin
+  case AState of
+    TFmrPartState.Hot, TFmrPartState.CheckedHot:
+      Fill(ACanvas, R, TFmrToken.CaptionButtonHotFill);
+    TFmrPartState.Pressed, TFmrPartState.Checked:
+      Fill(ACanvas, R, TFmrToken.CaptionButtonPressedFill);
+  end;
+end;
+
+{ galleries, application menu, mini toolbar, radial menu }
+
+procedure TFmrRibbonPainter.DrawResizeGrip(const ACanvas: TCanvas; const R: TRectF; const ABoth: Boolean);
+var
+  Col: TAlphaColor;
+  I, J: Integer;
+  X, Y: Single;
+begin
+  Fill(ACanvas, R, TFmrToken.MenuHeaderFill);
+  Line(ACanvas, PointF(R.Left, Round(R.Top) + 0.5), PointF(R.Right, Round(R.Top) + 0.5),
+    FTheme.Colors[TFmrToken.MenuSeparator]);
+  Col := FTheme.Colors[TFmrToken.MenuShortcutText];
+  ACanvas.Fill.Kind := TBrushKind.Solid;
+  ACanvas.Fill.Color := Col;
+  if ABoth then
+  begin
+    // A triangle of dots in the corner.
+    for I := 0 to 2 do
+      for J := 0 to 2 - I do
+      begin
+        X := Round(R.Right) - 4 - J * 3;
+        Y := Round(R.Bottom) - 3 - I * 3;
+        ACanvas.FillRect(RectF(X - 1, Y - 1, X + 1, Y + 1), 0, 0, [], 0.9);
+      end;
+  end
+  else
+    for I := -2 to 2 do
+    begin
+      X := Round(R.CenterPoint.X) + I * 4;
+      Y := Round(R.CenterPoint.Y) + 0.5;
+      ACanvas.FillRect(RectF(X - 1, Y - 1, X + 1, Y + 1), 0, 0, [], 0.9);
+    end;
+end;
+
+procedure TFmrRibbonPainter.DrawThinScrollBar(const ACanvas: TCanvas; const ATrack, AThumb: TRectF;
+  const AHot: Boolean);
+var
+  Rad: Single;
+  Col: TAlphaColor;
+begin
+  Rad := Min(ATrack.Width, 6) / 2;
+  Fill(ACanvas, ATrack, TFmrToken.GalleryScrollFill, Rad);
+  Col := FTheme.Colors[TFmrToken.GalleryScrollGlyph];
+  if AHot then
+    Fill(ACanvas, AThumb, TFmrFill.Solid(FmrWithAlpha(Col, 0.75 * TAlphaColorRec(Col).A / 255)), Rad)
+  else
+    Fill(ACanvas, AThumb, TFmrFill.Solid(FmrWithAlpha(Col, 0.45 * TAlphaColorRec(Col).A / 255)), Rad);
+end;
+
+procedure TFmrRibbonPainter.DrawGalleryFilterBand(const ACanvas: TCanvas; const R: TRectF; const ACaption: string;
+  const AHot: Boolean);
+var
+  W: Single;
+  Col: TAlphaColor;
+begin
+  Fill(ACanvas, R, TFmrToken.GalleryGroupHeaderFill);
+  if AHot then
+    DrawMenuItem(ACanvas, R, TFmrPartState.Hot);
+  Col := FTheme.Colors[TFmrToken.GalleryGroupHeaderText];
+  W := Min(TextWidth(ACaption, 0, True), R.Width - 32);
+  TextEx(ACanvas, RectF(R.Left + 8, R.Top, R.Left + 8 + W + 2, R.Bottom), ACaption, Col, TTextAlign.Leading,
+    TTextAlign.Center, 0, True, False);
+  Arrow(ACanvas, PointF(R.Left + 8 + W + 10, R.CenterPoint.Y + 0.5), TFmrArrowDirection.Down, Col);
+  Line(ACanvas, PointF(R.Left, Round(R.Bottom) - 0.5), PointF(R.Right, Round(R.Bottom) - 0.5),
+    FTheme.Colors[TFmrToken.MenuSeparator]);
+end;
+
+procedure TFmrRibbonPainter.DrawPinGlyph(const ACanvas: TCanvas; const R: TRectF; const APinned: Boolean;
+  const AColor: TAlphaColor);
+var
+  C: TPointF;
+  M: TMatrix;
+  State: TCanvasSaveState;
+begin
+  C := R.CenterPoint;
+  C := PointF(Round(C.X) + 0.5, Round(C.Y) + 0.5);
+  State := ACanvas.SaveState;
+  try
+    if not APinned then
+    begin
+      // The unpinned pin lies on its side (rotated by 90 degrees around the center).
+      M := TMatrix.CreateTranslation(-C.X, -C.Y) * TMatrix.CreateRotation(DegToRad(-90)) *
+        TMatrix.CreateTranslation(C.X, C.Y);
+      ACanvas.MultiplyMatrix(M);
+    end;
+    FStroke.Kind := TBrushKind.Solid;
+    FStroke.Color := AColor;
+    FStroke.Thickness := 1;
+    FStroke.Dash := TStrokeDash.Solid;
+    // head, body, plate and needle
+    ACanvas.DrawRect(RectF(C.X - 2.5, C.Y - 6, C.X + 2.5, C.Y - 5), 0, 0, [], 1, FStroke);
+    ACanvas.DrawRect(RectF(C.X - 2, C.Y - 5, C.X + 2, C.Y + 1), 0, 0, [], 1, FStroke);
+    ACanvas.DrawLine(PointF(C.X - 4.5, C.Y + 1), PointF(C.X + 4.5, C.Y + 1), 1, FStroke);
+    ACanvas.DrawLine(PointF(C.X, C.Y + 1), PointF(C.X, C.Y + 6), 1, FStroke);
+    if APinned then
+    begin
+      ACanvas.Fill.Kind := TBrushKind.Solid;
+      ACanvas.Fill.Color := AColor;
+      ACanvas.FillRect(RectF(C.X - 2, C.Y - 5, C.X + 2, C.Y + 1), 0, 0, [], 0.35);
+    end;
+  finally
+    ACanvas.RestoreState(State);
+  end;
+end;
+
+procedure TFmrRibbonPainter.DrawAppMenuFrame(const ACanvas: TCanvas; const R, AInner: TRectF);
+var
+  Rad: Single;
+begin
+  Rad := Max(FTheme.Metrics.MenuRadius, 3);
+  if FTheme.Style.Family = TFmrThemeFamily.Office2007 then
+    Fill(ACanvas, R, TFmrToken.CaptionFill, Rad)
+  else
+    Fill(ACanvas, R, TFmrToken.TabRowFill, Rad);
+  Frame(ACanvas, R, TFmrToken.MenuBorder, Rad);
+  Fill(ACanvas, AInner, TFmrToken.MenuFill);
+  Frame(ACanvas, RectF(AInner.Left - 1, AInner.Top - 1, AInner.Right + 1, AInner.Bottom + 1), TFmrToken.MenuBorder);
+end;
+
+procedure TFmrRibbonPainter.DrawMiniToolbar(const ACanvas: TCanvas; const R: TRectF);
+var
+  Rad: Single;
+begin
+  Rad := Max(FTheme.Metrics.MenuRadius, 3);
+  Fill(ACanvas, R, TFmrToken.MiniToolbarFill, Rad);
+  Frame(ACanvas, R, TFmrToken.MiniToolbarBorder, Rad);
+end;
+
+procedure TFmrRibbonPainter.DrawRadialBackground(const ACanvas: TCanvas; const ACenter: TPointF; const AOuter, ARing,
+  AInner: Single);
+var
+  Accent: TAlphaColor;
+begin
+  Accent := FTheme.Colors[TFmrToken.RadialBorder];
+  // outer ring (accent tinted), item area, center button
+  FTheme.Fills[TFmrToken.RadialFill].ApplyTo(FBrush);
+  ACanvas.FillEllipse(RectF(ACenter.X - AOuter, ACenter.Y - AOuter, ACenter.X + AOuter, ACenter.Y + AOuter), 1, FBrush);
+  DrawRadialSector(ACanvas, ACenter, ARing, AOuter, 0, 360, Accent, 0.16);
+  FStroke.Kind := TBrushKind.Solid;
+  FStroke.Color := Accent;
+  FStroke.Thickness := 2;
+  FStroke.Dash := TStrokeDash.Solid;
+  ACanvas.DrawEllipse(RectF(ACenter.X - AOuter + 1, ACenter.Y - AOuter + 1, ACenter.X + AOuter - 1,
+    ACenter.Y + AOuter - 1), 1, FStroke);
+  FStroke.Thickness := 1;
+  FStroke.Color := FmrWithAlpha(Accent, 0.45 * TAlphaColorRec(Accent).A / 255);
+  ACanvas.DrawEllipse(RectF(ACenter.X - ARing, ACenter.Y - ARing, ACenter.X + ARing, ACenter.Y + ARing), 1, FStroke);
+  FStroke.Color := Accent;
+  FStroke.Thickness := 2;
+  ACanvas.DrawEllipse(RectF(ACenter.X - AInner, ACenter.Y - AInner, ACenter.X + AInner, ACenter.Y + AInner), 1,
+    FStroke);
+  FStroke.Thickness := 1;
+end;
+
+procedure TFmrRibbonPainter.DrawRadialSector(const ACanvas: TCanvas; const ACenter: TPointF; const ARInner, AROuter,
+  AStart, ASweep: Single; const AColor: TAlphaColor; const AOpacity: Single);
+var
+  Path: TPathData;
+  I, N: Integer;
+  A: Single;
+begin
+  if (TAlphaColorRec(AColor).A = 0) or (ASweep <= 0) then
+    Exit;
+  N := Max(4, Ceil(ASweep / 4));
+  Path := TPathData.Create;
+  try
+    for I := 0 to N do
+    begin
+      A := DegToRad(AStart + ASweep * I / N);
+      if I = 0 then
+        Path.MoveTo(PointF(ACenter.X + AROuter * Cos(A), ACenter.Y + AROuter * Sin(A)))
+      else
+        Path.LineTo(PointF(ACenter.X + AROuter * Cos(A), ACenter.Y + AROuter * Sin(A)));
+    end;
+    for I := N downto 0 do
+    begin
+      A := DegToRad(AStart + ASweep * I / N);
+      Path.LineTo(PointF(ACenter.X + ARInner * Cos(A), ACenter.Y + ARInner * Sin(A)));
+    end;
+    Path.ClosePath;
+    ACanvas.Fill.Kind := TBrushKind.Solid;
+    ACanvas.Fill.Color := AColor;
+    ACanvas.FillPath(Path, AOpacity);
+  finally
+    Path.Free;
   end;
 end;
 

@@ -92,8 +92,14 @@ type
     /// <summary>State of a part for painting (normal, hot, pressed, checked, disabled).</summary>
     function PartState(const APart: TFmrElementPart): TFmrPartState; virtual;
     procedure PaintFocus(const ACanvas: TCanvas); virtual;
+    /// <summary>Writer of HotPart; elements with inner parts (galleries) learn here that the mouse left them.
+    /// </summary>
+    procedure SetHotPart(const Value: TFmrElementPart); virtual;
   public
     constructor Create(const AHost: IFmrElementHost); virtual;
+    /// <summary>The mouse moved over the element (host coordinates); called by TFmrElementTracker after the hot
+    /// part was set. Elements with inner parts (gallery cells, scroll buttons) track them here.</summary>
+    procedure MouseMoveAt(const P: TPointF); virtual;
     procedure Invalidate;
     function IsEnabled: Boolean; virtual;
     function IsChecked: Boolean; virtual;
@@ -114,7 +120,7 @@ type
     property Host: IFmrElementHost read FHost write FHost;
     property Bounds: TRectF read FBounds write FBounds;
     property Visible: Boolean read FVisible write FVisible;
-    property HotPart: TFmrElementPart read FHotPart write FHotPart;
+    property HotPart: TFmrElementPart read FHotPart write SetHotPart;
     property PressedPart: TFmrElementPart read FPressedPart write FPressedPart;
     /// <summary>Key tip assigned for the current scope.</summary>
     property KeyTip: string read FKeyTip write FKeyTip;
@@ -458,6 +464,15 @@ procedure TFmrElement.Invalidate;
 begin
   if FHost <> nil then
     FHost.InvalidateElement(Self);
+end;
+
+procedure TFmrElement.SetHotPart(const Value: TFmrElementPart);
+begin
+  FHotPart := Value;
+end;
+
+procedure TFmrElement.MouseMoveAt(const P: TPointF);
+begin
 end;
 
 procedure TFmrElement.SetFocused(const Value: Boolean);
@@ -1211,11 +1226,11 @@ begin
     Exit;
   Old := FHot;
   Changed := AElement <> FHot;
-  if Old <> nil then
+  // A part change of the same element is one change (elements learn in SetHotPart when the mouse leaves them).
+  if (Old <> nil) and (Old <> AElement) then
   begin
     Old.HotPart := TFmrElementPart.None;
-    if Old <> AElement then
-      Old.Invalidate;
+    Old.Invalidate;
   end;
   FHot := AElement;
   FHotPart := APart;
@@ -1252,6 +1267,8 @@ begin
     Part := TFmrElementPart.None;
   end;
   SetHot(E, Part);
+  if E <> nil then
+    E.MouseMoveAt(P);
 end;
 
 function TFmrElementTracker.MouseDown(const AButton: TMouseButton; const P: TPointF): TFmrElement;
@@ -1270,6 +1287,7 @@ begin
     Exit;
   Result := E;
   SetHot(E, Part);
+  E.MouseMoveAt(P);
   if E.OpensOnPress(Part) then
   begin
     FHost.ElementDropDown(E, False);

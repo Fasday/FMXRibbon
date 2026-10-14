@@ -318,4 +318,41 @@ begin
   W.Show;
 end;
 
+{ menu screen tips }
+
+var
+  GMenuTips: TFmrScreenTipController;
+  [Unsafe] GMenuTipMenu: TFmrMenuControl;
+
+/// Shows the screen tip of the hot row of a menu to the right of the menu, aligned with the row (installed as
+/// FmrMenuHotRowHook; rows without a screen tip or hint show nothing).
+procedure MenuHotRowChanged(const AMenu: TFmrMenuControl; const ARow: TFmrMenuRow);
+var
+  TL: TPointF;
+begin
+  if (ARow = nil) or (ARow.Kind <> TFmrMenuRowKind.Item) or (AMenu.Context = nil) or
+    (csDestroying in AMenu.ComponentState) then
+  begin
+    if (GMenuTips <> nil) and ((GMenuTipMenu = nil) or (GMenuTipMenu = AMenu)) then
+    begin
+      GMenuTips.Cancel;
+      GMenuTipMenu := nil;
+    end;
+    Exit;
+  end;
+  if GMenuTips = nil then
+    GMenuTips := TFmrScreenTipController.Create;
+  GMenuTipMenu := AMenu;
+  TL := AMenu.LocalToScreen(PointF(AMenu.Width + 6, ARow.Bounds.Top - 2));
+  GMenuTips.Hover(ARow, RectF(TL.X, TL.Y, TL.X, TL.Y), AMenu.Context.Painter, AMenu.Context.OwnerForm);
+end;
+
+initialization
+  FmrMenuHotRowHook := MenuHotRowChanged;
+
+finalization
+  FmrMenuHotRowHook := nil;
+  GMenuTipMenu := nil;
+  FreeAndNil(GMenuTips);
+
 end.

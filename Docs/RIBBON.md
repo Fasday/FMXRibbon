@@ -17,6 +17,7 @@ Demo: `Demos\RibbonBasic` (a Word-like ribbon built in code, see "Demo and test 
 | `FMR.Ribbon.Popup` | `TFmrPopupForm`, `TFmrPopupManager` (`FmrPopups`), key sink and `IFmrKeyHandler`, `IFmrPopupContext`/`TFmrPopupContext`, `IFmrPopupContent`, menus (`TFmrMenuControl`, `TFmrMenuRow`), `TFmrColorPaletteControl`, `TFmrPopupMenu` component, `TFmrCommandItem`, `TFmrTempMenu`, drop-down registry (`FmrRegisterDropDown`, `FmrCreateDropDownContent`), `IFmrThemeSource` |
 | `FMR.Ribbon.ScreenTips` | `TFmrScreenTipContent`, `TFmrScreenTipController` (delay, placement, one tip at a time) |
 | `FMR.Ribbon.Fonts.Win` | Font family list (EnumFontFamiliesEx) for font name editors; empty on other platforms |
+| `FMR.Ribbon.Gallery`, `FMR.Ribbon.ColorGallery`, `FMR.Ribbon.AppMenu`, `FMR.Ribbon.MiniToolbar`, `FMR.Ribbon.RadialMenu` | In-ribbon and drop-down galleries, color gallery, Office 2007 application menu, mini toolbar, radial menu - see `Docs\GALLERIES.md` |
 
 Additions to `Source\Themes\FMR.Ribbon.Painter.pas` (new methods only, existing signatures untouched): `TextEx`,
 `DrawShadow`, `DrawPopupBackground`, `DrawCheckBox`, `DrawSearchGlyph`, `DrawCustomizeGlyph`, `DrawChevron`,
@@ -200,6 +201,25 @@ button ("...") with a menu of what does not fit. Switch from the display options
   on click, parts are not streamed.
 - **Diagnostics**: `DebugDump` (parts, elements and bounds as text; the demo writes it with `/dump=`).
 
+## Galleries, application menu, mini toolbar, radial menu
+
+Built on the extension points above, in their own units (full description: `Docs\GALLERIES.md`):
+
+- `FMR.Ribbon.Gallery`: `TFmrGalleryView` (`FmrRegisterItemView` for `TFmrGalleryItem`: in-ribbon gallery with the
+  layout's column reduction, row scrolling, drop-down button, hot tracking, live preview, selection, one key tip) and
+  `TFmrGalleryPopupContent` (`FmrRegisterDropDown`: drop-down gallery with filter band, group headers, wheel/scroll
+  bar, keyboard, commands below, resize grip; also menus whose links contain galleries). `TFmrRibbonGalleryItem` adds
+  `OnDrawItem` and `DropDownResize`.
+- `FMR.Ribbon.ColorGallery`: drop-down of every `TFmrColorItem` (theme colors with tints/shades, standard and recent
+  colors, Automatic, No Color, "More Colors..." dialog), `TFmrColorGalleryItem` (highlight palette, live preview).
+- `FMR.Ribbon.AppMenu`: `TFmrRibbonApplicationMenu` - the Office 2007 application menu (`IFmrApplicationMenu`).
+- `FMR.Ribbon.MiniToolbar`: `TFmrRibbonMiniToolbar` - fading floating toolbar, optionally with a context menu.
+- `FMR.Ribbon.RadialMenu`: `TFmrRibbonRadialMenu` - round menu with nested rings.
+- Menu rows show screen tips (`FmrMenuHotRowHook` in `FMR.Ribbon.Popup`, handler in `FMR.Ribbon.ScreenTips`).
+- Hooks added for them: `TFmrElement.SetHotPart`/`MouseMoveAt` (`FMR.Ribbon.Views`); menu commands now run from the
+  message loop (`TThread.ForceQueue`), so a command that shows a modal dialog no longer runs inside the mouse handler
+  of a popup the popup manager frees meanwhile.
+
 ## Status
 
 ### Done (checked on screenshots, see `shots\rb_*.png`)
@@ -217,12 +237,10 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
 
 ### Not done / known limitations
 
-- Galleries: `TFmrGalleryItem` shows a placeholder menu (in-ribbon gallery, gallery popup, scroll buttons are not
-  implemented).
-- Office 2007 application menu with recent documents pane (only `TFmrPopupMenu` or the backstage view).
+- Galleries, the color gallery ("More Colors...", live preview), the Office 2007 application menu, the mini toolbar,
+  the radial menu and menu screen tips are done (`Docs\GALLERIES.md`, its own list of known issues).
 - `ShowMode = AutoHide` behaves like `TabsOnly` (no hiding of the whole ribbon on the caption).
-- "More Colors..." in the palette, live preview on hover, font preview in the font combo.
-- Menu rows show no screen tips.
+- Font preview in the font combo.
 - Editor controls use the default FMX style (white in dark themes).
 - Right to left mirrors the groups only.
 - Alt+letter pressed together (without releasing Alt) does not jump to a tab; press and release Alt, then the letter.
@@ -243,8 +261,9 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
 ## Demo and test scripts (`Demos\RibbonBasic`)
 
 `RibbonBasic.exe` switches: `/theme=<name> /frame=fullnc|dwm|ncstrip|none /minimized /simplified /width=N
-/height=N /qatbelow /tabletools /keytips /touch /nosearch /tab=N /topmost /dump=<file> /backstage`. Debug builds
-report memory leaks on exit.
+/height=N /qatbelow /tabletools /keytips /touch /nosearch /tab=N /topmost /dump=<file> /backstage /appmenu
+/open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial` (see
+`Docs\GALLERIES.md`). Debug builds report memory leaks on exit.
 
 The desktop may be shared with other windows, so the scripts do not rely on the screen:
 

@@ -49,7 +49,9 @@ type
     /// <summary>At the top-left corner of the anchor (context menus).</summary>
     AtPoint,
     /// <summary>Above the anchor, left aligned.</summary>
-    Above);
+    Above,
+    /// <summary>Below the anchor, right aligned (buttons at the right end of a bar).</summary>
+    BelowEnd);
 
   /// <summary>Row style of a menu.</summary>
   TFmrMenuItemStyle = (
@@ -476,6 +478,15 @@ type
     property OnPopup: TNotifyEvent read FOnPopup write FOnPopup;
   end;
 
+  /// <summary>Called when the hot row of a menu changes (ARow = nil: no hot row, the menu closes or is freed).
+  /// </summary>
+  TFmrMenuHotRowHook = procedure(const AMenu: TFmrMenuControl; const ARow: TFmrMenuRow);
+
+var
+  /// <summary>Menu screen tips: FMR.Ribbon.ScreenTips installs a handler that shows the screen tip of the hot row.
+  /// </summary>
+  FmrMenuHotRowHook: TFmrMenuHotRowHook;
+
 /// <summary>The popup manager of the application (created on first use).</summary>
 function FmrPopups: TFmrPopupManager;
 /// <summary>True while the popup manager exists (False after finalization).</summary>
@@ -495,7 +506,46 @@ function FmrFormOf(const AObject: TFmxObject): TCommonCustomForm;
 implementation
 
 uses
-  System.Character{$IFDEF MSWINDOWS}, Winapi.Windows{$ENDIF};
+  System.Character{$IFDEF MSWINDOWS}, Winapi.Windows{$ENDIF}, FMR.Ribbon.BiDi;
+
+function MenuMirrored(const AContext: IFmrPopupContext): Boolean;
+begin
+  // Popups of a right-to-left ribbon: their context implements IFmrMirroredHost (FMR.Ribbon.BiDi).
+  Result := FmrIsMirrored(AContext);
+end;
+
+/// Right-to-left placement: drop-downs align their right edges with the anchor, submenus open to the left.
+function MirrorPlacement(const ARect, AAnchor: TRectF; const APlacement: TFmrPopupPlacement): TRectF;
+var
+  Work: TRectF;
+  X, W: Single;
+begin
+  Result := ARect;
+  W := ARect.Width;
+  Work := Screen.DisplayFromRect(AAnchor).WorkareaRect;
+  if Work.IsEmpty then
+    Work := Screen.WorkAreaRect;
+  case APlacement of
+    TFmrPopupPlacement.Right:
+      begin
+        X := AAnchor.Left - W;
+        if (X < Work.Left) and (AAnchor.Right + W <= Work.Right) then
+          X := AAnchor.Right;
+      end;
+    TFmrPopupPlacement.AtPoint:
+      begin
+        X := AAnchor.Left - W;
+        if X < Work.Left then
+          X := AAnchor.Left;
+      end;
+    TFmrPopupPlacement.BelowEnd:
+      X := AAnchor.Left;
+  else
+    X := AAnchor.Right - W;
+  end;
+  X := EnsureRange(X, Work.Left, Max(Work.Left, Work.Right - W));
+  Result := RectF(X, ARect.Top, X + W, ARect.Bottom);
+end;
 
 var
   GPopups: TFmrPopupManager;
@@ -851,7 +901,10 @@ begin
       end;
   else
     begin
-      X := AAnchor.Left;
+      if APlacement = TFmrPopupPlacement.BelowEnd then
+        X := AAnchor.Right - W
+      else
+        X := AAnchor.Left;
       Y := AAnchor.Bottom;
       if (Y + H > Work.Bottom) and (AAnchor.Top - H >= Work.Top) then
         Y := AAnchor.Top - H;
@@ -884,6 +937,8 @@ begin
   else
     Size := TSizeF.Create(100, 100);
   R := PlaceRect(AAnchor, Size, APlacement);
+  if (APopup.Context <> nil) and MenuMirrored(APopup.Context) then
+    R := MirrorPlacement(R, AAnchor, APlacement);
   APopup.FAnchor := AAnchor;
   APopup.FByKeyboard := AByKeyboard;
   APopup.FParentPopup := AParent;
@@ -1639,6 +1694,8 @@ begin
   FSubRow := nil;
   FHot := nil;
   FPressed := nil;
+  if Assigned(FmrMenuHotRowHook) then
+    FmrMenuHotRowHook(Self, nil);
   FreeAndNil(FMatcher);
   FreeAndNil(FKeyTipRows);
   FreeAndNil(FRows);
@@ -1836,7 +1893,10 @@ end;
 
 procedure TFmrMenuControl.InvalidateElement(const AElement: TFmrElement);
 begin
-  InvalidateRect(AElement.Bounds);
+  if MenuMirrored(FContext) then
+    InvalidateRect(FmrMirrorRect(AElement.Bounds, Width))
+  else
+    InvalidateRect(AElement.Bounds);
 end;
 
 procedure TFmrMenuControl.ElementDropDown(const AElement: TFmrElement; const AByKeyboard: Boolean);
@@ -1871,15 +1931,17 @@ begin
   if FHot <> nil then
   begin
     FHot.HotPart := TFmrElementPart.None;
-    InvalidateRect(FHot.Bounds);
+    InvalidateElement(FHot);
   end;
   FHot := ARow;
   FHotPart := APart;
   if FHot <> nil then
   begin
     FHot.HotPart := APart;
-    InvalidateRect(FHot.Bounds);
+    InvalidateElement(FHot);
   end;
+  if Assigned(FmrMenuHotRowHook) then
+    FmrMenuHotRowHook(Self, FHot);
 end;
 
 procedure TFmrMenuControl.Paint;
@@ -1897,6 +1959,9 @@ begin
   State := Canvas.SaveState;
   try
     Canvas.IntersectClipRect(LocalRect);
+    // Right to left: rows keep their left-to-right geometry, the canvas is flipped (gutter on the right).
+    if MenuMirrored(FContext) then
+      FmrMirrorCanvas(Canvas, Width);
     Clip := LocalRect;
     for Row in FRows do
       if Row.Bounds.IntersectsWith(Clip) then
@@ -1932,6 +1997,8 @@ var
   Part: TFmrElementPart;
 begin
   inherited;
+  if MenuMirrored(FContext) then
+    X := Width - X;
   Row := RowAt(PointF(X, Y));
   if (Row <> nil) and not Row.IsSelectable then
     Row := nil;
@@ -1959,6 +2026,8 @@ begin
   inherited;
   if Button <> TMouseButton.mbLeft then
     Exit;
+  if MenuMirrored(FContext) then
+    X := Width - X;
   Row := RowAt(PointF(X, Y));
   if (Row = nil) or not Row.IsSelectable then
     Exit;
@@ -1980,17 +2049,21 @@ var
   Row: TFmrMenuRow;
   Part: TFmrElementPart;
   Pressed: TFmrMenuRow;
+  PX: Single;
 begin
   inherited;
   Pressed := FPressed;
   FPressed := nil;
+  PX := X;
+  if MenuMirrored(FContext) then
+    X := Width - X;
   Row := RowAt(PointF(X, Y));
   if (Row = nil) or not Row.IsSelectable then
     Exit;
   Part := Row.PartAt(PointF(X, Y));
   if Button = TMouseButton.mbRight then
   begin
-    if (Row.Item <> nil) and FContext.ItemContextPopup(Row.Item, LocalToScreen(PointF(X, Y))) then
+    if (Row.Item <> nil) and FContext.ItemContextPopup(Row.Item, LocalToScreen(PointF(PX, Y))) then
       Exit;
     Exit;
   end;
@@ -2059,9 +2132,18 @@ begin
         Repaint;
       end;
     end;
-  TL := LocalToScreen(PointF(ARow.Bounds.Left, ARow.Bounds.Top - FPad - 1));
-  BR := LocalToScreen(PointF(ARow.Bounds.Right, ARow.Bounds.Bottom));
-  Anchor := RectF(TL.X, TL.Y, BR.X + 2, BR.Y);
+  if MenuMirrored(FContext) then
+  begin
+    TL := LocalToScreen(PointF(Width - ARow.Bounds.Right, ARow.Bounds.Top - FPad - 1));
+    BR := LocalToScreen(PointF(Width - ARow.Bounds.Left, ARow.Bounds.Bottom));
+    Anchor := RectF(TL.X - 2, TL.Y, BR.X, BR.Y);
+  end
+  else
+  begin
+    TL := LocalToScreen(PointF(ARow.Bounds.Left, ARow.Bounds.Top - FPad - 1));
+    BR := LocalToScreen(PointF(ARow.Bounds.Right, ARow.Bounds.Bottom));
+    Anchor := RectF(TL.X, TL.Y, BR.X + 2, BR.Y);
+  end;
   Repaint;
   FmrPopups.Show(Popup, Anchor, TFmrPopupPlacement.Right, Mine, AByKeyboard);
 end;
@@ -2095,8 +2177,14 @@ begin
   Item := ARow.Item;
   Ctx := FContext;
   FmrPopups.CloseAll;
-  Ctx.ItemExecuting(Item);
-  Item.Click;
+  // The command runs from the message loop: a command that shows a modal dialog must not run inside the mouse
+  // handler of this popup, which the popup manager frees while the dialog is open.
+  TThread.ForceQueue(nil,
+    procedure
+    begin
+      Ctx.ItemExecuting(Item);
+      Item.Click;
+    end);
 end;
 
 procedure TFmrMenuControl.MoveHot(const ADelta: Integer);
@@ -2180,6 +2268,8 @@ end;
 procedure TFmrMenuControl.PopupClosed;
 begin
   FTimer.Enabled := False;
+  if Assigned(FmrMenuHotRowHook) then
+    FmrMenuHotRowHook(Self, nil);
   if FSubPopup <> nil then
   begin
     FSubPopup.OnClosed := nil;
@@ -2199,6 +2289,12 @@ var
 begin
   Result := True;
   Mine := MyPopup;
+  // Right to left: Left opens a submenu and Right closes it, like Windows menus.
+  if MenuMirrored(FContext) then
+    case Key of
+      vkLeft: Key := vkRight;
+      vkRight: Key := vkLeft;
+    end;
   case Key of
     vkUp: MoveHot(-1);
     vkDown: MoveHot(1);
