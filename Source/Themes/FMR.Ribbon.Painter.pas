@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Painter: draws ribbon parts from theme tokens        }
@@ -55,6 +55,9 @@ type
     function TextSize(const AText: string; const ASize: Single = 0; const ABold: Boolean = False;
       const AMaxWidth: Single = 0; const AWordWrap: Boolean = False): TSizeF;
     function TextWidth(const AText: string; const ASize: Single = 0; const ABold: Boolean = False): Single;
+    /// <summary>AText shortened with an ellipsis so it fits AMaxWidth (unchanged when it fits).</summary>
+    function FitText(const AText: string; const AMaxWidth: Single; const ASize: Single = 0;
+      const ABold: Boolean = False): string;
     procedure Text(const ACanvas: TCanvas; const R: TRectF; const AText: string; const AColor: TAlphaColor;
       const AHAlign: TTextAlign = TTextAlign.Center; const AVAlign: TTextAlign = TTextAlign.Center;
       const ASize: Single = 0; const ABold: Boolean = False; const AWordWrap: Boolean = False;
@@ -381,6 +384,26 @@ begin
   Result := TextSize(AText, ASize, ABold).Width;
 end;
 
+function TFmrRibbonPainter.FitText(const AText: string; const AMaxWidth, ASize: Single; const ABold: Boolean): string;
+var
+  Lo, Hi, Mid: Integer;
+begin
+  if (AText = '') or (TextWidth(AText, ASize, ABold) <= AMaxWidth) then
+    Exit(AText);
+  // Longest prefix that fits together with the ellipsis
+  Lo := 0;
+  Hi := Length(AText);
+  while Lo < Hi do
+  begin
+    Mid := (Lo + Hi + 1) div 2;
+    if TextWidth(Copy(AText, 1, Mid) + #$2026, ASize, ABold) <= AMaxWidth then
+      Lo := Mid
+    else
+      Hi := Mid - 1;
+  end;
+  Result := TrimRight(Copy(AText, 1, Lo)) + #$2026;
+end;
+
 procedure TFmrRibbonPainter.Text(const ACanvas: TCanvas; const R: TRectF; const AText: string;
   const AColor: TAlphaColor; const AHAlign, AVAlign: TTextAlign; const ASize: Single; const ABold, AWordWrap: Boolean;
   const AOpacity: Single);
@@ -638,7 +661,7 @@ procedure TFmrRibbonPainter.DrawContextGroupHeader(const ACanvas: TCanvas; const
 begin
   Fill(ACanvas, R, TFmrFill.Vertical([FmrWithAlpha(AColor, 0.55), FmrWithAlpha(AColor, 0.25)], []));
   Line(ACanvas, PointF(R.Left, R.Top + 1.5), PointF(R.Right, R.Top + 1.5), AColor, 3);
-  Text(ACanvas, RectF(R.Left + 6, R.Top + 3, R.Right - 6, R.Bottom), ACaption,
+  Text(ACanvas, RectF(R.Left + 6, R.Top + 3, R.Right - 6, R.Bottom), FitText(ACaption, R.Width - 12),
     FTheme.Colors[TFmrToken.CaptionText], TTextAlign.Center, TTextAlign.Center);
 end;
 

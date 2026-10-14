@@ -394,6 +394,52 @@ begin
   end;
 end;
 
+/// Indented JSON with two spaces per level (TJSONValue.Format leaves blank lines and misindents the last array
+/// element).
+function FormatJSON(const AValue: TJSONValue; const ALevel: Integer = 0): string;
+var
+  Pad, Inner: string;
+  I: Integer;
+  Obj: TJSONObject;
+  Arr: TJSONArray;
+begin
+  Pad := StringOfChar(' ', ALevel * 2);
+  Inner := StringOfChar(' ', ALevel * 2 + 2);
+  if AValue is TJSONObject then
+  begin
+    Obj := TJSONObject(AValue);
+    if Obj.Count = 0 then
+      Exit('{}');
+    Result := '{' + sLineBreak;
+    for I := 0 to Obj.Count - 1 do
+    begin
+      Result := Result + Inner + Obj.Pairs[I].JsonString.ToJSON + ': ' +
+        FormatJSON(Obj.Pairs[I].JsonValue, ALevel + 1);
+      if I < Obj.Count - 1 then
+        Result := Result + ',';
+      Result := Result + sLineBreak;
+    end;
+    Result := Result + Pad + '}';
+  end
+  else if AValue is TJSONArray then
+  begin
+    Arr := TJSONArray(AValue);
+    if Arr.Count = 0 then
+      Exit('[]');
+    Result := '[' + sLineBreak;
+    for I := 0 to Arr.Count - 1 do
+    begin
+      Result := Result + Inner + FormatJSON(Arr.Items[I], ALevel + 1);
+      if I < Arr.Count - 1 then
+        Result := Result + ',';
+      Result := Result + sLineBreak;
+    end;
+    Result := Result + Pad + ']';
+  end
+  else
+    Result := AValue.ToJSON;
+end;
+
 class function TFmrRibbonLayoutStorage.SaveToString(const AOwner: IFmrRibbonStructureOwner;
   const AIndent: Boolean): string;
 var
@@ -402,7 +448,7 @@ begin
   J := SaveToJSON(AOwner);
   try
     if AIndent then
-      Result := J.Format(2)
+      Result := FormatJSON(J)
     else
       Result := J.ToJSON;
   finally

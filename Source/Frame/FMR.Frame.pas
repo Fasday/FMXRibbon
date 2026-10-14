@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Form frame: caption content in the title bar area    }
@@ -616,5 +616,9 @@ begin
   if Hooked then
     FPlatform.ShowSystemMenu(AScreenPoint);
 end;
+
+initialization
+  // Forms stream the frame by class name even when it is not a published field.
+  RegisterClass(TFmrFormFrame);
 
 end.
