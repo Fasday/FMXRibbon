@@ -70,7 +70,7 @@ type
     property DropDownLinks: TFmrItemLinks read FDropDownLinks write SetDropDownLinks stored IsDropDownLinksStored;
     /// <summary>Buttons with the same GroupIndex (not 0) in one manager are exclusive (radio).</summary>
     property GroupIndex: Integer read FGroupIndex write SetGroupIndex default 0;
-    /// <summary>Filled with the accent color in every state, like the "Share" button of Office (PrimaryButton*
+    /// <summary>Filled with the accent color in every state, like a "Share" button (PrimaryButton*
     /// tokens).</summary>
     property Primary: Boolean read FPrimary write SetPrimary default False;
     property OnDropDown: TNotifyEvent read FOnDropDown write FOnDropDown;
@@ -300,7 +300,7 @@ type
   TFmrCheckStyle = (
     /// <summary>A check box (a radio button with a GroupIndex) before the caption.</summary>
     CheckBox,
-    /// <summary>The caption followed by a Windows 11 toggle switch (Office "AutoSave").</summary>
+    /// <summary>The caption followed by a toggle switch (an "AutoSave" switch).</summary>
     ToggleSwitch);
 
   /// <summary>Check box item painted by the ribbon; exclusive (radio) with a GroupIndex other than 0.</summary>

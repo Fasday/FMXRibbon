@@ -5,8 +5,8 @@ All demos are FireMonkey programs for Windows (Win64 and Win32). Build them from
 `bin\<Platform>\<Config>\`:
 
 ```powershell
-.\build.ps1 -Project Demos\WordLike\WordLike.dpr                 # Win64 Debug
-.\build.ps1 -Project Demos\WordLike\WordLike.dpr -Platform Win32
+.\build.ps1 -Project Demos\Notes\Notes.dpr                       # Win64 Debug
+.\build.ps1 -Project Demos\Notes\Notes.dpr -Platform Win32
 .\build.ps1 -Project Demos\Showcase\Showcase.dpr -Config Release
 ```
 
@@ -17,48 +17,50 @@ Debug builds set `ReportMemoryLeaksOnShutdown`: closing a demo that leaked shows
 
 ```powershell
 .\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64
-.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark','/activelook' -Shots 6,8
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Modern2024Dark','/activelook' -Shots 6,8
 .\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/waylandframe=preview' -CsdOff -Shots 6
 ```
 
 RibbonBasic on Linux also knows `/waylandframe=preview` (a stand-in `IFMXWaylandWindowFrame` service that previews
 the integrated title bar; run with `FMXWAYLAND_CSD=0`) and `/open=fontname` (opens the font list, the status bar shows
-the number of families and the theme font). WordLike, Extras and Customize are not ported yet; NCProof is about the
+the number of families and the theme font). Notes, Extras and Customize are not ported yet; NCProof is about the
 Windows non-client area.
 
 **FastCanvas** (optional GPU canvas, `f:\Projects\FmxFastCanvas_GitHub`, see its README): the demos that support it
 call `InstallFastCanvas` before `Application.Initialize` when they are built with the `FMR_FASTCANVAS` define:
 
 ```powershell
-.\build.ps1 -Project Demos\WordLike\WordLike.dpr -Define FMR_FASTCANVAS `
+.\build.ps1 -Project Demos\Notes\Notes.dpr -Define FMR_FASTCANVAS `
   -SearchPath f:\Projects\FmxFastCanvas_GitHub\src\Canvas,f:\Projects\FmxFastCanvas_GitHub\third_party\delphidx12\src
 ```
 
-(WordLike, Showcase and NCProof support it; the About page of WordLike and the Canvas page of the Showcase show the
-canvas class in use.)
+(Notes, Showcase and NCProof support it; the About page of Notes and the Canvas page of the Showcase show the canvas
+class in use.)
 
 Screenshots for documentation are taken with `tools\drive.ps1` (posted mouse messages, keys, `PrintWindow`
 capture, independent of other windows on the desktop), for example
-`.\tools\drive.ps1 -Exe bin\Win64\Debug\Showcase.exe -Arguments "/page=1 /theme=Office365Black" -Out shots\x.png`.
+`.\tools\drive.ps1 -Exe bin\Win64\Debug\Showcase.exe -Arguments "/page=1 /theme=ModernBlack" -Out shots\x.png`.
+Theme names of the first release (`Office365Black`…) are accepted too: they are aliases of the new names.
 
 | Demo | What it shows |
 |---|---|
-| [WordLike](#wordlike--fmr-write) | "FMR Write": a complete Word-like application whose main form is a real `.fmx` form |
+| [Notes](#notes--fmr-notes) | "FMR Notes": a notes editor whose main form is a real `.fmx` form |
 | [Showcase](#showcase--feature-gallery) | One page per feature with explanations and live controls |
-| [RibbonBasic](#ribbonbasic) | A Word-like ribbon built in code: galleries, application menu, mini toolbar, radial menu |
+| [RibbonBasic](#ribbonbasic) | A document-editor style ribbon built in code: galleries, application menu, mini toolbar, radial menu |
 | [Extras](#extras) | Backstage view and status bar on their own (with a stand-in theme provider) |
 | [NCProof](#ncproof) | The window frame: FMX controls in the real non-client area, the three frame modes |
 | [Customize](#customize) | Customization form, display options, auto-hide, simplified switch, right to left, UI Automation |
 
-## WordLike — FMR Write
+## Notes — FMR Notes
 
-`Demos\WordLike\WordLike.dpr`. A text editor that looks and behaves like Word, written the way an application is
-written in the IDE: **the main form is streamed from `WordLikeMain.fmx`** — the window frame (`TFmrFormFrame`,
-FullNC), the bar manager with about 140 items, the ribbon with its tabs, groups, links, the "Selection Tools"
-contextual group and the quick access toolbar, the backstage view with its tabs and content, the status bar with
-its panels, an image list, the document page, the find pane, the mini toolbar, the context menu, a timer and the
-file dialogs. The unit (`WordLikeMain.pas`) only declares the published fields and the event handlers that the
-`.fmx` refers to.
+`Demos\Notes\Notes.dpr`. A small notes editor ("Note1 - FMR Notes"), written the way an application is written in
+the IDE: **the main form is streamed from `NotesMain.fmx`** — the window frame (`TFmrFormFrame`), the bar manager
+with about 140 items, the ribbon with its tabs, groups, links, the "Selection Tools" contextual group and the quick
+access toolbar, the backstage view with its tabs and content, the status bar with its panels, an image list, the note
+page, the find pane, the mini toolbar, the context menu, a timer and the file dialogs. The unit (`NotesMain.pas`)
+only declares the published fields and the event handlers that the `.fmx` refers to. The default look is the Modern
+2024 theme that follows the light or dark mode of Windows (View > Theme, Options page) with the caption over Mica
+(Dwm frame; FullNC and NCStrip on the Options page).
 
 What to try:
 
@@ -76,59 +78,60 @@ What to try:
   zoom scales the page and the font), the **Themes gallery** listing every registered theme with a preview swatch
   (a click switches the whole window live), the accent gallery, simplified ribbon, touch mode, language
   (English / Русский), Customize Ribbon (`TFmrRibbon.ShowCustomizationForm`), Reset Ribbon.
-- **Selection Tools** (contextual group, two tabs "Text" and "Lines"): shown while the document has a selection;
+- **Selection Tools** (contextual group, two tabs "Text" and "Lines"): shown while the note has a selection;
   change case, cut/copy/delete, quotes, sort, reverse and trim lines, lists, a selection counter.
 - **File** (backstage view): Info (properties, protect = read-only, check for issues = remove double spaces,
-  version history = undo), New (template tiles with images from the `TImageList`), Open (recent files and samples,
-  Browse), Save, Save As (folder, name, format), Print (simulated: copies, printer list, page preview), Close, About
-  (canvas class), Options (theme, accent, frame mode FullNC/Dwm/NCStrip, Mica/Acrylic backdrop, language, touch,
-  simplified, QAT below, search box, screen tips — all applied live).
+  version history = undo), New (note templates: blank note, to-do list, report, journal, meeting notes, release
+  notes; tiles with images from the `TImageList`), Open (recent files and samples, Browse), Save, Save As (folder,
+  name, format), Print (simulated: copies, printer list, page preview), Close, About (canvas class), Options (theme,
+  accent, frame mode FullNC/Dwm/NCStrip, Mica/Acrylic backdrop, language, touch, simplified, QAT below, search box,
+  screen tips — all applied live).
 - Quick access toolbar (Save, Undo, Redo, customize menu), Undo/Redo history (also Ctrl+Z / Ctrl+Y), the search box
-  ("Tell me": commands; Enter searches the document), key tips everywhere (Alt), the mini toolbar after a mouse
-  selection and on right click (with the context menu), status bar: page, words, characters, language (click to
-  switch), messages, view buttons, zoom slider.
-- **Persistence**: on close the ribbon layout is saved to `%APPDATA%\FMRWrite\layout.json` (customized tabs, QAT,
+  (commands; Enter searches the note), key tips everywhere (Alt), the mini toolbar after a mouse selection and on
+  right click (with the context menu), status bar: page, words, characters, language (click to switch), messages,
+  view buttons, zoom slider.
+- **Persistence**: on close the ribbon layout is saved to `%APPDATA%\FMRNotes\layout.json` (customized tabs, QAT,
   minimized/simplified state) and theme, accent, frame, language, zoom and recent files to `settings.ini`; both are
   loaded at start. Reset Ribbon returns to the designed layout.
 - **Language**: `FmrSetLanguage` switches the library strings; the captions of the demo's own components are
-  translated from `WordLikeLang.pas` (English texts are captured from the `.fmx` at start).
+  translated from `NotesLang.pas` (English texts are captured from the `.fmx` at start).
 
-Command line: `/theme=<name> /accent=RRGGBB /lang=ru /frame=fullnc|dwm|ncstrip /backdrop=mica|acrylic /zoom=N
-/tab=N /backstage[=N] /select /find=<text> /simplified /touch /qatbelow
+Command line: `/theme=<name>|system /accent=RRGGBB /lang=ru /frame=fullnc|dwm|ncstrip /backdrop=mica|acrylic
+/zoom=N /tab=N /backstage[=N] /select /find=<text> /simplified /touch /qatbelow
 /open=styles|themes|accent|table|shapes|symbols|fontcolor|minitoolbar|context|customize|keytips /keytips /fresh`
-(ignore saved settings) `/nosave /settingsdir=<folder> /docdir=<folder> /width=N /height=N /dumpfmx=<file>` (writes
-the form, as loaded, back to text) `/dump=<file>` (`TFmrRibbon.DebugDump`).
+(ignore saved settings) `/nosave /docdir=<folder> /width=N /height=N /pos=X,Y /topmost
+/activelook /dumpfmx=<file>` (writes the form, as loaded, back to text) `/dump=<file>` (`TFmrRibbon.DebugDump`).
 
 ### The `.fmx` and its generator
 
-`WordLikeMain.fmx` was not written by hand: `tools\GenForm.dpr` creates the real form class with `CreateNew` (so no
-resource is read), builds every component in code (`tools\WordLikeBuild.pas`: owned by the form, named, events
-pointing to published methods) and saves it with `TStream.WriteComponent` + `ObjectBinaryToText`, exactly what the
-IDE does when it saves a designed form. To change the form, edit `WordLikeBuild.pas` (or open the `.fmx` in the IDE
-with the packages installed) and regenerate:
+`NotesMain.fmx` was not written by hand: `tools\GenForm.dpr` creates the real form class with `CreateNew` (so no
+resource is read), builds every component in code (`tools\NotesBuild.pas`: owned by the form, named, events pointing
+to published methods) and saves it with `TStream.WriteComponent` + `ObjectBinaryToText`, exactly what the IDE does
+when it saves a designed form. To change the form, edit `NotesBuild.pas` (or open the `.fmx` in the IDE with the
+packages installed) and regenerate:
 
 ```powershell
-.\Demos\WordLike\tools\gen.ps1            # builds GenForm (-Define WORDLIKE_GEN), writes the .fmx, builds the demo
+.\Demos\Notes\tools\gen.ps1               # builds GenForm (-Define NOTES_GEN), writes the .fmx, builds the demo
 bin\Win64\Debug\GenForm.exe <file.fmx> /show /fresh /nosave   # also shows the generated form, for comparison
 ```
 
-`WordLike.exe /dumpfmx=<file>` writes the loaded form back to text: compared with `WordLikeMain.fmx` only the client
-size and the positions that depend on it differ (the frame attaches in `Loaded` and takes the caption strip from the
+`Notes.exe /dumpfmx=<file>` writes the loaded form back to text: compared with `NotesMain.fmx` only the client size
+and the positions that depend on it differ (the frame attaches in `Loaded` and takes the caption strip from the
 client area), so every property of the library survives streaming.
 
 ## Showcase — feature gallery
 
-`Demos\Showcase\Showcase.dpr`, built in code. The main ribbon (Word template from `FmrApplyRibbonTemplate` plus a
-"Showcase" tab with a themes gallery, page navigation and popups) is in the window frame; the navigation list on the
-left (a themed `TFmrBackstageGalleryList`) selects a page; every page explains one feature and has live controls
+`Demos\Showcase\Showcase.dpr`, built in code. The main ribbon (Document template from `FmrApplyRibbonTemplate` plus
+a "Showcase" tab with a themes gallery, page navigation and popups) is in the window frame; the navigation list on
+the left (a themed `TFmrBackstageGalleryList`) selects a page; every page explains one feature and has live controls
 (themed `TFmrBackstageTile` buttons):
 
 | # | Page | Live controls |
 |---|---|---|
 | 0 | Overview | links to every page |
-| 1 | Themes and accents | all 18 built-in themes, 8 accent colors |
+| 1 | Themes and accents | all 21 built-in themes, 8 accent colors |
 | 2 | Window frame | FullNC / Dwm / NCStrip, backdrop None / Mica / Acrylic / Tabbed (Dwm, Windows 11) |
-| 3 | Adaptive layout | a slider sets the width of a second ribbon in a panel (reduction steps); Simple / Word / Excel templates |
+| 3 | Adaptive layout | a slider sets the width of a second ribbon in a panel (reduction steps); Simple / Document / Spreadsheet templates |
 | 4 | Galleries | open the styles, themes, color, highlight galleries and the Shapes menu |
 | 5 | Menus and popups | split button menu, context menu (`TFmrPopupMenu`), drop-down menu, command search |
 | 6 | Key tips | show key tips, on/off |
@@ -139,7 +142,7 @@ left (a themed `TFmrBackstageGalleryList`) selects a page; every page explains o
 | 11 | Right to left | `RightToLeft` on/off |
 | 12 | Mini toolbar | with the context menu, fading |
 | 13 | Radial menu | nested ring (Align) |
-| 14 | Application menu or backstage | backstage view, Office 2007 application menu, popup menu; Office 2007 Blue (orb) |
+| 14 | Application menu or backstage | backstage view, application menu in the style of Office 2007, popup menu; Glass Blue (orb) |
 | 15 | Status bar | a second status bar with every panel kind |
 | 16 | Merging | a "document" ribbon merged into / unmerged from the main ribbon (`Merge` / `Unmerge`) |
 | 17 | Persistence | layout JSON in a memo: save, load, hide a tab, reset |
@@ -154,21 +157,21 @@ merges, measures...), for screenshots.
 
 ## RibbonBasic
 
-`Demos\RibbonBasic\RibbonBasic.dpr`: a Word-like ribbon built in code — tabs Home, Insert, Layout, View, the "Table
-Tools" contextual group, every button kind, editors, color items, dialog launchers, the quick access toolbar and the
-search box; the in-ribbon styles gallery, Cover Page (drop-down gallery with filter and grip), Shapes (menu with an
-inline gallery), font color / highlight galleries, the Office 2007 application menu, the mini toolbar (selection,
-right click) and the radial menu. Switches: `/theme= /frame=fullnc|dwm|ncstrip|none /minimized /simplified /width=
-/height= /qatbelow /tabletools /keytips /touch /nosearch /tab=N /backstage /appmenu
-/open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname /dump=<file>`
-(Linux: `/waylandframe=preview`; see `Docs\RIBBON.md` and `Docs\GALLERIES.md`).
+`Demos\RibbonBasic\RibbonBasic.dpr`: a document-editor style ribbon built in code — tabs Home, Insert, Layout, View,
+the "Table Tools" contextual group, every button kind, editors, color items, dialog launchers, the quick access
+toolbar and the search box; the in-ribbon styles gallery, Cover Page (drop-down gallery with filter and grip), Shapes
+(menu with an inline gallery), font color / highlight galleries, the application menu in the style of Office 2007,
+the mini toolbar (selection, right click) and the radial menu. Switches: `/theme= /frame=fullnc|dwm|ncstrip|none
+/minimized /simplified /width= /height= /pos=X,Y /topmost /activelook /qatbelow /tabletools /keytips /touch /nosearch
+/tab=N /backstage /appmenu /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname
+/dump=<file>` (Linux: `/waylandframe=preview`; see `Docs\RIBBON.md` and `Docs\GALLERIES.md`).
 
 ## Extras
 
 `Demos\Extras\ExtrasDemo.dpr`: the backstage view (Info, New, Open, Save As, Print, Account, Options) and the status
 bar (text, container, item links, view buttons, zoom slider) without a ribbon: a stand-in theme provider plays its
 part. Switches: `/theme= /accent=RRGGBB /backstage /tab=N /keytips /standalone /noanim /frame[=fullnc|dwm|ncstrip]
-/keeprow` (see `Docs\EXTRAS.md`).
+/keeprow /pos=X,Y /topmost` (see `Docs\EXTRAS.md`).
 
 ## NCProof
 

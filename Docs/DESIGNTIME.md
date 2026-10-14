@@ -79,7 +79,7 @@ design package is unloaded.
 | Property | Editor |
 |---|---|
 | `Theme` of `TFmrRibbon`, `TFmrRibbonBackstageView`, `TFmrStatusBar`, `TFmrPopupMenu` | Drop-down of `TFmrTheme.ThemeNames` |
-| `AccentColor` (ribbon, backstage view, status bar) | Drop-down "(theme default), Word, Excel, PowerPoint, Outlook, OneNote, Access, Fluent" with color swatches; `#AARRGGBB` / `#RRGGBB` / `$hex` typed; "..." opens the color dialog |
+| `AccentColor` (ribbon, backstage view, status bar) | Drop-down "(theme default), Blue, Cobalt, Green, Orange, Azure, Purple, Crimson, Sky" (the `FmrAccent*` constants) with color swatches; `#AARRGGBB` / `#RRGGBB` / `$hex` typed; "..." opens the color dialog |
 | Every `TFmrImageSource` (`Glyph`, `LargeGlyph`, group glyphs, screen tip images, backstage glyphs...) | Summary "(Glyph $E8C8 Copy)", "(Image 3)", "(SVG)", "(Path)", "(None)"; sub-properties; "..." opens the **image dialog** |
 | `TFmrImageSource.GlyphCode` | Shown as `$E8C8 Copy`; accepts `E8C8`, `$E8C8`, `U+E8C8`, `#E8C8`; "..." opens the dialog on the icon font page |
 | `TFmrImageSource.GlyphFontFamily` | Drop-down of the icon fonts installed (Segoe Fluent Icons, Segoe MDL2 Assets, Segoe UI Symbol...) |
@@ -143,7 +143,7 @@ Ribbon1
   a context group: the tab joins it; onto the ribbon: leaves it); items dragged from the items editor become links.
 - F2 renames (caption of tabs/groups/context groups; the item caption for links). Context menu with the same commands.
 - **Selection decision**: tabs, groups, context groups are selected in the Object Inspector; **a link selects its item**
-  (as in DevExpress: caption, glyph, events are at hand); the link's own properties are in the panel at the bottom
+  (so its caption, glyph and events are at hand); the link's own properties are in the panel at the bottom
   (Begin group, Visible, Key tip, Default sizes / Large / Small + text / Small, button group) and "Link in Inspector"
   selects the `TFmrItemLink` itself. The designer's selection selects the matching node (for an item: its first link).
 - Refresh: designer notifications (item deleted/inserted, items modified) schedule a refresh (30 ms timer); when only
@@ -153,14 +153,14 @@ Ribbon1
 ### Templates
 
 `Source\Templates\FMR.Ribbon.Templates.pas` (run time, in the runtime package): `TFmrRibbonTemplateBuilder` builds
-complete Office-like structures into any structure owner and its bar manager; `FmrApplyRibbonTemplate(Ribbon,
+complete ribbon structures into any structure owner and its bar manager; `FmrApplyRibbonTemplate(Ribbon,
 Template, Manager = nil, Replace = False, Namer = nil)`.
 
 | Template | Content |
 |---|---|
 | `Simple` | Home (Clipboard, Font, Editing), View (Zoom, Show) |
-| `Word` | Home (Clipboard with Paste split menu, Font with font name/size editors and button-group rows, Paragraph, Styles gallery with drop-down commands, Editing), Insert (Pages, Tables, Illustrations, Links, Comments, Header & Footer, Text, Symbols), Layout (Page Setup with menus, Paragraph with spin editors, Arrange), View (Views as radio buttons, Show check boxes, Zoom, Window), contextual group "Table Tools" (Table Design, Table Layout) |
-| `Excel` | Home (Clipboard, Font, Alignment, Number, Styles, Cells, Editing), Insert (Tables, Illustrations, Charts, Text), Formulas, Data, View |
+| `Document` | Home (Clipboard with Paste split menu, Font with font name/size editors and button-group rows, Paragraph, Styles gallery with drop-down commands, Editing), Insert (Pages, Tables, Illustrations, Links, Comments, Header & Footer, Text, Symbols), Layout (Page Setup with menus, Paragraph with spin editors, Arrange), View (Views as radio buttons, Show check boxes, Zoom, Window), contextual group "Table Tools" (Table Design, Table Layout) |
+| `Spreadsheet` | Home (Clipboard, Font, Alignment, Number, Styles, Cells, Editing), Insert (Tables, Illustrations, Charts, Text), Formulas, Data, View |
 
 All templates fill the QAT with Save, Undo, Redo (shortcuts Ctrl+S/Z/Y), set key tips of the tabs and common
 commands, categories per tab, and use glyphs of the Segoe Fluent Icons / MDL2 font (`FmrGlyph*` constants), so no
@@ -336,7 +336,7 @@ a VCL control, where `FindVCLWindow` (it walks up the parents) found that contro
   the structure editor) - 25 checks, 0 failures.
 - `DesignPreview.exe /realtest=LOG [/shots=DIR]` (`tools\DesignPreview\RealRibbonTest.pas`): an FMX form inside the
   VCL program put into the design state the way the IDE does it (`TComponent.SetDesigning(True)` on the form before
-  its components are created, so every constructor sees `csDesigning`), a bar manager and a ribbon built by the Word
+  its components are created, so every constructor sees `csDesigning`), a bar manager and a ribbon built by the Document
   template, the controller with a fake designer whose root is that form. Mouse input is sent to the form window as
   Windows messages (FMX routes them through `ObjectAtPoint`). Two passes: rows inside the ribbon, and rows in a
   `TFmrFormFrame` host. 45 checks, 0 failures on Win64 and Win32:
@@ -380,14 +380,15 @@ bin\Win64\Debug\DesignPreview.exe /structure /expand /select=btnPaste /shot=shot
 bin\Win64\Debug\DesignPreview.exe /items /shot=shots\design\items.png
 bin\Win64\Debug\DesignPreview.exe /image /glyph=E8C8 /shot=shots\design\image.png
 bin\Win64\Debug\DesignPreview.exe /templates /shot=shots\design\templates.png
-bin\Win64\Debug\DesignPreview.exe /template=excel /structure      # template: word (default), excel, simple, none
+bin\Win64\Debug\DesignPreview.exe /template=spreadsheet /structure   # template: document (default), spreadsheet, simple, none
 bin\Win64\Debug\DesignPreview.exe /selftest=shots\design\selftest.txt   # exit code = failures
 bin\Win64\Debug\DesignPreview.exe /realtest=shots\design\realtest.txt /shots=shots\design   # real TFmrRibbon
 ```
 
 `TemplateDemo.dpr` (FMX) shows a real `TFmrRibbon` built by a template
-(`/template=word|excel|simple /tab=N /theme=NAME /context`); checked on screenshots: Word Home and Insert tabs
-(Office365White), Excel Home (Office2016Colorful). Captions containing `&` use `&&` (the ribbon treats `&` as an
+(`/template=document|spreadsheet|simple /tab=N /theme=NAME /context`; the switches `word` and `excel` of the first
+release still work); checked on screenshots: Document Home and Insert tabs (ModernWhite), Spreadsheet Home
+(BannerColorful). Captions containing `&` use `&&` (the ribbon treats `&` as an
 accelerator mark).
 
 `/selftest` also drives the structure editor (Ins adds a button to the selected group with the tab's category, Del
@@ -407,13 +408,13 @@ and Win64 after phase B: classes registered, `Register` exported, clean unload).
 - The design-hook contract and the template builder are runtime code in the new folder `Source\Templates` (I may not
   touch `Source\Core`; the coordinator may move `FMR.Ribbon.DesignSupport` to `Source\Core` — only the `.dpk` path
   changes).
-- A link node selects its item (DevExpress-like); link properties in the structure editor's bottom panel.
+- A link node selects its item; link properties in the structure editor's bottom panel.
 - `{$LIBSUFFIX AUTO}`: BPLs are named `...370.bpl`, DCPs keep the plain name; both IDEs (32/64-bit) are served by the
   Win32/Win64 builds.
 - Component icons are PNG resources drawn by the build script (glyph of the icon font or a small sketch on a colored
   rounded square); `.dcr` regenerated with `-Icons`.
 - Template glyph code points were chosen by looking at rendered sheets of Segoe Fluent Icons; where the font has no
-  exact Office icon (Shapes, Header, Subscript...) a close glyph is used; Subscript/Superscript are left out.
+  exact icon (Shapes, Header, Subscript...) a close glyph is used; Subscript/Superscript are left out.
 
 ## Open issues
 
@@ -423,4 +424,4 @@ and Win64 after phase B: classes registered, `Register` exported, clean unload).
 - `IDesigner.CreateChild` with a non-control parent (the bar manager, a tab) is what FMX's own menu editor does for
   `TMainMenu`; to be confirmed in the IDE for tabs/groups.
 - The 64-bit IDE registry key `Known Packages x64` is used by `-Install`; install through the IDE menu when in doubt.
-- The template icons are approximations (one icon font); Office has its own icons.
+- The template icons are approximations (one icon font).

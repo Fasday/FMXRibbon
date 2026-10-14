@@ -6,17 +6,17 @@ canvas, windows and popups are Wayland `xdg_toplevel`/`xdg_popup` surfaces. Ever
 compiles with `dcclinux64`; `Demos\RibbonBasic` and `Demos\Showcase` build and run (checked on a headless Weston 14
 in WSL, screenshots below).
 
-![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](images/linux/ribbonbasic-modern2024light.png)
 
 | | |
 |---|---|
-| ![Office 2024 Dark, a drop-down gallery](images/linux/gallery-dropdown.png) | ![Office 365 Colorful](images/linux/office365colorful.png) |
-| Office 2024 Dark, Insert > Cover Page: the drop-down gallery is an `xdg_popup` | Office 365 Colorful |
+| ![Modern 2024 Dark, a drop-down gallery](images/linux/gallery-dropdown-modern2024dark.png) | ![Modern Colorful](images/linux/modern-colorful.png) |
+| Modern 2024 Dark, Insert > Cover Page: the drop-down gallery is an `xdg_popup` | Modern Colorful |
 
-The pictures are frame dumps of a headless Weston (2026-10-14), with FMXWayland's `windowframe` branch: the
-ribbon draws the title bar through [the frame service](#the-window-frame-contract-ifmxwaylandwindowframe) (no
-`/waylandframe=preview`, no `FMXWAYLAND_CSD=0`). With FMXWayland's `main` (until the branch is merged) the
-ribbon sits under FMXWayland's own title bar.
+The pictures are frame dumps of a headless Weston (2026-10-14), with FMXWayland's frame service (its `windowframe`
+branch, merged into its `main` on 2026-10-14): the ribbon draws the title bar through [the frame service](#the-window-frame-contract-ifmxwaylandwindowframe) (no
+`/waylandframe=preview`, no `FMXWAYLAND_CSD=0`). With an FMXWayland without the service the ribbon sits under
+FMXWayland's own title bar.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ ribbon sits under FMXWayland's own title bar.
 - A Linux platform SDK to link against: FMXWayland's `tools\make-linux-sdk.ps1` makes one from a WSL distribution
   (default `D:\LinuxSDK\ubuntu-22.04`: glibc 2.35; `build.ps1 -Sdk <folder>` or `FMR_LINUX_SDK`).
 - At run time: a Wayland compositor (`wl_compositor`, `wl_shm`, `xdg_wm_base`), libwayland-client0, libxkbcommon0,
-  fontconfig (always there: `libsk4d.so` links it), `libsk4d.so` and `fonts/FmrFluentIcons.ttf` next to the
+  fontconfig (always there: `libsk4d.so` links it), `libsk4d.so` and `fonts/FmrIcons.ttf` next to the
   program.
 - For the headless checks: a WSL distribution with `weston` (default `Ubuntu-26.04`: Weston 14).
 
@@ -68,7 +68,7 @@ begin
 
 In the IDE: add the Linux64 platform to the project, put the generated `gen` folder, FMXWayland's `src` and
 `src\Protocols` **first** on the Linux64 search path, then FMR's `Source\*` folders (not `Source\Design`), and deploy
-`libsk4d.so` and `Assets\Fonts\FmrFluentIcons.ttf` (to `fonts\`) with the Deployment Manager.
+`libsk4d.so` and `Assets\Fonts\FmrIcons.ttf` (to `fonts\`) with the Deployment Manager.
 
 **Runtime package.** `tools\build-packages.ps1 -Platform Linux64` builds `bplFMRRibbon370.so` (the same unit list as
 Windows: the platform units compile to nothing elsewhere; `FMRRibbon.dproj` targets Win32, Win64 and Linux64). It is
@@ -84,13 +84,13 @@ On WSLg (a window on the Windows desktop):
 ```sh
 export XDG_RUNTIME_DIR=/mnt/wslg/runtime-dir WAYLAND_DISPLAY=wayland-0
 unset DISPLAY
-./RibbonBasic /theme=Office2024Dark
+./RibbonBasic /theme=Modern2024Dark
 ```
 
 Headless, without any window on the desktop and without input (what was used for every check here):
 
 ```powershell
-.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark','/activelook' -Shots 6,8
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Modern2024Dark','/activelook' -Shots 6,8
 .\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/tab=1','/open=cover' -Shots 6,8 -Out shots\linux\cover
 ```
 
@@ -112,23 +112,23 @@ Screenshots in `shots\linux\final\<name>\` (not committed; `tools\linux-run.ps1`
 
 | Check | Result | Evidence |
 |---|---|---|
-| Ribbon under FMXWayland's title bar: caption row with QAT and search box, no second title, tab row, groups, every button kind, icons | OK | `office2024light` (the first image of this file) |
-| Themes Office 2024 Light/Dark, Office 365 Colorful, Office 2007 Blue (orb, glossy) | OK | `office2024light`, `office2024dark`, `office365colorful`, `office2007blue` |
+| Ribbon under FMXWayland's title bar: caption row with QAT and search box, no second title, tab row, groups, every button kind, icons | OK | `modern2024light` (the first image of this file) |
+| Themes Modern 2024 Light/Dark, Modern Colorful, Glass Blue (orb, glossy) | OK | `modern2024light`, `modern2024dark`, `moderncolorful`, `glassblue` |
 | Group reduction at 640 dp (Styles and Editing collapsed, Clipboard small) | OK | `narrow` |
 | Drop-down gallery (filter, groups, grip) as `xdg_popup` | OK | `gallery-dropdown` |
 | Menu with an inline gallery (Shapes) as `xdg_popup` | OK | `menu-shapes` |
-| Office 2007 application menu (recent documents, submenus) as `xdg_popup` | OK | `appmenu2007` |
+| Application menu of the Glass themes (recent documents, submenus) as `xdg_popup` | OK | `appmenu2007` |
 | Key tips (`ShowKeyTipsNow`; keyboard input is not available headless) | shown | `keytips` |
 | Font name list from fontconfig (213 families), theme font resolved to Noto Sans | OK, opens in < 2 s | `fontlist` (status bar text) |
 | Integrated title bar with a stand-in frame service and `FMXWAYLAND_CSD=0` | OK (drawing; move/resize need the real service) | `titlebar-preview` |
 | Integrated title bar with the real service (FMXWayland `windowframe` branch): no FMXWayland title bar, the window at the program's size (1180x640), states from the listener, popups | OK | `nc_light`, `nc_dark_cover`, `nc_365c` (the pictures at the top) |
-| Showcase demo (Word template, backstage helper controls, status bar, navigation list), Office 365 Black | OK | `showcase` |
+| Showcase demo (Document template, backstage helper controls, status bar, navigation list), Modern Black | OK | `showcase` |
 | Output scale 2 (buffers 2x, icons and text sharp) | OK | `scale2` |
 | Windows: 171 tests, Win64/Win32 builds, packages Win32/Win64 (+ Linux64 runtime) | pass | `bin\Win64\Debug\FmrRibbonTests.exe`, `tools\build-packages.ps1` |
 
 Not checked: real mouse and keyboard input (no seat on the headless compositor; the owner's desktop was not to be
 used), WSLg, other compositors (GNOME, KDE, sway), the Release build at run time (it builds), the other demos
-(WordLike, Extras, Customize, NCProof: not ported; they need the same `.dpr` changes; NCProof is Windows-specific).
+(Notes, Extras, Customize, NCProof: not ported; they need the same `.dpr` changes; NCProof is Windows-specific).
 
 ## What the library does differently on Linux
 
@@ -149,16 +149,16 @@ default FMX text (memo, labels, FMXWayland's own title) is drawn in the theme fo
 
 **Icons.** The library, its templates and the demos use code points of Segoe Fluent Icons / Segoe MDL2 Assets, which
 are Windows fonts that must not be redistributed (also not as extracted outlines). Where the requested Segoe font is
-missing, `TFmrImageSource` draws the same icon from **FMR Fluent Icons** (`Assets\Fonts\FmrFluentIcons.ttf`, 51 KB):
+missing, `TFmrImageSource` draws the same icon from **FMR Icons** (`Assets\Fonts\FmrIcons.ttf`, 51 KB):
 the 266 needed icons of Microsoft's Fluent UI System Icons (MIT, `THIRD_PARTY_NOTICES.md`), taken from
 `FluentSystemIcons-Resizable.ttf` at their original code points and renamed so the subset never hides a full copy.
-`tools\IconFont\segoe-fluent-map.txt` maps each Segoe code to a Fluent icon name (every code of the image picker
+`tools\IconFont\segoe-icon-map.txt` maps each Segoe code to a Fluent icon name (every code of the image picker
 catalog, the templates, the customization form and the demos); `tools\IconFont\make-icon-font.ps1` (Python 3 +
 fontTools) downloads the pinned font, writes the subset and `Source\Core\FMR.Ribbon.IconFont.inc` (the table). At
 run time:
 
-- `FmrEnsureIconFont` registers the font with Skia once, from `$FMR_ICON_FONT`, `fonts/FmrFluentIcons.ttf` or
-  `FmrFluentIcons.ttf` next to the program, or `../share/fmr-ribbon/fonts/` (an installed "FMR Fluent Icons" family
+- `FmrEnsureIconFont` registers the font with Skia once, from `$FMR_ICON_FONT`, `fonts/FmrIcons.ttf` or
+  `FmrIcons.ttf` next to the program, or `../share/fmr-ribbon/fonts/` (an installed "FMR Icons" family
   is used as is);
 - `TFmrImageSource.RegisterGlyphFallback(SegoeCode, FallbackCode)` adds or replaces mappings,
   `GlyphFallbackFontFamily` names another fallback font (for example a full Fluent System Icons font of the
@@ -179,11 +179,11 @@ manager kept an interface of a popup's content while its closed-handler ran.
 ## What does not work yet
 
 - **The integrated title bar** (caption row and tab row in the title bar, as FullNC on Windows) needs the platform
-  service below. FMXWayland implements it in its `windowframe` branch (not in its `main` yet): built against that
-  branch, RibbonBasic without `/waylandframe=preview` and without `FMXWAYLAND_CSD=0` attaches by itself, FMXWayland's
+  service below. FMXWayland implements it (its `windowframe` branch, merged into `main` on 2026-10-14): built against it,
+  RibbonBasic without `/waylandframe=preview` and without `FMXWAYLAND_CSD=0` attaches by itself, FMXWayland's
   title bar goes away and the ribbon's caption row takes its place (checked on headless Weston, 2026-10-14; real
   input — move, resize, double click, window menu — is tested on sway, KWin and GNOME by FMXWayland's own tests).
-  With FMXWayland's `main` the ribbon sits under FMXWayland's title bar. Notes on that implementation:
+  Without the service the ribbon sits under FMXWayland's title bar. Notes on that implementation:
   - `BeginMove` returns True at the press; the move starts when the pointer is dragged past 4 px (as GTK), so clicks
     stay clicks and the second press of a double click arrives with `ssDouble` (the frame toggles maximize).
   - Before the first configure `GetStates` is 0 and `GetCapabilities` is `$FFFFFFFF` (`FmxwCapsUnknown`); the listener
@@ -198,7 +198,7 @@ manager kept an interface of a popup's content while its closed-handler ran.
 - FMXWayland limits (its README): no file dialogs (Customize: import/export), no window positions (`/pos`), popups
   without grab, no IME, no drag and drop, no native main menu.
 - `TFmrFontNameItem.ShowFontPreview` is not drawn (on Windows neither: the list shows names in the theme font).
-- Office 2010/2013 themes and the Fluent themes were not looked at on Linux (no reason to differ).
+- The Classic, Flat and Soft themes were not looked at on Linux (no reason to differ).
 - FMX itself crashes on Linux when a form is freed from code while a drop-down list of one of its combo boxes is
   open (access violation in `TPlatformLinux.GetClientSize` while the window goes away; reproduced with a plain
   `TComboBox`/`TComboEdit`, no ribbon involved). A form with a `TFmrRibbon` is protected: the ribbon closes every open

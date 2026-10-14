@@ -1,45 +1,51 @@
 # FMR Ribbon for Delphi FireMonkey
 
-A Microsoft Office-style ribbon for FireMonkey: tabs, groups with adaptive reduction, galleries, backstage view,
-Office 2007 application menu, quick access toolbar, key tips, screen tips, user customization, 21 themes — and the
-**real non-client area of the window**: the caption row and the tab row can live in the non-client area
-(`WM_NCCALCSIZE` / `WM_NCPAINT`) while holding ordinary FMX controls — buttons, `TEdit`, `TComboBox`, anything.
+A ribbon control for FireMonkey in the style of Microsoft Office: tabs, groups with adaptive reduction, galleries,
+backstage view, an application menu in the style of Office 2007, quick access toolbar, key tips, screen tips, user
+customization, 21 themes — and the **real non-client area of the window**: the caption row and the tab row can live in
+the non-client area (`WM_NCCALCSIZE` / `WM_NCPAINT`) while holding ordinary FMX controls — buttons, `TEdit`,
+`TComboBox`, anything.
 
 [Русская версия](README.ru.md)
 
-![FMR Write: the caption row and the tab row in the real non-client area](Docs/images/fmr-write.png)
+> Not affiliated with or endorsed by Microsoft. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
+> Access, Windows and Fluent are trademarks of the Microsoft group of companies. Theme names describe a visual style
+> only.
+
+![FMR Notes (Demos\Notes) in its default look: the Modern 2024 Dark theme following the dark mode of Windows, the caption over Mica](Docs/images/fmr-notes.png)
 
 ## Highlights
 
 - **FMX controls in the real non-client area.** Frame mode `FullNC` (default): `GetClientRect` starts below the tab
   row, and in the caption you can type, select, use the clipboard, open drop-down lists, see hints, drag the window by
   empty space, double-click to maximize, open the system menu and get Windows 11 Snap Layouts on the maximize button.
-  The Windows 11 shadow and rounded corners stay. Two more modes: `Dwm` (like Office: client area over the extended
-  frame, Mica/Acrylic) and `NCStrip` (system title bar + a non-client strip below it), switchable at run time. Proof:
+  The Windows 11 shadow and rounded corners stay. Two more modes: `Dwm` (client area over the extended frame,
+  Mica/Acrylic) and `NCStrip` (system title bar + a non-client strip below it), switchable at run time. Proof:
   `Demos\NCProof` with a live window-geometry and hit-test panel (`Docs\FRAME.md`).
-- **DevExpress-like model:** `TFmrBarManager` holds items; groups, the QAT, menus and the mini toolbar hold links
+- **Items + links model:** `TFmrBarManager` holds items; groups, the QAT, menus and the mini toolbar hold links
   (`TFmrItemLink`) to them, so one command can appear in many places. Items are lightweight (not controls): hundreds
   of commands stay fast.
 - **Ribbon:** tabs, contextual tabs, groups with adaptive reduction (large → small with text → small → collapsed
   group), every button kind (check, radio, drop-down, split, button groups), embedded controls (edit, combo, spin,
   check, track bar, font and color pickers, any `TControl`), minimized mode, auto-hide, simplified (single-line
-  Office 365 ribbon), touch mode, right-to-left, command search in the caption ("Tell me what you want to do").
-- **Galleries** in the ribbon and in drop-downs (groups, filter, resizing, live preview), Office color gallery,
-  owner-drawn styles gallery.
-- **Backstage view** (Office 2010+) and the Office 2007 **application menu** with recent documents.
+  ribbon), touch mode, right-to-left, command search in the caption row.
+- **Galleries** in the ribbon and in drop-downs (groups, filter, resizing, live preview), a color gallery with theme
+  colors, owner-drawn styles gallery.
+- **Backstage view** and an **application menu** in the style of Office 2007 with recent documents.
 - **QAT** above/below the ribbon, **key tips** (Alt / F10, multi-level, also with non-Latin keyboard layouts),
   **screen tips**, **mini toolbar**, **radial menu**, **status bar** (zoom slider, view buttons).
 - **User customization:** "Customize the Ribbon" / "Quick Access Toolbar" dialog, layout saved to and loaded from
   JSON, import/export, reset; **ribbon merging**.
-- **Themes:** Office 2024 (Light, Dark Gray, Dark: the Microsoft 365 look measured on Word, with the focus effect
-  of the caption row), Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver,
-  Black), Windows 11 Light/Dark; any accent color; any token can be overridden by a StyleBook (`Docs\STYLES.md`).
+- **Themes:** Modern 2024 (Light, Dark Gray, Dark: in the style of Microsoft 365 (2024), with the focus effect of the
+  caption row), Modern (Colorful, White, Dark Gray, Black: in the style of Microsoft 365 (2019–2023)), Banner, Flat,
+  Classic and Glass (in the style of Office 2016, 2013, 2010 and 2007), Soft Light/Dark (in the style of Windows 11);
+  any accent color; any token can be overridden by a StyleBook (`Docs\STYLES.md`).
 - **Icons:** `TImageList`, SVG (Skia), icon-font glyphs (Segoe Fluent Icons; where it is missing the same icons
-  come from the bundled "FMR Fluent Icons", made of Microsoft's MIT-licensed Fluent UI System Icons), `TPathData`.
+  come from the bundled "FMR Icons", a subset of Microsoft's MIT-licensed Fluent UI System Icons), `TPathData`.
 - **Linux** (FMXWayland, a native Wayland backend of FMX): every runtime unit compiles for Linux64, RibbonBasic and
   Showcase run (`Docs\LINUX.md`).
-- **IDE designer:** packages, items and structure editors, image picker, templates (Word, Excel, simple), themes from
-  the context menu; tab switching, item selection and drag & drop on the form (`Docs\DESIGNTIME.md`).
+- **IDE designer:** packages, items and structure editors, image picker, templates (document, spreadsheet, simple),
+  themes from the context menu; tab switching, item selection and drag & drop on the form (`Docs\DESIGNTIME.md`).
 - **Localization** EN/RU (`FmrSetLanguage('ru')`), **UI Automation** provider, works with the stock FMX canvas and
   with FastCanvas (a Direct3D 11/12 GPU canvas).
 
@@ -49,20 +55,24 @@ The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in the
 
 | | |
 |---|---|
-| ![Office 2024 Light](Docs/images/themes/Office2024Light.png) | ![Office 2024 Dark](Docs/images/themes/Office2024Dark.png) |
-| `Office2024Light` — Office 2024 Light | `Office2024Dark` — Office 2024 Dark |
-| ![Office 2024 Dark Gray](Docs/images/themes/Office2024DarkGray.png) | ![Office 365 Colorful](Docs/images/themes/Office365Colorful.png) |
-| `Office2024DarkGray` — Office 2024 Dark Gray | `Office365Colorful` — Office 365 Colorful |
-| ![Office 365 White](Docs/images/themes/Office365White.png) | ![Office 365 Black](Docs/images/themes/Office365Black.png) |
-| `Office365White` — Office 365 White | `Office365Black` — Office 365 Black |
-| ![Office 2016 Colorful](Docs/images/themes/Office2016Colorful.png) | ![Office 2013 White](Docs/images/themes/Office2013White.png) |
-| `Office2016Colorful` — Office 2016 Colorful | `Office2013White` — Office 2013 White |
-| ![Office 2010 Blue](Docs/images/themes/Office2010Blue.png) | ![Office 2007 Blue](Docs/images/themes/Office2007Blue.png) |
-| `Office2010Blue` — Office 2010 Blue | `Office2007Blue` — Office 2007 Blue |
-| ![Office 2007 Black](Docs/images/themes/Office2007Black.png) | ![Windows 11 Light](Docs/images/themes/FluentLight.png) |
-| `Office2007Black` — Office 2007 Black | `FluentLight` — Windows 11 Light |
-| ![Windows 11 Dark](Docs/images/themes/FluentDark.png) |  |
-| `FluentDark` — Windows 11 Dark |  |
+| ![Modern 2024 Light](Docs/images/themes/Modern2024Light.png) | ![Modern 2024 Dark](Docs/images/themes/Modern2024Dark.png) |
+| `Modern2024Light` — Modern 2024 Light, in the style of Microsoft 365 (2024) | `Modern2024Dark` — Modern 2024 Dark |
+| ![Modern 2024 Dark Gray](Docs/images/themes/Modern2024DarkGray.png) | ![Modern Colorful](Docs/images/themes/ModernColorful.png) |
+| `Modern2024DarkGray` — Modern 2024 Dark Gray | `ModernColorful` — Modern Colorful, in the style of Microsoft 365 (2019–2023) |
+| ![Modern White](Docs/images/themes/ModernWhite.png) | ![Modern Black](Docs/images/themes/ModernBlack.png) |
+| `ModernWhite` — Modern White (the default theme) | `ModernBlack` — Modern Black |
+| ![Banner Colorful](Docs/images/themes/BannerColorful.png) | ![Flat White](Docs/images/themes/FlatWhite.png) |
+| `BannerColorful` — Banner Colorful, in the style of Office 2016 | `FlatWhite` — Flat White, in the style of Office 2013 |
+| ![Classic Blue](Docs/images/themes/ClassicBlue.png) | ![Glass Blue](Docs/images/themes/GlassBlue.png) |
+| `ClassicBlue` — Classic Blue, in the style of Office 2010 | `GlassBlue` — Glass Blue, in the style of Office 2007 |
+| ![Glass Black](Docs/images/themes/GlassBlack.png) | ![Soft Light](Docs/images/themes/SoftLight.png) |
+| `GlassBlack` — Glass Black | `SoftLight` — Soft Light, in the style of Windows 11 |
+| ![Soft Dark](Docs/images/themes/SoftDark.png) |  |
+| `SoftDark` — Soft Dark |  |
+
+The theme names of the first release (`Office365White`, `Office2024Light`, `FluentDark`…) still work as deprecated
+aliases: `TFmrRibbon.Theme := 'Office2024Light'` selects `Modern2024Light` and stores the new name, so forms saved
+again get the new names (`Docs\STYLES.md`).
 
 ## Requirements
 
@@ -72,25 +82,25 @@ The same ribbon (`Demos\RibbonBasic`, FullNC frame) in 13 of the 21 built-in the
 
 ## Linux
 
-![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](Docs/images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic on Linux: the caption row and the tab row in place of the title bar](Docs/images/linux/ribbonbasic-modern2024light.png)
 
 | | |
 |---|---|
-| ![Office 2024 Dark, a drop-down gallery](Docs/images/linux/gallery-dropdown.png) | ![Office 365 Colorful](Docs/images/linux/office365colorful.png) |
+| ![Modern 2024 Dark, a drop-down gallery](Docs/images/linux/gallery-dropdown-modern2024dark.png) | ![Modern Colorful](Docs/images/linux/modern-colorful.png) |
 
 FMR Ribbon runs on Linux on FMXWayland (a native Wayland platform for FMX without libfmux; Skia canvas):
 
 ```powershell
 .\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64      # -FmxWayland <folder> -Sdk <Linux SDK>
-.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark' -Shots 6
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Modern2024Dark' -Shots 6
 ```
 
-The program sets `GlobalUseSkia := True` and ships `libsk4d.so` and `fonts/FmrFluentIcons.ttf` (build.ps1 copies
+The program sets `GlobalUseSkia := True` and ships `libsk4d.so` and `fonts/FmrIcons.ttf` (build.ps1 copies
 them). Themes fall back to an installed UI font (Noto Sans, Cantarell, DejaVu Sans…), Segoe icon codes are drawn from
 the bundled icon font, the font list comes from fontconfig. With FMXWayland's window frame service
-(`IFMXWaylandWindowFrame`, in its `windowframe` branch until it is merged) the caption row and the tab row take the
-place of the title bar, as in the pictures above (the window is moved, resized, maximized and given its window menu
-by the compositor); without it the ribbon sits under FMXWayland's own title bar. Details in `Docs\LINUX.md`.
+(`IFMXWaylandWindowFrame`) the caption row and the tab row take the place of the title bar, as in the pictures above
+(the window is moved, resized, maximized and given its window menu by the compositor); without it the ribbon sits
+under FMXWayland's own title bar. Details in `Docs\LINUX.md`.
 
 ## Installation
 
@@ -128,7 +138,7 @@ begin
   Ribbon := TFmrRibbon.Create(Self);
   Ribbon.Parent := Self;
   Ribbon.BarManager := Manager;
-  Ribbon.Theme := 'Office365Colorful';
+  Ribbon.Theme := 'ModernColorful';
   Home := Ribbon.AddTab('Home', 'tabHome');
   Home.AddGroup('Clipboard').ItemLinks.AddItem(Paste);
 end;
@@ -142,8 +152,8 @@ context menu ("Apply template…") or add tabs, groups and commands with the str
 | Demo | Shows |
 |---|---|
 | `Demos\NCProof` | FMX controls in the real non-client area, the three frame modes, live window geometry and hit-test |
-| `Demos\RibbonBasic` | a Word-like ribbon: every button kind, galleries, application menu, mini toolbar, radial menu |
-| `Demos\WordLike` | "FMR Write", a showcase application whose form is loaded from an `.fmx` like a designed form |
+| `Demos\RibbonBasic` | a document-editor style ribbon: every button kind, galleries, application menu, mini toolbar, radial menu |
+| `Demos\Notes` | "FMR Notes", a notes editor whose main form is loaded from an `.fmx` like a designed form |
 | `Demos\Showcase` | one page per feature, theme and mode switches |
 | `Demos\Extras` | backstage view and status bar |
 | `Demos\Customize` | customization dialog, auto-hide, simplified, RTL, UI Automation |
@@ -185,5 +195,9 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Third-party notices (the Fluent UI System Icons in `Assets\Fonts`):
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT, see [LICENSE](LICENSE). Third-party notices ("FMR Icons" in `Assets\Fonts`, a subset of Microsoft's Fluent UI
+System Icons, MIT): [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Not affiliated with or endorsed by Microsoft. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
+Access, Windows and Fluent are trademarks of the Microsoft group of companies. Theme names describe a visual style
+only.

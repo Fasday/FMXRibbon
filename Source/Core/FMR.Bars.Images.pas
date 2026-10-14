@@ -14,7 +14,7 @@ unit FMR.Bars.Images;
 /// default, cached per pixel size and tint), icon font glyphs with FillText and path data with FillPath.
 /// Define FMR_NO_SKIA to build without Skia (SVG then needs a TFmrImageSource.SvgRenderer of your own).
 /// Glyph codes are Segoe Fluent Icons / Segoe MDL2 Assets code points by default. Where that font is not installed
-/// (Linux, macOS) a known code is drawn from GlyphFallbackFontFamily ("FMR Fluent Icons", Assets\Fonts: icons of
+/// (Linux, macOS) a known code is drawn from GlyphFallbackFontFamily ("FMR Icons", Assets\Fonts: icons of
 /// Fluent UI System Icons, MIT; table FMR.Ribbon.IconFont.inc, RegisterGlyphFallback adds codes); an unknown code or
 /// a missing font gives a small placeholder dot instead of the "missing glyph" box.
 
@@ -140,8 +140,8 @@ type
     /// <summary>Icon font used when GlyphFontFamily is empty: 'Segoe Fluent Icons' on Windows 11 and on other
     /// platforms (its codes are mapped to GlyphFallbackFontFamily there), 'Segoe MDL2 Assets' on Windows 10.</summary>
     class property DefaultGlyphFontFamily: string read FDefaultGlyphFontFamily write FDefaultGlyphFontFamily;
-    /// <summary>Icon font for Segoe icon codes when the Segoe icon fonts are not installed: 'FMR Fluent Icons'
-    /// (FMR.Ribbon.Fonts.FmrEnsureIconFont registers Assets\Fonts\FmrFluentIcons.ttf deployed with the program).
+    /// <summary>Icon font for Segoe icon codes when the Segoe icon fonts are not installed: 'FMR Icons'
+    /// (FMR.Ribbon.Fonts.FmrEnsureIconFont registers Assets\Fonts\FmrIcons.ttf deployed with the program).
     /// </summary>
     class property GlyphFallbackFontFamily: string read FGlyphFallbackFontFamily write FGlyphFallbackFontFamily;
     /// <summary>Renderer of SVG images; Skia by default (nil with FMR_NO_SKIA).</summary>

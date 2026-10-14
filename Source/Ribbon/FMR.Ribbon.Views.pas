@@ -108,7 +108,7 @@ type
     function IsChecked: Boolean; virtual;
     /// <summary>Part under a point (local coordinates of the host); None outside.</summary>
     function PartAt(const P: TPointF): TFmrElementPart; virtual;
-    /// <summary>True when pressing APart opens a drop-down at once (on mouse down, like Office).</summary>
+    /// <summary>True when pressing APart opens a drop-down at once (on mouse down).</summary>
     function OpensOnPress(const APart: TFmrElementPart): Boolean; virtual;
     /// <summary>Runs the command of APart (a click).</summary>
     procedure Execute(const APart: TFmrElementPart); virtual;
@@ -1047,7 +1047,7 @@ begin
     Exit;
   if IsPrimary then
   begin
-    // Accent filled in every state; a split button is one filled shape (Office "Share").
+    // Accent filled in every state; a split button is one filled shape (a "Share" button).
     MainState := PartState(TFmrElementPart.Main);
     ArrowState := PartState(TFmrElementPart.DropDown);
     if ArrowState in [TFmrPartState.Hot, TFmrPartState.Pressed] then
@@ -1173,7 +1173,7 @@ begin
 
   if IsToggleSwitch then
   begin
-    // Caption first, then the switch (Office "AutoSave").
+    // Caption first, then the switch (an "AutoSave" switch).
     CheckR := RectF(R.Right - Pad - ToggleSwitchWidth, Round(R.CenterPoint.Y - ToggleSwitchHeight / 2),
       R.Right - Pad, Round(R.CenterPoint.Y - ToggleSwitchHeight / 2) + ToggleSwitchHeight);
     if Caption <> '' then

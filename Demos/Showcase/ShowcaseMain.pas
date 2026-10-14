@@ -9,7 +9,7 @@
 
 unit ShowcaseMain;
 
-/// Feature gallery of FMR Ribbon, built in code. The main ribbon (Word template + a "Showcase" tab) lives in the
+/// Feature gallery of FMR Ribbon, built in code. The main ribbon (Document template + a "Showcase" tab) lives in the
 /// window frame; the left navigation list (a themed TFmrBackstageGalleryList) selects a page; every page explains
 /// one feature and has live controls (themed TFmrBackstageTile buttons) that change the main ribbon, or a ribbon
 /// of its own (adaptive layout, merging). All companion controls follow the theme of the main ribbon.
@@ -202,8 +202,8 @@ const
     (Group: 'Ribbon'; Title: 'Display modes'; Glyph: $E8A0; Description: 'Minimized, auto-hide, simplified, touch'),
     (Group: 'Ribbon'; Title: 'Right to left'; Glyph: $E8AB; Description: 'Mirrored groups'),
     (Group: 'Popups'; Title: 'Mini toolbar'; Glyph: $E8D2; Description: 'Floating formatting toolbar'),
-    (Group: 'Popups'; Title: 'Radial menu'; Glyph: $E7F4; Description: 'OneNote style'),
-    (Group: 'Popups'; Title: 'Application menu or backstage'; Glyph: $E8A5; Description: 'File tab, Office 2007 orb'),
+    (Group: 'Popups'; Title: 'Radial menu'; Glyph: $E7F4; Description: 'Pie menu for touch'),
+    (Group: 'Popups'; Title: 'Application menu or backstage'; Glyph: $E8A5; Description: 'File tab or the Glass orb'),
     (Group: 'Companions'; Title: 'Status bar'; Glyph: $E81E; Description: 'Panels, zoom slider, views'),
     (Group: 'Data'; Title: 'Merging'; Glyph: $E8A7; Description: 'A child ribbon merged in'),
     (Group: 'Data'; Title: 'Persistence'; Glyph: $E78C; Description: 'Layout as JSON'),
@@ -224,10 +224,10 @@ const
     'Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5,1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 ' +
     '10,5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z';
 
-  Accents: array [0..7] of TAlphaColor = (0, $FF2B579A, $FF217346, $FFB7472A, $FF0072C6, $FF80397B, $FFA4373A,
-    $FF0067C0);
-  AccentNames: array [0..7] of string = ('Theme default', 'Word', 'Excel', 'PowerPoint', 'Outlook', 'OneNote',
-    'Access', 'Fluent');
+  Accents: array [0..7] of TAlphaColor = (0, FmrAccentBlue, FmrAccentGreen, FmrAccentOrange, FmrAccentAzure,
+    FmrAccentPurple, FmrAccentCrimson, FmrAccentSky);
+  AccentNames: array [0..7] of string = ('Theme default', 'Blue', 'Green', 'Orange', 'Azure', 'Purple',
+    'Crimson', 'Sky');
 
 { TShowcasePanel }
 
@@ -369,8 +369,8 @@ begin
   FRibbon.ShowDisplayModeButton := True;
   FRibbon.BeginStructureUpdate;
   try
-    // a complete Word-like structure from the run-time template builder, then a tab of our own
-    FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Word, FManager);
+    // a complete document editor structure from the run-time template builder, then a tab of our own
+    FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Document, FManager);
     BuildShowcaseTab;
   finally
     FRibbon.EndStructureUpdate;
@@ -529,7 +529,7 @@ begin
   FBackstage.ThemeProvider := FRibbon;
   FRibbon.ApplicationMenu := FBackstage;
 
-  // Office 2007 application menu
+  // Application menu in the style of Office 2007
   FAppMenu07 := TFmrRibbonApplicationMenu.Create(Self);
   FAppMenu07.Parent := Self;
   FAppMenu07.BarManager := FManager;
@@ -807,7 +807,7 @@ begin
   else
     TextColor := APainter.Theme.Colors[TFmrToken.MenuItemText];
   APainter.TextEx(ACanvas, RectF(ARect.Left + 1, ARect.Bottom - 17, ARect.Right - 1, ARect.Bottom - 1),
-    AEntry.Caption.Replace('Office ', '').Replace('Windows 11 ', 'Win11 '), TextColor, TTextAlign.Center,
+    AEntry.Caption.Replace('Modern 2024 ', '2024 '), TextColor, TTextAlign.Center,
     TTextAlign.Center, APainter.Metrics.FontSize - 1.5, False, False);
   AHandled := True;
 end;
@@ -1062,12 +1062,12 @@ var
   Flow: TFlowLayout;
   I: Integer;
 begin
-  AddText('FMR Ribbon is an open-source (MIT) Microsoft Office style ribbon for Delphi FireMonkey. A bar manager ' +
+  AddText('FMR Ribbon is an open-source (MIT) ribbon control for Delphi FireMonkey. A bar manager ' +
     'holds the commands (items); the ribbon, the quick access toolbar, menus, the mini toolbar, the radial menu and ' +
     'the status bar show links to them. Everything is painted by a theme painter: no styled control per button, so ' +
     'hundreds of commands cost a few objects each.');
   AddText('The window above is a TFmrFormFrame (FullNC mode: the caption row and the tab row are in the real ' +
-    'non-client area) with a TFmrRibbon built by FmrApplyRibbonTemplate (Word template) plus the "Showcase" tab, a ' +
+    'non-client area) with a TFmrRibbon built by FmrApplyRibbonTemplate (Document template) plus the "Showcase" tab, a ' +
     'TFmrStatusBar at the bottom and this page area, whose labels, tiles and the navigation list are the themed ' +
     'helper controls of the backstage view.');
   AddSection('Pages');
@@ -1245,14 +1245,14 @@ begin
     T.TagString := IntToStr(Ord(B));
     T.Selected := FFrame.Backdrop = B;
   end;
-  AddText('Tip: the Fluent themes (Windows 11 Light / Dark) have a transparent caption over a backdrop.',
+  AddText('Tip: the Soft and Modern 2024 themes have a transparent caption over a backdrop.',
     TFmrBackstageTextStyle.Secondary);
   AddInfo;
   UpdateFrameInfo;
   FAutoActions.AddOrSetValue(2,
     procedure
     begin
-      ApplyTheme('FluentLight', 0);
+      ApplyTheme('SoftLight', 0);
       FFrame.Mode := TFmrFrameMode.Dwm;
       FFrame.Backdrop := TFmrFrameBackdrop.Mica;
       UpdateFrameInfo;
@@ -1313,7 +1313,7 @@ begin
   FEmbeddedHost.Parent := FBox;
   FEmbedded := NewEmbeddedRibbon(FEmbeddedHost, FEmbeddedManager, FEmbeddedFrame);
   FEmbedded.Position.Point := PointF(0, 0);
-  FmrApplyRibbonTemplate(FEmbedded, TFmrRibbonTemplate.Word, FEmbeddedManager);
+  FmrApplyRibbonTemplate(FEmbedded, TFmrRibbonTemplate.Document, FEmbeddedManager);
   FEmbedded.ActiveTab := FEmbedded.Tabs(0);
   AddInfo;
   AddSection('Templates (TFmrRibbonTemplateBuilder, FmrApplyRibbonTemplate)');
@@ -1323,7 +1323,7 @@ begin
     T := AddButton(Flow, TFmrRibbonTemplateBuilder.TemplateCaption(Tpl), $E8A5, TemplateAction(Tpl), 200, 44);
     T.Tag := 1;
     T.TagString := IntToStr(Ord(Tpl));
-    T.Selected := Tpl = TFmrRibbonTemplate.Word;
+    T.Selected := Tpl = TFmrRibbonTemplate.Document;
   end;
   TrackChange(nil);
   FAutoActions.AddOrSetValue(3,
@@ -1383,7 +1383,7 @@ begin
   AddText('Buttons can be plain, check (toggle, radio with GroupIndex), drop-down or split; their menus are the ' +
     'links of DropDownLinks or of a TFmrSubItem: large rows with descriptions, check marks, submenus, accelerators, ' +
     'key tips and screen tips. TFmrPopupMenu is the same menu as a component (context menus, application menus). ' +
-    'Right-clicking any command offers "Add to Quick Access Toolbar". The search box ("Tell me") searches captions, ' +
+    'Right-clicking any command offers "Add to Quick Access Toolbar". The search box searches captions, ' +
     'descriptions, hints and keywords of every item.');
   Flow := AddFlow(300, 46);
   AddButton(Flow, 'Split button menu (Paste)', FmrGlyphPaste,
@@ -1616,9 +1616,9 @@ var
   Flow: TFlowLayout;
 begin
   AddText('Minimized (Ctrl+F1, double click on a tab) shows only the tabs, a click on a tab shows its commands ' +
-    'over the document. ShowMode = AutoHide hides the whole ribbon until the caption row is clicked (Office "Auto-' +
+    'over the document. ShowMode = AutoHide hides the whole ribbon until the caption row is clicked ("Auto-' +
     'hide Ribbon", also in the Ribbon Display Options caption button). DisplayMode = Simplified is the single-line ' +
-    'ribbon of Office 365 with an overflow menu (also the chevron at the right end). TouchMode enlarges every ' +
+    'ribbon with an overflow menu (also the chevron at the right end). TouchMode enlarges every ' +
     'interactive size.');
   Flow := AddFlow(280, 46);
   AddButton(Flow, 'Minimized on / off', $E70E,
@@ -1697,7 +1697,7 @@ procedure TShowcaseForm.PageMiniToolbar;
 var
   Flow: TFlowLayout;
 begin
-  AddText('TFmrRibbonMiniToolbar is the floating formatting toolbar of Office: it reuses the items of the ribbon ' +
+  AddText('TFmrRibbonMiniToolbar is a floating formatting toolbar: it reuses the items of the ribbon ' +
     '(font name and size editors, buttons, color galleries), appears half transparent near the mouse after a text ' +
     'selection and fades out as the mouse goes away; with a context menu it appears above the menu and stays ' +
     'opaque while the menu is open.');
@@ -1723,7 +1723,7 @@ procedure TShowcaseForm.PageRadial;
 var
   Flow: TFlowLayout;
 begin
-  AddText('TFmrRibbonRadialMenu is the round menu of OneNote for touch: up to eight commands around the center, ' +
+  AddText('TFmrRibbonRadialMenu is a round menu for touch: up to eight commands around the center, ' +
     'sub items open a nested ring (Align), the center button goes back or closes. It uses the same items as the ' +
     'ribbon, so check states and colors are shared. Arrow keys rotate the focus.');
   Flow := AddFlow(300, 46);
@@ -1754,10 +1754,11 @@ var
   Flow: TFlowLayout;
   T: TFmrBackstageTile;
 begin
-  AddText('The File tab (or the Office 2007 orb) opens TFmrRibbon.ApplicationMenu: a TFmrRibbonBackstageView ' +
-    '(Office 2010 and newer: covers the window, the tab row hides, the caption stays), a ' +
-    'TFmrRibbonApplicationMenu (Office 2007: large rows, submenus in the right pane, recent documents with pins) or ' +
-    'a plain TFmrPopupMenu. With an Office 2007 theme the application button is the orb.');
+  AddText('The File tab (or the orb of the Glass themes) opens TFmrRibbon.ApplicationMenu: a TFmrRibbonBackstageView ' +
+    '(covers the window, the tab row hides, the caption stays), a ' +
+    'TFmrRibbonApplicationMenu (in the style of Office 2007: large rows, submenus in the right pane, recent ' +
+    'documents with pins) or ' +
+    'a plain TFmrPopupMenu. With a Glass theme the application button is the orb.');
   Flow := AddFlow(300, 46);
   T := AddButton(Flow, 'Backstage view', $E8A5,
     procedure
@@ -1767,7 +1768,7 @@ begin
   T.Tag := 1;
   T.TagString := '0';
   T.Selected := FRibbon.ApplicationMenu = FBackstage;
-  T := AddButton(Flow, 'Office 2007 application menu', $E8A5,
+  T := AddButton(Flow, 'Application menu', $E8A5,
     procedure
     begin
       ChooseAppMenu(FAppMenu07, 1);
@@ -1794,16 +1795,16 @@ begin
       else
         FFileMenu.PopupBelow(FRibbon.ApplicationButtonScreenRect);
     end, 300, 46);
-  AddButton(Flow, 'Office 2007 Blue with the orb', $E790,
+  AddButton(Flow, 'Glass Blue with the orb', $E790,
     procedure
     begin
-      ApplyTheme('Office2007Blue', 0);
+      ApplyTheme('GlassBlue', 0);
       ChooseAppMenu(FAppMenu07, 1);
     end, 300, 46);
   FAutoActions.AddOrSetValue(14,
     procedure
     begin
-      ApplyTheme('Office2007Blue', 0);
+      ApplyTheme('GlassBlue', 0);
       ChooseAppMenu(FAppMenu07, 1);
       FAppMenu07.ShowApplicationMenu(FRibbon, FRibbon.ApplicationButtonScreenRect, False);
     end);
@@ -1816,8 +1817,8 @@ var
   Bar: TProgressBar;
   Links: TFmrStatusBarPanel;
 begin
-  AddText('TFmrStatusBar is the Office status bar: text panels with glyphs and click events, container panels for ' +
-    'any control, item link panels (small buttons for bar items), the Read / Print / Web view buttons and the Word ' +
+  AddText('TFmrStatusBar is a status bar: text panels with glyphs and click events, container panels for ' +
+    'any control, item link panels (small buttons for bar items), the Read / Print / Web view buttons and the ' +
     'zoom slider with the 100 % tick in the middle. Panels are placed from the left and from the right; when the ' +
     'bar is too narrow, stretched panels shrink, then panels are hidden from the end. The bar at the bottom of the ' +
     'window is one; here is another with every kind of panel:');
@@ -1883,7 +1884,7 @@ var
 
 begin
   AddText('Merging puts the tabs and groups of another ribbon (a child form, a plug-in) into the main ribbon, the ' +
-    'way Office merges the ribbon of an embedded document: TFmrRibbon.Merge(Source) adds copies that link the same ' +
+    'way an application merges the ribbon of an embedded document: TFmrRibbon.Merge(Source) adds copies that link the same ' +
     'items; Unmerge removes them and restores what was hidden. Per tab or group, MergeKind says what to do: Merge ' +
     'into the target with the same name or caption, Add, Replace or Remove. Below is a "document" ribbon:');
   Host := TLayout.Create(FBox);
@@ -2016,7 +2017,7 @@ procedure TShowcaseForm.PageCustomize;
 var
   Flow: TFlowLayout;
 begin
-  AddText('ShowCustomizationForm opens the "Customize the Ribbon" form of Office: commands by category or tab, ' +
+  AddText('ShowCustomizationForm opens the "Customize the Ribbon" form: commands by category or tab, ' +
     'search, new tabs and groups, rename, move up and down, hide, reset, import and export, and the "Quick Access ' +
     'Toolbar" page. The result is the same layout that persistence saves. The right click menu of the ribbon and ' +
     '"More Commands" of the quick access toolbar menu open it too.');
@@ -2046,7 +2047,7 @@ begin
     'options, the customization form, color names, screen tip footers...) comes from FMR.Ribbon.Strings: ' +
     'FmrSetLanguage(''ru'') switches to Russian, FmrRegisterLanguage adds a table, FmrSetString overrides one ' +
     'string. The ribbon updates itself on TFmrLanguageChangedMessage; the captions of your own items are yours ' +
-    '(Demos\WordLike switches them too).');
+    '(Demos\Notes switches them too).');
   Flow := AddFlow(220, 46);
   AddButton(Flow, 'English', $E774,
     procedure

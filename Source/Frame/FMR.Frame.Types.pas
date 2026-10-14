@@ -18,8 +18,8 @@ type
   /// <summary>How the top of a form (title bar, ribbon tabs) is made.</summary>
   TFmrFrameMode = (
     /// <summary>The top non-client area is removed; the caption content is drawn by FMX in the client area over a
-    /// DWM frame extended into it: Mica/Acrylic, system shadow and corners, GPU rendering. Office, DevExpress (Aero
-    /// mode), Chrome and VS Code do this.</summary>
+    /// DWM frame extended into it: Mica/Acrylic, system shadow and corners, GPU rendering. Most applications with
+    /// their own title bar (browsers, code editors, office suites) do this.</summary>
     Dwm,
     /// <summary>The caption content lives in the real non-client area (WM_NCCALCSIZE, WM_NCPAINT): GetClientRect
     /// starts below it. FMX controls in it are painted into a bitmap and copied to the window DC.</summary>

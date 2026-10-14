@@ -1,44 +1,48 @@
 # FMR Ribbon для Delphi FireMonkey
 
-Лента (ribbon) в стиле Microsoft Office для FireMonkey: вкладки, группы с адаптивным сжатием, галереи, Backstage,
-меню приложения Office 2007, QAT, KeyTips, ScreenTips, настройка пользователем, 21 тема — и **настоящая неклиентская
-область окна**: строка заголовка и строка вкладок могут жить в NC-области (`WM_NCCALCSIZE` / `WM_NCPAINT`), при этом
-в них лежат обычные FMX-контролы — кнопки, `TEdit`, `TComboBox`, что угодно.
+Лента (ribbon) для FireMonkey в стиле Microsoft Office: вкладки, группы с адаптивным сжатием, галереи, Backstage,
+меню приложения в стиле Office 2007, QAT, KeyTips, ScreenTips, настройка пользователем, 21 тема — и **настоящая
+неклиентская область окна**: строка заголовка и строка вкладок могут жить в NC-области (`WM_NCCALCSIZE` /
+`WM_NCPAINT`), при этом в них лежат обычные FMX-контролы — кнопки, `TEdit`, `TComboBox`, что угодно.
 
 [English version](README.md)
 
-![FMR Write: строка заголовка и вкладки в настоящей NC-области](Docs/images/fmr-write.png)
+> Проект не связан с Microsoft и не одобрен ею. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
+> Access, Windows и Fluent — товарные знаки группы компаний Microsoft. Названия тем описывают только визуальный стиль.
+
+![FMR Notes (Demos\Notes) в виде по умолчанию: тема Modern 2024 Dark по тёмному режиму Windows, заголовок поверх Mica](Docs/images/fmr-notes.png)
 
 ## Главное
 
 - **FMX-контролы в настоящей NC-области.** Режим рамки `FullNC` (по умолчанию): `GetClientRect` начинается под
   строкой вкладок, а в заголовке работают ввод текста, выделение, буфер обмена, выпадающие списки, подсказки,
   перетаскивание окна за пустое место, двойной щелчок, системное меню, Snap Layouts Windows 11 на кнопке «развернуть».
-  Тень и скруглённые углы Windows 11 сохраняются. Ещё два режима: `Dwm` (как Office: клиентская область поверх
-  расширенной рамки, Mica/Acrylic) и `NCStrip` (системный заголовок + NC-полоса под ним). Переключаются на лету.
+  Тень и скруглённые углы Windows 11 сохраняются. Ещё два режима: `Dwm` (клиентская область поверх расширенной рамки,
+  Mica/Acrylic) и `NCStrip` (системный заголовок + NC-полоса под ним). Переключаются на лету.
   Доказательство — демо `Demos\NCProof` с живой панелью геометрии окна и hit-test (`Docs\FRAME.md`).
-- **Модель как у DevExpress:** `TFmrBarManager` с элементами и ссылки (`TFmrItemLink`) на них в группах, QAT, меню,
+- **Модель «элементы + ссылки»:** `TFmrBarManager` с элементами и ссылки (`TFmrItemLink`) на них в группах, QAT, меню,
   mini toolbar; один элемент — во многих местах. Элементы лёгкие (не контролы): сотни команд без тормозов.
 - **Лента:** вкладки, контекстные вкладки, группы с адаптивным сжатием (большие → малые с текстом → малые →
   свёрнутая группа), кнопки всех видов (check, radio, dropdown, split, группы кнопок), встроенные контролы (edit,
   combo, spin, check, track bar, выбор шрифта и цвета, любой `TControl`), свёрнутый режим, AutoHide, Simplified
-  (однострочная лента Office 365), Touch, RTL, поиск команд в заголовке («Что вы хотите сделать?»).
-- **Галереи** в ленте и выпадающие (группы, фильтр, изменение размера, живой предпросмотр), галерея цветов Office,
-  галерея стилей с owner-draw.
-- **Backstage view** (Office 2010+) и **меню приложения** Office 2007 с последними документами.
+  (однострочная лента), Touch, RTL, поиск команд в строке заголовка.
+- **Галереи** в ленте и выпадающие (группы, фильтр, изменение размера, живой предпросмотр), галерея цветов с цветами
+  темы, галерея стилей с owner-draw.
+- **Backstage view** и **меню приложения** в стиле Office 2007 с последними документами.
 - **QAT** над/под лентой, **KeyTips** (Alt / F10, многоуровневые, работают и на русской раскладке), **ScreenTips**,
   **mini toolbar**, **radial menu**, **строка состояния** (масштаб, кнопки режимов).
 - **Настройка пользователем:** форма «Настроить ленту» / «Панель быстрого доступа», сохранение и загрузка раскладки
   в JSON, импорт/экспорт, сброс; **слияние лент** (merge).
-- **Темы:** Office 2024 (Light, Dark Gray, Dark: вид Microsoft 365, снятый с Word, с эффектом неактивного окна
-  в строке заголовка), Office 365 (Colorful, White, Dark Gray, Black), Office 2016, 2013, 2010, 2007 (Blue, Silver,
-  Black), Windows 11 Light/Dark; любой акцентный цвет; переопределение любого токена через StyleBook (`Docs\STYLES.md`).
+- **Темы:** Modern 2024 (Light, Dark Gray, Dark: в стиле Microsoft 365 (2024), с эффектом неактивного окна в строке
+  заголовка), Modern (Colorful, White, Dark Gray, Black: в стиле Microsoft 365 (2019–2023)), Banner, Flat, Classic и
+  Glass (в стиле Office 2016, 2013, 2010 и 2007), Soft Light/Dark (в стиле Windows 11); любой акцентный цвет;
+  переопределение любого токена через StyleBook (`Docs\STYLES.md`).
 - **Иконки:** `TImageList`, SVG (Skia), глифы иконочных шрифтов (Segoe Fluent Icons; где его нет, те же иконки
-  берутся из встроенного шрифта «FMR Fluent Icons» на основе Fluent UI System Icons от Microsoft, MIT), `TPathData`.
+  берутся из встроенного шрифта «FMR Icons» — подмножества Fluent UI System Icons от Microsoft, MIT), `TPathData`.
 - **Linux** (FMXWayland — нативный Wayland-бэкенд FMX): все runtime-модули компилируются под Linux64, RibbonBasic и
   Showcase работают (`Docs\LINUX.md`).
-- **Дизайнер IDE:** пакеты, редакторы элементов и структуры, выбор иконки, шаблоны (Word, Excel, простой), темы из
-  контекстного меню; щелчок по вкладке, выделение элементов и drag&drop на форме (`Docs\DESIGNTIME.md`).
+- **Дизайнер IDE:** пакеты, редакторы элементов и структуры, выбор иконки, шаблоны (документ, таблица, простой), темы
+  из контекстного меню; щелчок по вкладке, выделение элементов и drag&drop на форме (`Docs\DESIGNTIME.md`).
 - **Локализация** EN/RU (`FmrSetLanguage('ru')`), **UI Automation** (экранные дикторы, автотесты),
   работает со штатным канвасом FMX и с FastCanvas (GPU-канвас на Direct3D 11/12).
 
@@ -48,20 +52,24 @@
 
 | | |
 |---|---|
-| ![Office 2024 Light](Docs/images/themes/Office2024Light.png) | ![Office 2024 Dark](Docs/images/themes/Office2024Dark.png) |
-| `Office2024Light` — Office 2024 Light | `Office2024Dark` — Office 2024 Dark |
-| ![Office 2024 Dark Gray](Docs/images/themes/Office2024DarkGray.png) | ![Office 365 Colorful](Docs/images/themes/Office365Colorful.png) |
-| `Office2024DarkGray` — Office 2024 Dark Gray | `Office365Colorful` — Office 365 Colorful |
-| ![Office 365 White](Docs/images/themes/Office365White.png) | ![Office 365 Black](Docs/images/themes/Office365Black.png) |
-| `Office365White` — Office 365 White | `Office365Black` — Office 365 Black |
-| ![Office 2016 Colorful](Docs/images/themes/Office2016Colorful.png) | ![Office 2013 White](Docs/images/themes/Office2013White.png) |
-| `Office2016Colorful` — Office 2016 Colorful | `Office2013White` — Office 2013 White |
-| ![Office 2010 Blue](Docs/images/themes/Office2010Blue.png) | ![Office 2007 Blue](Docs/images/themes/Office2007Blue.png) |
-| `Office2010Blue` — Office 2010 Blue | `Office2007Blue` — Office 2007 Blue |
-| ![Office 2007 Black](Docs/images/themes/Office2007Black.png) | ![Windows 11 Light](Docs/images/themes/FluentLight.png) |
-| `Office2007Black` — Office 2007 Black | `FluentLight` — Windows 11 Light |
-| ![Windows 11 Dark](Docs/images/themes/FluentDark.png) |  |
-| `FluentDark` — Windows 11 Dark |  |
+| ![Modern 2024 Light](Docs/images/themes/Modern2024Light.png) | ![Modern 2024 Dark](Docs/images/themes/Modern2024Dark.png) |
+| `Modern2024Light` — Modern 2024 Light, в стиле Microsoft 365 (2024) | `Modern2024Dark` — Modern 2024 Dark |
+| ![Modern 2024 Dark Gray](Docs/images/themes/Modern2024DarkGray.png) | ![Modern Colorful](Docs/images/themes/ModernColorful.png) |
+| `Modern2024DarkGray` — Modern 2024 Dark Gray | `ModernColorful` — Modern Colorful, в стиле Microsoft 365 (2019–2023) |
+| ![Modern White](Docs/images/themes/ModernWhite.png) | ![Modern Black](Docs/images/themes/ModernBlack.png) |
+| `ModernWhite` — Modern White (тема по умолчанию) | `ModernBlack` — Modern Black |
+| ![Banner Colorful](Docs/images/themes/BannerColorful.png) | ![Flat White](Docs/images/themes/FlatWhite.png) |
+| `BannerColorful` — Banner Colorful, в стиле Office 2016 | `FlatWhite` — Flat White, в стиле Office 2013 |
+| ![Classic Blue](Docs/images/themes/ClassicBlue.png) | ![Glass Blue](Docs/images/themes/GlassBlue.png) |
+| `ClassicBlue` — Classic Blue, в стиле Office 2010 | `GlassBlue` — Glass Blue, в стиле Office 2007 |
+| ![Glass Black](Docs/images/themes/GlassBlack.png) | ![Soft Light](Docs/images/themes/SoftLight.png) |
+| `GlassBlack` — Glass Black | `SoftLight` — Soft Light, в стиле Windows 11 |
+| ![Soft Dark](Docs/images/themes/SoftDark.png) |  |
+| `SoftDark` — Soft Dark |  |
+
+Названия тем первого выпуска (`Office365White`, `Office2024Light`, `FluentDark`…) продолжают работать как устаревшие
+псевдонимы: `TFmrRibbon.Theme := 'Office2024Light'` выбирает `Modern2024Light` и сохраняет новое имя, так что заново
+сохранённые формы получают новые названия (`Docs\STYLES.md`).
 
 ## Требования
 
@@ -71,25 +79,25 @@
 
 ## Linux
 
-![RibbonBasic в Linux: строка заголовка и вкладки ленты вместо заголовка окна](Docs/images/linux/ribbonbasic-office2024light.png)
+![RibbonBasic в Linux: строка заголовка и вкладки ленты вместо заголовка окна](Docs/images/linux/ribbonbasic-modern2024light.png)
 
 | | |
 |---|---|
-| ![Office 2024 Dark, выпадающая галерея](Docs/images/linux/gallery-dropdown.png) | ![Office 365 Colorful](Docs/images/linux/office365colorful.png) |
+| ![Modern 2024 Dark, выпадающая галерея](Docs/images/linux/gallery-dropdown-modern2024dark.png) | ![Modern Colorful](Docs/images/linux/modern-colorful.png) |
 
 FMR Ribbon работает в Linux на FMXWayland (нативная Wayland-платформа FMX без libfmux; канвас Skia):
 
 ```powershell
 .\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64      # -FmxWayland <папка> -Sdk <Linux SDK>
-.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark' -Shots 6
+.\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Modern2024Dark' -Shots 6
 ```
 
-Программа ставит `GlobalUseSkia := True` и поставляется с `libsk4d.so` и `fonts/FmrFluentIcons.ttf` (build.ps1
-кладёт их рядом). Темы берут установленный UI-шрифт (Noto Sans, Cantarell, DejaVu Sans…), коды Segoe-иконок рисуются
-из встроенного шрифта, список шрифтов — из fontconfig. С сервисом рамки окна FMXWayland (`IFMXWaylandWindowFrame`,
-пока в его ветке `windowframe`, до слияния) строка заголовка и вкладки ленты встают на место заголовка окна, как на
-картинках выше (перемещение, изменение размера, разворачивание и меню окна делает композитор); без сервиса лента стоит
-под собственным заголовком FMXWayland. Подробности в `Docs\LINUX.md`.
+Программа ставит `GlobalUseSkia := True` и поставляется с `libsk4d.so` и `fonts/FmrIcons.ttf` (build.ps1 кладёт их
+рядом). Темы берут установленный UI-шрифт (Noto Sans, Cantarell, DejaVu Sans…), коды Segoe-иконок рисуются из
+встроенного шрифта, список шрифтов — из fontconfig. С сервисом рамки окна FMXWayland (`IFMXWaylandWindowFrame`)
+строка заголовка и вкладки ленты встают на место заголовка окна, как на картинках выше (перемещение, изменение
+размера, разворачивание и меню окна делает композитор); без сервиса лента стоит под собственным заголовком
+FMXWayland. Подробности в `Docs\LINUX.md`.
 
 ## Установка
 
@@ -126,7 +134,7 @@ begin
   Ribbon := TFmrRibbon.Create(Self);
   Ribbon.Parent := Self;
   Ribbon.BarManager := Manager;
-  Ribbon.Theme := 'Office365Colorful';
+  Ribbon.Theme := 'ModernColorful';
   Home := Ribbon.AddTab('Главная', 'tabHome');
   Home.AddGroup('Буфер обмена').ItemLinks.AddItem(Paste);
 end;
@@ -140,8 +148,8 @@ end;
 | Демо | Что показывает |
 |---|---|
 | `Demos\NCProof` | FMX-контролы в настоящей NC-области, три режима рамки, живая геометрия окна и hit-test |
-| `Demos\RibbonBasic` | лента как в Word: все виды кнопок, галереи, меню приложения, mini toolbar, radial menu |
-| `Demos\WordLike` | «FMR Write» — приложение-витрина, форма из `.fmx` (загрузка из ресурса как из дизайнера) |
+| `Demos\RibbonBasic` | лента редактора документов: все виды кнопок, галереи, меню приложения, mini toolbar, radial menu |
+| `Demos\Notes` | «FMR Notes» — редактор заметок, главная форма из `.fmx` (загрузка из ресурса как из дизайнера) |
 | `Demos\Showcase` | страница на каждую возможность, переключение тем и режимов |
 | `Demos\Extras` | Backstage view и строка состояния |
 | `Demos\Customize` | форма настройки, AutoHide, Simplified, RTL, UI Automation |
@@ -184,5 +192,8 @@ bin\Win64\Debug\FmrStress.exe /log=stress.log
 
 ## Лицензия
 
-MIT, см. [LICENSE](LICENSE). Сторонние компоненты (Fluent UI System Icons в `Assets\Fonts`):
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+MIT, см. [LICENSE](LICENSE). Сторонние компоненты («FMR Icons» в `Assets\Fonts` — подмножество Fluent UI System Icons
+от Microsoft, MIT): [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+Проект не связан с Microsoft и не одобрен ею. Microsoft, Office, Microsoft 365, Word, Excel, PowerPoint, Outlook,
+Access, Windows и Fluent — товарные знаки группы компаний Microsoft. Названия тем описывают только визуальный стиль.

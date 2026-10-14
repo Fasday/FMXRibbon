@@ -186,7 +186,7 @@ type
     property OnToggle: TProc<Integer> read FOnToggle write FOnToggle;
   end;
 
-  /// <summary>Vertical page navigation (Office options dialog style).</summary>
+  /// <summary>Vertical page navigation (options dialog style).</summary>
   TFmrCustNav = class(TFmrCustControl)
   private
     FItems: TArray<string>;

@@ -12,7 +12,7 @@ unit FMR.Ribbon.ScreenTips;
 /// Screen tips: a bold header (with the shortcut), the description wrapped to the tip width with an optional image,
 /// "This command is currently disabled" for disabled commands and an optional footer below a separator ("Press F1 for
 /// more help"). TFmrScreenTipController shows the tip of the element under the mouse after a delay, below an anchor
-/// rectangle (Office shows ribbon tips below the ribbon); moving to another element while a tip is visible shows
+/// rectangle (ribbon tips are shown below the ribbon); moving to another element while a tip is visible shows
 /// the next tip at once. The tip window is a non-activating popup outside the popup chain, so menus stay open.
 
 interface

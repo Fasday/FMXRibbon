@@ -1,7 +1,7 @@
 {*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
-{  Backstage view (Office "File" view)                  }
+{  Backstage view ("File" view)                         }
 {                                                       }
 {  MIT License. Copyright (c) 2026 Fasday               }
 {                                                       }
@@ -9,7 +9,7 @@
 
 unit FMR.Ribbon.Backstage;
 
-/// TFmrRibbonBackstageView: the Office 2010+/365 "File" view. When shown it covers its parent (normally the form;
+/// TFmrRibbonBackstageView: the full-window "File" view. When shown it covers its parent (normally the form;
 /// Align = Contents, brought to front) with a navigation pane on the left and the active tab on the right.
 /// Its children are the navigation items, in their child order:
 ///   - TFmrBackstageTab: a designable container (drop any FMX controls into it); clicking its item shows it;
@@ -41,7 +41,7 @@ type
   /// <summary>How the view appears.</summary>
   TFmrBackstageAnimation = (None, Fade, Slide);
 
-  /// <summary>Glyphs of the navigation items: Auto shows them for the Office 365 and Fluent themes.</summary>
+  /// <summary>Glyphs of the navigation items: Auto shows them for the Modern, Modern 2024 and Soft themes.</summary>
   TFmrBackstageNavGlyphs = (Auto, Show, Hide);
 
   /// <summary>A page of the backstage view: a container for any FMX controls. The view sets its bounds and shows
@@ -78,7 +78,7 @@ type
   published
     /// <summary>Caption of the navigation item.</summary>
     property Caption: string read FCaption write SetCaption;
-    /// <summary>Glyph of the navigation item (shown by the Office 365 / Fluent themes, see NavGlyphs).</summary>
+    /// <summary>Glyph of the navigation item (shown by the Modern, Modern 2024 and Soft themes, see NavGlyphs).</summary>
     property Glyph: TFmrImageSource read FGlyph write SetGlyph;
     /// <summary>A separator line is drawn above the navigation item.</summary>
     property BeginGroup: Boolean read FBeginGroup write SetBeginGroup default False;
@@ -1084,7 +1084,7 @@ begin
   Result.GlyphSize := 18;
   Result.SeparatorGap := 8;
   case T.Style.Family of
-    TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010:
+    TFmrThemeFamily.Glass, TFmrThemeFamily.Classic:
       begin
         Result.BackHeight := 46;
         Result.BackSize := 32;
@@ -1097,7 +1097,7 @@ begin
         Result.MinWidth := 132;
         Result.GlyphSize := 16;
       end;
-    TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2016:
+    TFmrThemeFamily.Flat, TFmrThemeFamily.Banner:
       begin
         Result.BackHeight := 76;
         Result.BackSize := 36;
@@ -1132,7 +1132,7 @@ begin
     TFmrBackstageNavGlyphs.Hide:
       Result := False;
   else
-    Result := CurrentTheme.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
+    Result := CurrentTheme.Style.Family in [TFmrThemeFamily.Modern, TFmrThemeFamily.Soft, TFmrThemeFamily.Modern2024];
   end;
 end;
 
@@ -1570,7 +1570,7 @@ procedure TFmrRibbonBackstageView.ClickButton(const AButton: TFmrBackstageButton
 begin
   if (AButton = nil) or not AButton.IsEnabled then
     Exit;
-  // Office closes the view first, so a dialog opened by the command shows over the document
+  // The view closes first, so a dialog opened by the command shows over the document
   if not AButton.KeepOpen then
     Hide;
   AButton.Click;
@@ -1611,7 +1611,7 @@ begin
     Exit;
   FFocusIndex := I;
   FShowFocus := True;
-  // like Office: moving over a tab shows it
+  // moving over a tab shows it
   if FEntries[I].IsTab then
     ActiveTab := TFmrBackstageTab(FEntries[I].Item);
   Repaint;
@@ -1976,8 +1976,8 @@ begin
     P.Fill(ACanvas, HR, TFmrToken.BackstageNavSelectedFill, M.ItemRadius, [], AOpacity)
   else if Hot then
     P.Fill(ACanvas, HR, TFmrToken.BackstageNavHotFill, M.ItemRadius, [], AOpacity);
-  // Office 365 / Fluent: an accent bar marks the selected item when the pane is not colored
-  if Selected and (T.Style.Family in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024]) then
+  // Modern, Modern 2024, Soft: an accent bar marks the selected item when the pane is not colored
+  if Selected and (T.Style.Family in [TFmrThemeFamily.Modern, TFmrThemeFamily.Soft, TFmrThemeFamily.Modern2024]) then
   begin
     Colored := T.Fills[TFmrToken.BackstageNavFill].MainColor = T.Colors[TFmrToken.Accent];
     if not Colored then
@@ -2058,7 +2058,7 @@ begin
     NavR := RectF(Min(0, FSlideOffset * 2), 0, FNavWidth, R.Height);
     P.Fill(Canvas, NavR, TFmrToken.BackstageNavFill, 0, [], Op);
     SepCol := T.Colors[TFmrToken.BackstageNavSeparator];
-    if not (T.Style.Family in [TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2016]) then
+    if not (T.Style.Family in [TFmrThemeFamily.Flat, TFmrThemeFamily.Banner]) then
     begin
       X := Round(FNavWidth) - 0.5;
       P.Line(Canvas, PointF(X, 0), PointF(X, R.Height), SepCol, 1, Op);

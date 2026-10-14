@@ -1,6 +1,6 @@
 unit CustomizeDemoMain;
 
-/// Customization demo: a Word-like ribbon built in code (the same commands as Demos\RibbonBasic, with categories)
+/// Customization demo: a document-editor style ribbon built in code (the same commands as Demos\RibbonBasic, with categories)
 /// to exercise the customization form (FMR.Ribbon.Customize), the display options button and auto-hide, the
 /// classic/simplified switch, right to left, the themed editors and the UI Automation provider.
 ///

@@ -48,7 +48,7 @@ type
     procedure GetValues(Proc: TGetStrProc); override;
   end;
 
-  /// <summary>Accent color: names of the Office accents, '#AARRGGBB', a color dialog and swatches.</summary>
+  /// <summary>Accent color: names of the accent constants (FmrAccentBlue...), '#AARRGGBB', a color dialog and swatches.</summary>
   TFmrAccentColorProperty = class(TOrdinalProperty, ICustomPropertyDrawing, ICustomPropertyDrawing80,
     ICustomPropertyListDrawing)
   public
@@ -551,15 +551,16 @@ type
   end;
 
 const
-  AccentNames: array[0..7] of TAccentName = (
+  AccentNames: array[0..8] of TAccentName = (
     (Name: '(theme default)'; Color: 0),
-    (Name: 'Word'; Color: FmrAccentWord),
-    (Name: 'Excel'; Color: FmrAccentExcel),
-    (Name: 'PowerPoint'; Color: FmrAccentPowerPoint),
-    (Name: 'Outlook'; Color: FmrAccentOutlook),
-    (Name: 'OneNote'; Color: FmrAccentOneNote),
-    (Name: 'Access'; Color: FmrAccentAccess),
-    (Name: 'Fluent'; Color: FmrAccentFluent));
+    (Name: 'Blue'; Color: FmrAccentBlue),
+    (Name: 'Cobalt'; Color: FmrAccentCobalt),
+    (Name: 'Green'; Color: FmrAccentGreen),
+    (Name: 'Orange'; Color: FmrAccentOrange),
+    (Name: 'Azure'; Color: FmrAccentAzure),
+    (Name: 'Purple'; Color: FmrAccentPurple),
+    (Name: 'Crimson'; Color: FmrAccentCrimson),
+    (Name: 'Sky'; Color: FmrAccentSky));
 
 function AccentText(const AColor: TAlphaColor): string;
 var
@@ -634,7 +635,7 @@ begin
   try
     C := TAlphaColor(GetOrdValue);
     if C = 0 then
-      C := FmrAccentWord;
+      C := FmrAccentBlue;
     D.Color := FmrAlphaColorToColor(C);
     D.Options := [cdFullOpen, cdAnyColor];
     if D.Execute then
@@ -1027,7 +1028,7 @@ begin
     Current := GetStrProp(Component, 'Theme');
   for S in TFmrTheme.ThemeNames do
   begin
-    Sub := AItem.AddItem(S, 0, SameText(S, Current), True, ThemeItemClick);
+    Sub := AItem.AddItem(S, 0, SameText(S, TFmrTheme.ResolveThemeName(Current)), True, ThemeItemClick);
     Sub := nil;
   end;
 end;

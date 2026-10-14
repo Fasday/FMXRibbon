@@ -1,6 +1,6 @@
 unit RibbonBasicMain;
 
-/// Word-like ribbon built in code (no .fmx): tabs Home, Insert, Layout, View, a contextual group "Table Tools" with
+/// A document-editor style ribbon built in code (no .fmx): tabs Home, Insert, Layout, View, a contextual group "Table Tools" with
 /// Design/Layout tabs (toggled by a check button), split/drop-down/check/radio buttons, editors (font name, font
 /// size, edit, spin, track bar), color items, a dialog launcher, the quick access toolbar and the search box.
 /// Icons are icon font glyphs (Segoe Fluent Icons / Segoe MDL2 Assets) and vector paths, so no image files are needed.
@@ -10,7 +10,7 @@ unit RibbonBasicMain;
 ///   /tabletools (show the contextual tabs)  /keytips (show key tips after start)  /touch  /nosearch  /tab=N
 ///   /topmost (stay on top while tools\shot.ps1 drives it)  /dump=<file> (write TFmrRibbon.DebugDump)
 ///   /backstage (the File tab opens a TFmrRibbonBackstageView of FMR.Ribbon.Backstage instead of a menu)
-///   /appmenu (the Office 2007 application menu in any theme; Office 2007 themes always get it)
+///   /appmenu (the application menu in the style of Office 2007 in any theme; the Glass themes always get it)
 ///   /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname (opens the
 ///   popup about a second after the window is painted, for screenshots; fontname also shows the number of font
 ///   families in the status bar)
@@ -204,7 +204,7 @@ begin
   TDemoMemo(FMemo).OnContext :=
     procedure(AScreenPoint: TPointF)
     begin
-      // Right click: the context menu with the mini toolbar above it (Office).
+      // Right click: the context menu with the mini toolbar above it.
       FMiniToolbar.Popup(AScreenPoint, True);
     end;
   FMemo.OnMouseUp := MemoMouseUp;
@@ -228,8 +228,8 @@ begin
   BuildMiniToolbar;
   BuildRadialMenu;
   ApplyCommandLine;
-  // Office 2007 themes get the Office 2007 application menu (the backstage view stays when /backstage is given).
-  if (FBackstage = nil) and (FForceAppMenu or (FRibbon.Painter.Theme.Style.Family = TFmrThemeFamily.Office2007)) then
+  // The Glass themes get the application menu (the backstage view stays when /backstage is given).
+  if (FBackstage = nil) and (FForceAppMenu or (FRibbon.Painter.Theme.Style.Family = TFmrThemeFamily.Glass)) then
     FRibbon.ApplicationMenu := FAppMenu07;
   ShowStyle(0);
 
@@ -551,7 +551,7 @@ begin
     end;
     G := Group(Insert, 'Text');
     Link(G, Btn('btnTextBox', 'Text Box', $E8D2, True), [TFmrViewLevel.Large]);
-    Link(G, Btn('btnWordArt', 'WordArt', $E8D2));
+    Link(G, Btn('btnTextEffects', 'Text Effects', $E8D2));
     Link(G, Btn('btnDropCap', 'Drop Cap', $E8D2));
     Link(G, Btn('btnSignature', 'Signature Line', $E70F));
 
@@ -960,8 +960,8 @@ end;
 
 function TRibbonBasicForm.BuildCoverGallery: TFmrRibbonGalleryItem;
 const
-  BuiltIn: array[0..11] of string = ('Austin', 'Banded', 'Facet', 'Filigree', 'Grid', 'Integral', 'Ion (Dark)',
-    'Ion (Light)', 'Motion', 'Retrospect', 'Semaphore', 'Sideline');
+  BuiltIn: array[0..11] of string = ('Horizon', 'Band', 'Prism', 'Lace', 'Tiles', 'Margin Bar', 'Nova (Dark)',
+    'Nova (Light)', 'Wave', 'Vintage', 'Signal', 'Edge');
   Online: array[0..3] of string = ('Annual Report', 'Newsletter', 'Proposal', 'Resume');
 var
   I: Integer;
@@ -989,7 +989,7 @@ begin
     E.Tag := I;
     E.Hint := 'Insert the ' + BuiltIn[I] + ' cover page.';
   end;
-  G := Result.Groups.Add('Office.com');
+  G := Result.Groups.Add('Online');
   for I := 0 to High(Online) do
   begin
     E := G.Items.Add(Online[I]);
@@ -997,7 +997,7 @@ begin
   end;
   Result.OnDrawItem := CoverDrawItem;
   Result.OnItemClick := GalleryItemClick;
-  Result.DropDownLinks.AddItem(Btn('btnMoreCovers', 'More Cover Pages from Office.com'));
+  Result.DropDownLinks.AddItem(Btn('btnMoreCovers', 'More Cover Pages Online'));
   Result.DropDownLinks.AddItem(Glyph(Btn('btnRemoveCover', 'Remove Current Cover Page'), $E74D));
   Result.DropDownLinks.AddItem(Btn('btnSaveCover', 'Save Selection to Cover Page Gallery...'));
 end;
@@ -1203,7 +1203,7 @@ var
   end;
 
 begin
-  // Office 2007 application menu (FMR.Ribbon.AppMenu): large items, submenus in the right pane, recent documents.
+  // Application menu in the style of Office 2007 (FMR.Ribbon.AppMenu): large items, submenus in the right pane, recent documents.
   FAppMenu07 := TFmrRibbonApplicationMenu.Create(Self);
   FAppMenu07.Parent := Self;
   FAppMenu07.BarManager := FManager;
@@ -1213,9 +1213,9 @@ begin
   SaveAs := Large(Btn('btnSaveAs07', 'Save &As', 0, False, TFmrButtonStyle.Split), $E792,
     'Save a copy of the document');
   B := TFmrButtonItem(SaveAs);
-  B.DropDownLinks.AddItem(Large(Btn('btnSaveDocx', 'Word Document'), $E8A5,
+  B.DropDownLinks.AddItem(Large(Btn('btnSaveDocx', 'Document'), $E8A5,
     'Save the document in the default file format.'));
-  B.DropDownLinks.AddItem(Large(Btn('btnSaveTemplate', 'Word Template'), $E8F4,
+  B.DropDownLinks.AddItem(Large(Btn('btnSaveTemplate', 'Document Template'), $E8F4,
     'Save the document as a template that can be used to format future documents.'));
   B.DropDownLinks.AddItem(Large(Btn('btnSavePdf', 'PDF or XPS'), $EA90,
     'Publish a copy of the document as a PDF or XPS file.'));
@@ -1243,8 +1243,8 @@ begin
   FAppMenu07.ItemLinks.AddItem(Prepare);
   FAppMenu07.ItemLinks.AddItem(Large(Btn('btnSend07', 'Sen&d'), $E724));
   FAppMenu07.ItemLinks.AddItem(Large(Btn('btnClose07', '&Close'), $E8BB), True);
-  FAppMenu07.Buttons.AddItem(Glyph(Btn('btnOptions07', 'Word Opt&ions'), $E713));
-  FAppMenu07.Buttons.AddItem(Glyph(Btn('btnExitWord', 'E&xit Word'), $E8BB));
+  FAppMenu07.Buttons.AddItem(Glyph(Btn('btnOptions07', 'Opt&ions'), $E713));
+  FAppMenu07.Buttons.AddItem(Glyph(Btn('btnExit07', 'E&xit'), $E8BB));
   FAppMenu07.RecentDocuments.Add('Quarterly Report.docx', 'C:\Documents\Quarterly Report.docx', True);
   FAppMenu07.RecentDocuments.Add('Meeting Notes.docx', 'C:\Documents\Meeting Notes.docx');
   FAppMenu07.RecentDocuments.Add('Project Plan.docx', 'C:\Documents\Project Plan.docx', True);

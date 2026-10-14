@@ -333,7 +333,7 @@ begin
     R := TabRect(I);
     if I = 0 then
     begin
-      // "File" tab of Office: accent background.
+      // "File" tab: accent background.
       Canvas.Fill.Kind := TBrushKind.Solid;
       Canvas.Fill.Color := FAccent;
       Canvas.FillRect(R, 3, 3, [TCorner.TopLeft, TCorner.TopRight], AbsoluteOpacity);

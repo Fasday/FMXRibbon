@@ -6,7 +6,7 @@
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File Demos\Customize\uia-test.ps1
-  powershell -ExecutionPolicy Bypass -File Demos\Customize\uia-test.ps1 -Arguments "/rtl /theme=FluentDark"
+  powershell -ExecutionPolicy Bypass -File Demos\Customize\uia-test.ps1 -Arguments "/rtl /theme=SoftDark"
 #>
 param(
   [string] $Exe = (Join-Path $PSScriptRoot '..\..\bin\Win64\Debug\CustomizeDemo.exe'),

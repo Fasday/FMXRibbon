@@ -1,14 +1,14 @@
 # FMR Ribbon — companion controls: backstage view and status bar
 
-`Source\Extras\` holds the controls that live next to the ribbon: the Office 2010+/365 **backstage view** ("File"
-view) and the Office **status bar**. Both work on their own (own `Theme` / `AccentColor`) and with the ribbon
+`Source\Extras\` holds the controls that live next to the ribbon: the **backstage view** ("File"
+view) and the **status bar**. Both work on their own (own `Theme` / `AccentColor`) and with the ribbon
 (`ThemeProvider` = the `TFmrRibbon`, or any object implementing `IFmrThemeProvider`). Demo: `Demos\Extras\ExtrasDemo.dpr`.
 
 ## Units
 
 | Unit | Content |
 |---|---|
-| `FMR.Ribbon.Extras.Layout` | Pure logic, no FMX: status bar panel placement (`FmrLayoutStatusPanels`), Word-like zoom scale (`FmrZoomToFraction` / `FmrFractionToZoom`, 100 % in the middle), zoom steps (`FmrZoomStep`), keyboard navigation over selectable entries (`FmrNextSelectable`, `FmrEdgeSelectable`), scroll clamping. Tested by `Tests\FMR.Tests.Extras` (12 tests) |
+| `FMR.Ribbon.Extras.Layout` | Pure logic, no FMX: status bar panel placement (`FmrLayoutStatusPanels`), zoom scale (`FmrZoomToFraction` / `FmrFractionToZoom`, 100 % in the middle), zoom steps (`FmrZoomStep`), keyboard navigation over selectable entries (`FmrNextSelectable`, `FmrEdgeSelectable`), scroll clamping. Tested by `Tests\FMR.Tests.Extras` (12 tests) |
 | `FMR.Ribbon.ThemeLink` | `TFmrThemeLink`: the theme of a companion control — explicit provider, else the nearest parent that is a provider, else an own theme built from `ThemeName` + `AccentColor` with the form's StyleBook tokens applied. Listens to `TFmrThemeChangedMessage` and `TStyleChangedMessage` |
 | `FMR.Ribbon.StatusBar` | `TFmrStatusBar`, `TFmrStatusBarPanel` |
 | `FMR.Ribbon.Backstage` | `TFmrRibbonBackstageView`, `TFmrBackstageTab`, `TFmrBackstageButton`, `TFmrBackstageViewMessage` |
@@ -50,7 +50,7 @@ TFmrRibbonBackstageView (TControl; hidden at run time until Show, Align = Conten
 
 **Decision — children, not collections.** Tabs and buttons are children of the view, in navigation order (child
 order). Tabs must be real containers so the designer can drop controls into them; making buttons children too gives
-one ordered list (Save between Open and Save As, like Office) that FMX streams with no extra code, the Structure
+one ordered list (Save between Open and Save As) that FMX streams with no extra code, the Structure
 View shows and drag & drop reorders. `TFmrBackstageButton` is a `TFmxObject` (like the bar items of a bar manager),
 not a control, so it does not clutter the designer surface.
 
@@ -60,9 +60,9 @@ not a control, so it does not clutter the designer surface.
 |---|---|
 | `ActiveTab` | Visible tab (only the active tab is visible; `TFmrBackstageTab.Visible` is managed and not stored) |
 | `NavigationWidth` | dp, 0 = automatic (fits the captions; at least 132–172 dp depending on the theme family; at most half the view) |
-| `ShowBackButton` | Back arrow at the top of the pane (round in Office 2013/2016, flat in 365/Fluent/2010); closes the view |
+| `ShowBackButton` | Back arrow at the top of the pane (round in the Flat and Banner themes, flat in Modern, Modern 2024, Soft and Classic); closes the view |
 | `Caption` | Optional title next to the back button |
-| `NavGlyphs` | `Auto` (glyphs for Office 365 / Fluent), `Show`, `Hide` |
+| `NavGlyphs` | `Auto` (glyphs for the Modern, Modern 2024 and Soft themes), `Show`, `Hide` |
 | `Animation` | `Slide` (default: fade in + content slides 48 dp from the left, 220 ms ease-out), `Fade`, `None` |
 | `KeepCaptionVisible` | In the frame's Dwm mode (caption host in the client area) the view starts below the caption host |
 | `ThemeProvider`, `Theme`, `AccentColor` | See "Theme sources" |
@@ -80,26 +80,26 @@ not a control, so it does not clutter the designer surface.
 `TFmrBackstageButton`: `Caption`, `Glyph`, `BeginGroup`, `Enabled`, `Visible`, `Hint`, `KeyTip`, `NavAlign`,
 `KeepOpen` (clicking does not close the view), `Item` (optional `TFmrBarItem`: caption/glyph when empty, runs when
 `OnClick` is not assigned), `OnClick`. A click closes the view first, then runs the command (a dialog opened by
-the command shows over the document, as in Office).
+the command shows over the document).
 
 ### Behavior
 
 - **Show**: remembers the focused control, sets `Align = Contents`, `BringToFront`, makes the view visible (animated),
   focuses the navigation pane, fires `OnShow` and `TFmrBackstageViewMessage(View, True)`. The view covers its parent
-  completely (the status bar too, like Word).
+  completely (the status bar too).
 - **Hide**: Esc (from anywhere in the view: the form passes dialog keys to unfocused controls), the back button,
   a navigation button (unless `KeepOpen`), or code. Gives the focus back, fires `OnHide` and the message.
-- **Keyboard** (navigation pane focused): Up/Down (skip disabled items, wrap; moving over a tab shows it, as in
-  Office), Home/End, Enter/Space (tab: focus its first control; button: run it), Right (focus the content).
+- **Keyboard** (navigation pane focused): Up/Down (skip disabled items, wrap; moving over a tab shows it),
+  Home/End, Enter/Space (tab: focus its first control; button: run it), Right (focus the content).
   **Key tips**: `Show(True)` (or Alt while the pane is focused) shows key tips over the item glyphs (left of the text
   without glyphs); they are generated with `TFmrKeyTipAssigner` from the captions or taken from `KeyTip`, typed with
   `TFmrKeyTipMatcher` (partial matches hide the others, Backspace, Esc clears the typed text).
 - **Mouse**: hover/pressed/selected highlights, tooltips (`Hint` of items, "Back" for the back button).
-- **Painting** (tokens): `BackstageFill` (content), `BackstageNavFill` (pane; the accent in Office 2013/2016 and 365
-  Colorful), `BackstageNavText`, `BackstageNavHotFill`, `BackstageNavSelectedFill`, `BackstageNavSelectedText`,
-  `BackstageNavSeparator` (group lines; the pane border in 2010/365/Fluent), `TabActiveIndicator` (accent bar of the
-  selected item in Office 365 White/Gray/Black and Fluent), `KeyTip*`. Metrics per family: 2007/2010 (compact items,
-  rounded highlights), 2013/2016 (40 dp items, larger font, round back button, flat full-width highlight), 365/Fluent
+- **Painting** (tokens): `BackstageFill` (content), `BackstageNavFill` (pane; the accent in the Flat and Banner themes
+  and ModernColorful), `BackstageNavText`, `BackstageNavHotFill`, `BackstageNavSelectedFill`, `BackstageNavSelectedText`,
+  `BackstageNavSeparator` (group lines; the pane border in Classic, Modern and Soft), `TabActiveIndicator` (accent bar of the
+  selected item in ModernWhite/DarkGray/Black, Modern 2024 and Soft), `KeyTip*`. Metrics per family: Glass/Classic (compact
+  items, rounded highlights), Flat/Banner (40 dp items, larger font, round back button, flat full-width highlight), Modern/Soft
   (rounded inset highlight, glyphs, accent bar).
 
 ### Helper controls (`FMR.Ribbon.Backstage.Controls`)
@@ -115,7 +115,7 @@ All take the theme of the view they are in (and the images of its `BarManager`).
 
 ### The frame and the tab row
 
-Office 2013+ keeps the title bar visible while the backstage is open and hides the ribbon's tab row. With
+While the backstage is open the title bar stays visible and the ribbon's tab row is hidden. With
 `TFmrFormFrame` in `FullNC`/`NCStrip` the caption row and the tab row are in the non-client host, so the view (in the
 client area) never covers them; the ribbon must hide its tab row and shrink `Frame.CaptionHeight` while the view is
 open, and restore both when it closes. `ExtrasDemo /frame` does exactly that in `BackstageShow` / `BackstageHide`
@@ -173,10 +173,10 @@ Paints `DrawStatusBar` (`StatusBarFill` + `StatusBarSeparator` line at the top).
 | `Side` | `Left` (placed from the left in child order) / `Right` (ends at the right edge, in child order) |
 | `Text`, `Glyph`, `Alignment` | Text panels (glyph before the text) |
 | `PanelWidth` (0 = fit content; Container: 100), `MinWidth`, `Stretch` (shares the free width) | Placement. When the bar is too narrow: stretch panels shrink to `MinWidth`, then left panels from the last one, then left panels are hidden from the last one, then right panels shrink/hide from the first one |
-| `Bevel` | `Auto` (separator lines for Office 2007/2010, none for flat themes), `None`, `Separator`, `Frame` |
+| `Bevel` | `Auto` (separator lines for the Glass and Classic themes, none for flat themes), `None`, `Separator`, `Frame` |
 | `ItemLinks` | `TFmrItemLinks` (the panel is the `IFmrItemLinksOwner`): small buttons painted by the panel (glyph, caption when the link's `ViewLevels = [SmallWithText]`, static items or no glyph), checked state from `Item.IsChecked`, `BeginGroup`/separator items; a click runs `Item.Click` unless `OnLinkClick` handles it; hint = item hint or caption |
-| `Zoom`, `ZoomMin` (10), `ZoomMax` (500), `ZoomStep` (10), `SliderWidth` (100), `ShowZoomPercent` | Zoom slider like Word: − / + go to the previous/next multiple of `ZoomStep`; click on the track jumps, drag the thumb; the 100 % tick is in the middle (left half 10…100, right half 100…500) and snaps within 4 dp |
-| `OnZoomChange`, `OnZoomClick` | Zoom changed / the percentage was clicked (Word opens its Zoom dialog) |
+| `Zoom`, `ZoomMin` (10), `ZoomMax` (500), `ZoomStep` (10), `SliderWidth` (100), `ShowZoomPercent` | Zoom slider: − / + go to the previous/next multiple of `ZoomStep`; click on the track jumps, drag the thumb; the 100 % tick is in the middle (left half 10…100, right half 100…500) and snaps within 4 dp |
+| `OnZoomChange`, `OnZoomClick` | Zoom changed / the percentage was clicked (for example to open a zoom dialog) |
 | `ActiveView`, `Views`, `OnViewChange` | View buttons (Read Mode: open book, Print Layout: page, Web Layout: globe), checked look for the active one |
 | `Hint`, `ShowHint` (default True), `OnClick` (Text: hot tracked only when assigned), `Enabled`, `Visible`, `Padding` | Standard |
 
@@ -251,17 +251,17 @@ Screenshots checked (Windows 11, 150 %; `shots\` is not committed):
 
 | Shot | What was checked |
 |---|---|
-| `backstage_365.png` (`/backstage /theme=Office365White`) | gray pane, glyphs, accent bar on Info, flat back arrow, group separators, Account/Options at the bottom, Info page layout (header, title, path, tiles, properties column) |
-| `backstage_2016.png` (`Office2016Colorful /tab=2`) | accent pane, round back button, full-width darker selection, Open page: location tiles (Recent selected), recent files with group headers and document glyphs, hover |
-| `backstage_2010.png` (`Office2010Blue /tab=4`) | gradient pane, blue gradient selection, compact items, Print page with tile, `TSpinBox`, combo, settings, `TImage` preview |
-| `backstage_fluentdark.png` (`FluentDark /tab=1`) | dark pane, subtle selection + accent bar, New page template cards |
-| `backstage_keys_*.png` (`Office365Colorful`) | Down ×2 → Open shown with focus rectangle; Down ×2 more → Save skipped as a tab (focus only), Save As shown; Esc → view closed, "backstage hidden" |
+| `backstage_365.png` (`/backstage /theme=ModernWhite`) | gray pane, glyphs, accent bar on Info, flat back arrow, group separators, Account/Options at the bottom, Info page layout (header, title, path, tiles, properties column) |
+| `backstage_2016.png` (`BannerColorful /tab=2`) | accent pane, round back button, full-width darker selection, Open page: location tiles (Recent selected), recent files with group headers and document glyphs, hover |
+| `backstage_2010.png` (`ClassicBlue /tab=4`) | gradient pane, blue gradient selection, compact items, Print page with tile, `TSpinBox`, combo, settings, `TImage` preview |
+| `backstage_softdark.png` (`SoftDark /tab=1`) | dark pane, subtle selection + accent bar, New page template cards |
+| `backstage_keys_*.png` (`ModernColorful`) | Down ×2 → Open shown with focus rectangle; Down ×2 more → Save skipped as a tab (focus only), Save As shown; Esc → view closed, "backstage hidden" |
 | `backstage_keytips*.png` (`/keytips`) | key tips I N OP SA SV P C A OT over the glyphs; typing O leaves OP and OT |
-| `win32_enter*.png` (Win32, `Office2013White`) | Down ×3 → focus on Save; Enter → view closed, "Page 1 of 3 - saved"; click on the Focus link → checked, "Focus True" |
-| `extras_main.png`, `statusbar_2010_crop.png`, `statusbar_365black_crop.png` | status bar in light, Office 2010 (separators) and dark themes |
-| `statusbar_drag*.png` (`Office2016Colorful`) | thumb dragged → 364 %, page zoomed; click on Read Mode → checked button, sepia page |
+| `win32_enter*.png` (Win32, `FlatWhite`) | Down ×3 → focus on Save; Enter → view closed, "Page 1 of 3 - saved"; click on the Focus link → checked, "Focus True" |
+| `extras_main.png`, `statusbar_2010_crop.png`, `statusbar_365black_crop.png` | status bar in light, Classic (separators) and dark themes |
+| `statusbar_drag*.png` (`BannerColorful`) | thumb dragged → 364 %, page zoomed; click on Read Mode → checked button, sepia page |
 | `statusbar_hint_*_crop.png` | hover + hint on "245 words", "Zoom In" hint on +, two clicks on + → 120 %, "Read Mode" hint |
-| `frame_fullnc.png`, `frame_fullnc_backstage.png` (`/frame Office2016Colorful`) | caption row + tab row in the non-client area (HTCAPTION in gaps, HTCLIENT on File); backstage open: title bar kept, tab row hidden, non-client top 58 px |
+| `frame_fullnc.png`, `frame_fullnc_backstage.png` (`/frame BannerColorful`) | caption row + tab row in the non-client area (HTCAPTION in gaps, HTCLIENT on File); backstage open: title bar kept, tab row hidden, non-client top 58 px |
 | `frame_dwm*.png` (`/frame=dwm`) | caption host visible above the open view; Esc restores the tab row |
 
 ## Known issues / limits
@@ -277,6 +277,6 @@ Screenshots checked (Windows 11, 150 %; `shots\` is not committed):
 - Fixed: the hint of the hot entry ("Back") stayed on the screen when the view was closed with Esc (`Hide` now hides
   the application hint; checked on a screenshot).
 - No RTL mirroring, no touch-mode sizes yet.
-- Office 2007 has no backstage (application menu); the view still works and uses the 2007 tokens.
+- The Glass themes go with the application menu rather than a backstage; the view still works and uses their tokens.
 - Screenshots were sometimes covered by another program's test windows running on the same desktop
   (`FastCanvasStress`); those runs were repeated.

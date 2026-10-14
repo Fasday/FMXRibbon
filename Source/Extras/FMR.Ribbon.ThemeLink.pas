@@ -217,7 +217,7 @@ procedure TFmrThemeLink.SetThemeName(const Value: string);
 var
   S: string;
 begin
-  S := Value.Trim;
+  S := TFmrTheme.ResolveThemeName(Value.Trim);
   if S = '' then
     S := FmrDefaultThemeName;
   if S <> FThemeName then

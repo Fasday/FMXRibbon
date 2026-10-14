@@ -63,7 +63,7 @@ Window "Document1 - ..."                       (HWND provider + our fragment roo
   Pane "Ribbon"            id=<ribbon name>   class TFmrRibbon
     ToolBar "Quick Access Toolbar"  id=QuickAccessToolbar
       Button "Save"  id=btnSave ...           Button "Customize Quick Access Toolbar" id=QATCustomize
-    Edit "Tell me what you want to do"        id=SearchBox            (Value)
+    Edit "Search commands"                    id=SearchBox            (Value)
     Button "Ribbon Display Options"           id=DisplayOptions
     Tab "Ribbon Tabs"                         id=TabList
       Button "File"                           id=ApplicationButton

@@ -100,7 +100,7 @@ const
     'Show Dialog',
     { search }
     'Search',
-    'Tell me what you want to do',
+    'Search commands',
     'No results found',
     'Commands',
     'Recently Used',
@@ -232,7 +232,7 @@ const
     'Открыть диалоговое окно',
     { search }
     'Поиск',
-    'Что вы хотите сделать?',
+    'Поиск команд',
     'Ничего не найдено',
     'Команды',
     'Недавно использованные',

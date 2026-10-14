@@ -15,8 +15,8 @@ unit FMR.Ribbon.Design.StructureEditor;
 /// (links between groups, the QAT and menus, groups between tabs, tabs) and items from the items editor; rename
 /// with F2; edit link properties in the bottom panel; theme of the ribbon; templates.
 ///
-/// Selection: tabs, groups and context groups are selected in the Object Inspector; a link selects its item (as in
-/// DevExpress, so caption and glyph are at hand); the properties of the link itself are in the bottom panel ("Link
+/// Selection: tabs, groups and context groups are selected in the Object Inspector; a link selects its item (so
+/// caption and glyph are at hand); the properties of the link itself are in the bottom panel ("Link
 /// in Inspector" selects the TFmrItemLink collection item).
 
 interface
@@ -461,7 +461,7 @@ begin
   FBtnDown := NewToolButton(FToolBar2, 'Down', 'Move down (Ctrl+Down)', TbDown, MoveDownClick);
   NewToolButton(FToolBar2, 'Expand', 'Expand all', TbExpand, ExpandClick);
   NewToolButton(FToolBar2, 'Collapse', 'Collapse all', TbCollapse, CollapseClick);
-  NewToolButton(FToolBar2, 'Template', 'Apply a template (Word-like, Excel-like, simple)...', TbTemplate,
+  NewToolButton(FToolBar2, 'Template', 'Apply a template (document, spreadsheet, simple)...', TbTemplate,
     TemplateClick);
 
   Row2 := TPanel.Create(Self);
@@ -482,7 +482,7 @@ begin
     FThemeCombo.Items.Add(S);
   FThemeCombo.Enabled := IsPublishedProp(FRibbon, 'Theme');
   if FThemeCombo.Enabled then
-    FThemeCombo.ItemIndex := FThemeCombo.Items.IndexOf(GetStrProp(FRibbon, 'Theme'));
+    FThemeCombo.ItemIndex := FThemeCombo.Items.IndexOf(TFmrTheme.ResolveThemeName(GetStrProp(FRibbon, 'Theme')));
   FThemeCombo.OnChange := ThemeChange;
 
   FStatus := TStatusBar.Create(Self);
@@ -863,7 +863,7 @@ begin
   FDirty := False;
   if FThemeCombo.Enabled then
   begin
-    I := FThemeCombo.Items.IndexOf(GetStrProp(FRibbon, 'Theme'));
+    I := FThemeCombo.Items.IndexOf(TFmrTheme.ResolveThemeName(GetStrProp(FRibbon, 'Theme')));
     if I <> FThemeCombo.ItemIndex then
       FThemeCombo.ItemIndex := I;
   end;

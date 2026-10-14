@@ -10,12 +10,12 @@
 
 .EXAMPLE
   .\tools\theme-shots.ps1
-  .\tools\theme-shots.ps1 -Themes Office2024Dark,FluentLight -Height 340
+  .\tools\theme-shots.ps1 -Themes Modern2024Dark,SoftLight -Height 340
 #>
 param(
-  [string[]] $Themes = @('Office2024Light', 'Office2024DarkGray', 'Office2024Dark', 'Office365Colorful',
-    'Office365White', 'Office365Black', 'Office2016Colorful', 'Office2013White', 'Office2010Blue', 'Office2007Blue',
-    'Office2007Black', 'FluentLight', 'FluentDark'),
+  [string[]] $Themes = @('Modern2024Light', 'Modern2024DarkGray', 'Modern2024Dark', 'ModernColorful',
+    'ModernWhite', 'ModernBlack', 'BannerColorful', 'FlatWhite', 'ClassicBlue', 'GlassBlue',
+    'GlassBlack', 'SoftLight', 'SoftDark'),
   [string] $Exe = 'bin\Win64\Debug\RibbonBasic.exe',
   [string] $Frame = 'fullnc',
   # Height of the saved part in physical pixels (caption + tabs + ribbon body + a strip of the document)

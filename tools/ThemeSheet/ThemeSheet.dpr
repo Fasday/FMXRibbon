@@ -173,13 +173,13 @@ var
   end;
 
 begin
-  Light := TFmrTheme.CreateTheme('Office365White');
-  Dark := TFmrTheme.CreateTheme('Office365Black');
-  Light24 := TFmrTheme.CreateTheme('Office2024Light');
-  Dark24 := TFmrTheme.CreateTheme('Office2024Dark');
+  Light := TFmrTheme.CreateTheme('ModernWhite');
+  Dark := TFmrTheme.CreateTheme('ModernBlack');
+  Light24 := TFmrTheme.CreateTheme('Modern2024Light');
+  Dark24 := TFmrTheme.CreateTheme('Modern2024Dark');
   L := TStringList.Create;
   try
-    L.Add('| Token (StyleName) | Office 365 White | Office 365 Black | Office 2024 Light | Office 2024 Dark |');
+    L.Add('| Token (StyleName) | Modern White | Modern Black | Modern 2024 Light | Modern 2024 Dark |');
     L.Add('|---|---|---|---|---|');
     for T := Low(TFmrToken) to High(TFmrToken) do
       L.Add(Format('| `%s` | %s | %s | %s | %s |', [TFmrTheme.TokenStyleName(T), Desc(Light.Fills[T]),

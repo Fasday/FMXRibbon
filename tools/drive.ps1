@@ -13,7 +13,7 @@
   -NoCursor: mouse messages are posted without moving the real cursor (use it while somebody works at the desktop).
 
 .EXAMPLE
-  .\tools\drive.ps1 -Arguments "/theme=Office2007Blue" -Out shots\x.png -Actions "click:302,82;wait:500;shot:a"
+  .\tools\drive.ps1 -Arguments "/theme=GlassBlue" -Out shots\x.png -Actions "click:302,82;wait:500;shot:a"
 #>
 param(
   [string] $Exe = 'bin\Win64\Debug\RibbonBasic.exe',

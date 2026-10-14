@@ -2,11 +2,11 @@
 
 FMR Ribbon is MIT-licensed (see [LICENSE](LICENSE)). It includes the following third-party material.
 
-## Fluent UI System Icons
+## FMR Icons (Fluent UI System Icons)
 
-`Assets/Fonts/FmrFluentIcons.ttf` ("FMR Fluent Icons") is a subset of `fonts/FluentSystemIcons-Resizable.ttf` of
-Microsoft's Fluent UI System Icons (https://github.com/microsoft/fluentui-system-icons, commit
-`a347af95478f989038cccbf085978865264c048a`): the icons named in `tools/IconFont/segoe-fluent-map.txt`, at their
+FMR Icons (`Assets/Fonts/FmrIcons.ttf`, font family "FMR Icons") is a subset of Microsoft's Fluent UI System Icons,
+MIT License: `fonts/FluentSystemIcons-Resizable.ttf` of https://github.com/microsoft/fluentui-system-icons (commit
+`a347af95478f989038cccbf085978865264c048a`), the icons named in `tools/IconFont/segoe-icon-map.txt`, at their
 original code points, with the font renamed. Made by `tools/IconFont/make-icon-font.ps1`. It replaces the icons of
 the Windows fonts Segoe Fluent Icons / Segoe MDL2 Assets where those are not installed (Linux); no outline of the
 Segoe fonts is included in this repository.

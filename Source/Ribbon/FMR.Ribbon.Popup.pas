@@ -62,7 +62,7 @@ type
     /// description; normal rows otherwise.</summary>
     Auto,
     Normal,
-    /// <summary>Office 2007 style rows: large glyph, bold caption and the description below it.</summary>
+    /// <summary>Large rows (application menu style): large glyph, bold caption and the description below it.</summary>
     Large);
 
   /// <summary>Services shared by the popups of one chain (painter, images, key tips); implemented by the ribbon and
@@ -3081,9 +3081,9 @@ end;
 
 procedure TFmrPopupMenu.SetThemeName(const Value: string);
 begin
-  if FThemeName <> Value then
+  if FThemeName <> TFmrTheme.ResolveThemeName(Value) then
   begin
-    FThemeName := Value;
+    FThemeName := TFmrTheme.ResolveThemeName(Value);
     FreeAndNil(FPainter);
     FreeAndNil(FTheme);
   end;

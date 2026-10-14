@@ -9,7 +9,7 @@
 
 unit FMR.Ribbon.Customize;
 
-/// "Customize the Ribbon" and "Quick Access Toolbar" pages of an Office-like options dialog, created in code and
+/// "Customize the Ribbon" and "Quick Access Toolbar" pages of an options dialog, created in code and
 /// painted with the theme of the ribbon (FMR.Ribbon.CustomizeControls). The pages edit a TFmrRibbonCustomization
 /// session (FMR.Ribbon.CustomizeModel): OK applies it to the ribbon, Cancel throws it away. Opened by
 /// TFmrRibbon.ShowCustomizationForm, the "More Commands..." entry of the quick access toolbar menu and the
@@ -236,7 +236,7 @@ begin
   OnKeyDown := FormKey;
   OnResize := FormResized;
   BuildControls;
-  // The tree starts with the active tab expanded, like Office.
+  // The tree starts with the active tab expanded.
   if (ARibbon.ActiveTab <> nil) and (FSession.ShadowOf(ARibbon.ActiveTab) <> nil) then
     FExpanded.Add(FSession.ShadowOf(ARibbon.ActiveTab));
   RefreshAll;

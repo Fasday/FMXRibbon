@@ -139,9 +139,9 @@ type
       const AHot, ASelected: Boolean);
     /// <summary>Thin horizontal separator of a screen tip.</summary>
     procedure DrawScreenTipSeparator(const ACanvas: TCanvas; const AX1, AX2, AY: Single);
-    /// <summary>Background of the area around a floating body (Office 365, Fluent) or of the body row.</summary>
+    /// <summary>Background of the area around a floating body (Modern, Modern 2024, Soft) or of the body row.</summary>
     procedure DrawBodyBackground(const ACanvas: TCanvas; const R: TRectF; const AActive: Boolean);
-    /// <summary>Gutter highlight of a checked menu item (Office 2007/2010 draw a box around the check mark).</summary>
+    /// <summary>Gutter highlight of a checked menu item (Glass and Classic draw a box around the check mark).</summary>
     procedure DrawMenuCheckBackground(const ACanvas: TCanvas; const R: TRectF);
 
     { additions for galleries, the application menu, the mini toolbar and the radial menu }
@@ -155,7 +155,7 @@ type
       const AHot: Boolean);
     /// <summary>Pin of a recent document: upright when pinned, lying when not.</summary>
     procedure DrawPinGlyph(const ACanvas: TCanvas; const R: TRectF; const APinned: Boolean; const AColor: TAlphaColor);
-    /// <summary>Office 2007 application menu: outer frame (R) around the panel area (AInner) with the bands above and
+    /// <summary>Application menu (Glass themes): outer frame (R) around the panel area (AInner) with the bands above and
     /// below it.</summary>
     procedure DrawAppMenuFrame(const ACanvas: TCanvas; const R, AInner: TRectF);
     /// <summary>Background of the floating mini toolbar.</summary>
@@ -173,7 +173,7 @@ type
     /// <summary>Glyph of the "Ribbon Display Options" caption button (a window with an arrow pointing up).
     /// </summary>
     procedure DrawDisplayOptionsGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
-    /// <summary>Stroked chevron (Office 365 switch between classic and simplified ribbon).</summary>
+    /// <summary>Stroked chevron (switch between the classic and the simplified ribbon).</summary>
     procedure DrawSwitchChevron(const ACanvas: TCanvas; const R: TRectF; const AUp: Boolean; const AColor: TAlphaColor);
     /// <summary>Background of a caption-style button (display options, auto-hide "...") in a part state.</summary>
     procedure DrawCaptionStyleButton(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState);
@@ -181,11 +181,11 @@ type
     /// methods then draw unmirrored text and swap leading and trailing alignment.</summary>
     class function IsMirrored(const ACanvas: TCanvas): Boolean; static;
 
-    { additions for the caption row and tab row items (Office 2024) }
+    { additions for the caption row and tab row items (Modern 2024) }
     /// <summary>Toggle switch (a pill with a round thumb) in ATrack; AOpacity dims a disabled switch.</summary>
     procedure DrawToggleSwitch(const ACanvas: TCanvas; const ATrack: TRectF; const AChecked: Boolean;
       const AState: TFmrPartState);
-    /// <summary>Background of an accent filled "primary" button (Office "Share").</summary>
+    /// <summary>Background of an accent filled "primary" button (a "Share" button).</summary>
     procedure DrawPrimaryButton(const ACanvas: TCanvas; const R: TRectF; const AState: TFmrPartState;
       const ACorners: TCorners = []);
     /// <summary>Account picture: initials in a colored circle (AColor 0 = the accent).</summary>
@@ -333,7 +333,7 @@ begin
   H := S / 2;
   if FTheme.Style.ChevronArrows then
   begin
-    // Office 2024: a thin stroked chevron, S wide and S / 2 high.
+    // Modern 2024: a thin stroked chevron, S wide and S / 2 high.
     case ADirection of
       TFmrArrowDirection.Down:
         P := [PointF(ACenter.X - H, ACenter.Y - H / 2), PointF(ACenter.X, ACenter.Y + H / 2),
@@ -644,7 +644,7 @@ var
   TextR, Ind: TRectF;
   Caption: string;
   TextColor: TAlphaColor;
-  W, IndH: Single;
+  W, IndH, IndR: Single;
   Bold: Boolean;
 begin
   Rad := FTheme.Metrics.TabRadius;
@@ -693,13 +693,16 @@ begin
   if Shown and (FTheme.Style.TabShape = TFmrTabShape.Underline) then
   begin
     IndH := FTheme.Metrics.TabIndicatorHeight;
+    IndR := FTheme.Metrics.TabIndicatorRadius;
+    if IndR <= 0 then
+      IndR := IndH / 2;
     W := Min(TextWidth(Caption, FTheme.Metrics.EffectiveTabFontSize, Bold), R.Width - 8);
     Ind := RectF(R.CenterPoint.X - W / 2, R.Bottom - FTheme.Metrics.TabIndicatorOffset - IndH,
       R.CenterPoint.X + W / 2, R.Bottom - FTheme.Metrics.TabIndicatorOffset);
     if AContextColor <> 0 then
-      Fill(ACanvas, Ind, TFmrFill.Solid(AContextColor), IndH / 2)
+      Fill(ACanvas, Ind, TFmrFill.Solid(AContextColor), IndR)
     else
-      Fill(ACanvas, Ind, TFmrToken.TabActiveIndicator, IndH / 2);
+      Fill(ACanvas, Ind, TFmrToken.TabActiveIndicator, IndR);
   end;
 end;
 
@@ -707,7 +710,7 @@ function TFmrRibbonPainter.TabCaptionWidth(const ACaption: string): Single;
 var
   Caption: string;
 begin
-  // A tab is as wide as its caption when it is active (bold in Office 2024), so tabs do not move when one is picked.
+  // A tab is as wide as its caption when it is active (bold in Modern 2024), so tabs do not move when one is picked.
   Caption := ACaption;
   if FTheme.Style.UppercaseTabs then
     Caption := Caption.ToUpper;
@@ -799,9 +802,9 @@ var
 begin
   Rad := FTheme.Metrics.BodyRadius;
   B := R;
-  if FTheme.Style.FloatingBody and (FTheme.Style.Family = TFmrThemeFamily.Office2024) then
+  if FTheme.Style.FloatingBody and (FTheme.Style.Family = TFmrThemeFamily.Modern2024) then
   begin
-    // Office 2024: a 1 dp edge around the card and a short soft shadow below it.
+    // Modern 2024: a 1 dp edge around the card and a short soft shadow below it.
     Shadow := FTheme.Colors[TFmrToken.BodyShadow];
     A := TAlphaColorRec(Shadow).A / 255;
     for I := 3 downto 0 do
@@ -910,7 +913,7 @@ procedure TFmrRibbonPainter.DrawSplitButton(const ACanvas: TCanvas; const R, AMa
 var
   Outer: TFmrPartState;
 begin
-  // When one part is hot the other is outlined lighter (Office behavior): paint the whole frame hot, then the
+  // When one part is hot the other is outlined lighter: paint the whole frame hot, then the
   // pressed/hot part on top.
   if (AMainState in [TFmrPartState.Normal, TFmrPartState.Disabled]) and
     (AArrowState in [TFmrPartState.Normal, TFmrPartState.Disabled]) then
@@ -1144,9 +1147,9 @@ var
   Inner: TRectF;
 begin
   Rad := Max(FTheme.Metrics.ButtonRadius, 4);
-  if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+  if FTheme.Style.Family = TFmrThemeFamily.Modern2024 then
   begin
-    // Office 2024: the edge is a little darker at the bottom (a shadow line).
+    // Modern 2024: the edge is a little darker at the bottom (a shadow line).
     Border := FTheme.Colors[TFmrToken.SearchBoxBorder];
     Fill(ACanvas, RectF(R.Left, R.Top, R.Right, R.Bottom + 1), TFmrFill.Solid(FmrDarken(Border or $FF000000, 0.12)),
       Rad + 1, [], TAlphaColorRec(Border).A / 255);
@@ -1319,9 +1322,9 @@ begin
   FStroke.Color := AColor;
   FStroke.Thickness := 1.2;
   FStroke.Cap := TStrokeCap.Round;
-  if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+  if FTheme.Style.Family = TFmrThemeFamily.Modern2024 then
   begin
-    // Fluent magnifier: the handle points down to the left.
+    // Magnifier: the handle points down to the left.
     FStroke.Thickness := 1;
     ACanvas.DrawEllipse(RectF(C.X - Rad + 1, C.Y - Rad - 1, C.X + Rad + 1, C.Y + Rad - 1), 1, FStroke);
     ACanvas.DrawLine(PointF(C.X - Rad * 0.7 + 1, C.Y + Rad * 0.7 - 1), PointF(C.X - Rad * 1.6, C.Y + Rad * 1.6), 1,
@@ -1394,7 +1397,7 @@ end;
 
 procedure TFmrRibbonPainter.DrawMenuCheckBackground(const ACanvas: TCanvas; const R: TRectF);
 begin
-  if FTheme.Style.Family in [TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010] then
+  if FTheme.Style.Family in [TFmrThemeFamily.Glass, TFmrThemeFamily.Classic] then
     DrawButton(ACanvas, R, TFmrPartState.Checked)
   else
   begin
@@ -1652,7 +1655,7 @@ var
   Rad: Single;
 begin
   Rad := Max(FTheme.Metrics.MenuRadius, 3);
-  if FTheme.Style.Family = TFmrThemeFamily.Office2007 then
+  if FTheme.Style.Family = TFmrThemeFamily.Glass then
     Fill(ACanvas, R, TFmrToken.CaptionFill, Rad)
   else
     Fill(ACanvas, R, TFmrToken.TabRowFill, Rad);

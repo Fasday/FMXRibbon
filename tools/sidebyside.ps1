@@ -3,7 +3,7 @@
   Puts the same region of two screenshots one above the other (reference on top), zoomed, to compare them.
 
 .EXAMPLE
-  .\tools\sidebyside.ps1 -Ref shots\word2024\word_active.png -Ours shots\x.png -X 0 -Y 0 -Width 700 -Height 200 `
+  .\tools\sidebyside.ps1 -Ref shots\before.png -Ours shots\x.png -X 0 -Y 0 -Width 700 -Height 200 `
     -DX 15 -DY 8 -Out shots\cmp\caption.png
   DX/DY: where the reference point (X, Y) is in Ours, relative to (X, Y) (different window origins).
 #>

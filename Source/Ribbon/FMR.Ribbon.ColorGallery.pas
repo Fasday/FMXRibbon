@@ -10,9 +10,9 @@
 unit FMR.Ribbon.ColorGallery;
 
 /// The drop-down of color items (FmrRegisterDropDown for TFmrColorItem, so plain color items use it too):
-///   - "Automatic" row, Office theme colors (10 columns: the base colors and 5 rows of tints and shades), standard
+///   - "Automatic" row, theme colors (10 columns: the base colors and 5 rows of tints and shades), standard
 ///     colors, recent colors (colors picked with "More Colors..."), "No Color" and "More Colors..." rows;
-///   - the highlight palette of Word (15 colors in 5 columns) for TFmrColorGalleryItem.Palette = Highlight;
+///   - the text highlight palette (15 colors in 5 columns) for TFmrColorGalleryItem.Palette = Highlight;
 ///   - hot tracking with a screen tip naming the color ("Blue, Accent 1, Lighter 40%"), live preview
 ///     (TFmrColorGalleryItem.OnPreview), the current color selected, keyboard (arrows, Home/End, Enter, Esc).
 /// Picking a color sets TFmrColorItem.Color and clicks the item, so the main part of the split button applies the
@@ -37,9 +37,9 @@ const
 type
   /// <summary>Colors offered by a color gallery.</summary>
   TFmrColorPalette = (
-    /// <summary>Office theme colors with tints/shades and the standard colors.</summary>
-    Office,
-    /// <summary>The 15 text highlight colors of Word.</summary>
+    /// <summary>Theme colors with tints/shades and the standard colors.</summary>
+    Theme,
+    /// <summary>The 15 text highlight colors.</summary>
     Highlight);
 
   TFmrColorPreviewEvent = procedure(Sender: TObject; const AColor: TAlphaColor; const AActive: Boolean) of object;
@@ -58,7 +58,7 @@ type
     /// preview ends (restore the original look).</summary>
     procedure Preview(const AColor: TAlphaColor; const AActive: Boolean);
   published
-    property Palette: TFmrColorPalette read FPalette write FPalette default TFmrColorPalette.Office;
+    property Palette: TFmrColorPalette read FPalette write FPalette default TFmrColorPalette.Theme;
     property ShowRecentColors: Boolean read FShowRecentColors write FShowRecentColors default True;
     property OnPreview: TFmrColorPreviewEvent read FOnPreview write FOnPreview;
     /// <summary>Replaces the built-in "More Colors" dialog (set AHandled; AColor in/out).</summary>
@@ -128,7 +128,7 @@ procedure FmrShowColorDialog(const AInitial: TAlphaColor; const ATitle: string;
 /// <summary>The recently picked custom colors (newest first, at most 10).</summary>
 function FmrRecentColors: TArray<TAlphaColor>;
 procedure FmrAddRecentColor(const AColor: TAlphaColor);
-/// <summary>Office theme color of column ACol (0..9) and tint/shade row ARow (0 = base color, 1..5).</summary>
+/// <summary>Theme color of column ACol (0..9) and tint/shade row ARow (0 = base color, 1..5).</summary>
 function FmrThemeColor(const ACol, ARow: Integer): TAlphaColor;
 
 implementation
@@ -232,7 +232,7 @@ begin
 end;
 
 /// Amount of the tint (> 0: lighter) or shade (< 0: darker) of row ARow (1..5) for a base color of luminance AL,
-/// like the Office palette: light colors only get darker, very dark colors only lighter.
+/// like a theme palette: light colors only get darker, very dark colors only lighter.
 function TintOf(const AL: Single; const ARow: Integer): Single;
 const
   Normal: array[1..5] of Single = (0.8, 0.6, 0.4, -0.25, -0.5);

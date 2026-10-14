@@ -24,9 +24,10 @@ type
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
-    [Test] procedure WordStructure;
-    [Test] procedure ExcelStructure;
+    [Test] procedure DocumentStructure;
+    [Test] procedure SpreadsheetStructure;
     [Test] procedure SimpleStructure;
+    [Test] procedure TemplateCaptions;
     [Test] procedure ItemsHaveGlyphsAndCategories;
     [Test] procedure QuickAccessToolbar;
     [Test] procedure SecondApplicationGetsUniqueNames;
@@ -120,12 +121,12 @@ begin
   end;
 end;
 
-procedure TTemplateTests.WordStructure;
+procedure TTemplateTests.DocumentStructure;
 var
   First: TFmrRibbonTab;
   Ctx: TArray<TFmrRibbonContextGroup>;
 begin
-  First := FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Word);
+  First := FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   Assert.AreEqual('Home,Insert,Layout,View,Table Design,Table Layout', TabCaptions);
   Assert.AreEqual('Clipboard,Font,Paragraph,Styles,Editing', GroupCaptions(TFmrRibbonStructure.Tab(Ribbon, 0)));
   Assert.AreEqual('Pages,Tables,Illustrations,Links,Comments,Header && Footer,Text,Symbols',
@@ -141,9 +142,9 @@ begin
   CheckLinks;
 end;
 
-procedure TTemplateTests.ExcelStructure;
+procedure TTemplateTests.SpreadsheetStructure;
 begin
-  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Excel);
+  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Spreadsheet);
   Assert.AreEqual('Home,Insert,Formulas,Data,View', TabCaptions);
   Assert.AreEqual('Clipboard,Font,Alignment,Number,Styles,Cells,Editing',
     GroupCaptions(TFmrRibbonStructure.Tab(Ribbon, 0)));
@@ -161,6 +162,13 @@ begin
   CheckLinks;
 end;
 
+procedure TTemplateTests.TemplateCaptions;
+begin
+  Assert.AreEqual('Simple', TFmrRibbonTemplateBuilder.TemplateCaption(TFmrRibbonTemplate.Simple));
+  Assert.AreEqual('Document', TFmrRibbonTemplateBuilder.TemplateCaption(TFmrRibbonTemplate.Document));
+  Assert.AreEqual('Spreadsheet', TFmrRibbonTemplateBuilder.TemplateCaption(TFmrRibbonTemplate.Spreadsheet));
+end;
+
 procedure TTemplateTests.ItemsHaveGlyphsAndCategories;
 var
   Paste, Bold: TFmrBarItem;
@@ -168,7 +176,7 @@ var
   I: Integer;
   L: TFmrItemLink;
 begin
-  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Word);
+  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   Paste := Manager.ItemByName('btnPaste');
   Assert.AreEqual(Cardinal(FmrGlyphPaste), Paste.Glyph.GlyphCode);
   Assert.AreEqual(Cardinal(FmrGlyphPaste), Paste.LargeGlyph.GlyphCode, 'large buttons get a large glyph');
@@ -196,7 +204,7 @@ procedure TTemplateTests.QuickAccessToolbar;
 var
   QAT: TFmrRibbonQuickAccessToolbar;
 begin
-  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Word);
+  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   QAT := Ribbon.QuickAccessToolbar;
   Assert.AreEqual(3, QAT.ItemLinks.Count);
   Assert.AreEqual('btnSave', QAT.ItemLinks[0].Item.Name);
@@ -223,7 +231,7 @@ procedure TTemplateTests.ReplaceDeletesOldTabs;
 var
   Items: Integer;
 begin
-  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Word);
+  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   Items := Manager.ItemCount;
   FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Simple, nil, True);
   Assert.AreEqual('Home,View', TabCaptions);
@@ -267,7 +275,7 @@ var
   R: TFakeRibbon;
   Before, After: string;
 begin
-  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Word);
+  FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   Before := DumpStructure(Ribbon);
   S := TMemoryStream.Create;
   Copy := nil;

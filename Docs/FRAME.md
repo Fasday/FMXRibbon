@@ -2,7 +2,7 @@
 
 `Source\Frame` puts caption content (title, caption buttons, the ribbon's caption row and tab row, any FMX control)
 into the title bar area of a form. This file describes how it works, what each mode keeps of the Windows frame, what
-was measured on Windows 11 and what is still open. The contract (types, interfaces, default hit test rules) is in
+was checked on Windows 11 and what is still open. The contract (types, interfaces, default hit test rules) is in
 `Docs\ARCHITECTURE.md`, section "The frame".
 
 ## Units

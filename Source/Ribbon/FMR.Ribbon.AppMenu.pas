@@ -1,7 +1,7 @@
 {*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
-{  Office 2007 application menu                         }
+{  Application menu                                     }
 {                                                       }
 {  MIT License. Copyright (c) 2026 Fasday               }
 {                                                       }
@@ -9,14 +9,14 @@
 
 unit FMR.Ribbon.AppMenu;
 
-/// TFmrRibbonApplicationMenu: the Office 2007 application menu (TFmrRibbon.ApplicationMenu := AppMenu; it implements
+/// TFmrRibbonApplicationMenu: an application menu in the style of Office 2007 (TFmrRibbon.ApplicationMenu := AppMenu; it implements
 /// IFmrApplicationMenu). Layout of the popup:
 ///   - the orb of the ribbon painted pressed over the top-left corner, so the orb appears to lie on the menu (the
 ///     menu starts at the middle of the orb; with themes without an orb the menu opens below the "File" tab);
 ///   - left column: ItemLinks as large rows (32 dp glyph, caption, submenu arrow, split rows);
 ///   - right pane: the recent documents (ExtraPaneCaption, numbered rows with pin buttons, OnRecentClick) or, while a
 ///     left row with a submenu is hot, that submenu with a header (the item's Description, else its caption) and
-///     large rows with descriptions (Office 2007 style);
+///     large rows with descriptions;
 ///   - bottom band: Buttons (e.g. "Options", "Exit") right-aligned.
 /// Keyboard: Up/Down, Right/Left between the column and the pane, Tab to the buttons, Enter, Esc, accelerators (the
 /// '&' letter or the first letter, digits for recent documents); opened with the keyboard it shows key tips.
@@ -163,7 +163,7 @@ type
     property HotIndex: Integer read FHotIndex;
   end;
 
-  /// <summary>Office 2007 application menu: assign it to TFmrRibbon.ApplicationMenu.</summary>
+  /// <summary>Application menu in the style of Office 2007: assign it to TFmrRibbon.ApplicationMenu.</summary>
   TFmrRibbonApplicationMenu = class(TFmxObject, IFmrItemLinksOwner, IFmrApplicationMenu)
   private
     FItemLinks: TFmrItemLinks;

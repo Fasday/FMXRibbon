@@ -14,7 +14,7 @@ type
       const AStyle: TFmrKeyTipStyle = TFmrKeyTipStyle.Letters): TArray<string>;
     procedure CheckScope(const ATips: TArray<string>);
   public
-    [Test] procedure WordTabs;
+    [Test] procedure DocumentEditorTabs;
     [Test] procedure ExplicitTipsAreKept;
     [Test] procedure AcceleratorWins;
     [Test] procedure NumbersStyle;
@@ -82,7 +82,7 @@ begin
   Assert.IsTrue(TFmrKeyTipAssigner.IsPrefixFree(ATips), 'unique and prefix-free: ' + string.Join(' ', ATips));
 end;
 
-procedure TKeyTipTests.WordTabs;
+procedure TKeyTipTests.DocumentEditorTabs;
 var
   Tips: TArray<string>;
 begin
