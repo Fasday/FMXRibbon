@@ -57,7 +57,7 @@ uses
 type
   TControlAccess = class(TControl);
 
-  /// A form with a frame, a bar manager, a ribbon built from the Word template and a memo.
+  /// A form with a frame, a bar manager, a ribbon built from the Document template and a memo.
   TTestWindow = class
   public
     Form: TForm;
@@ -66,7 +66,7 @@ type
     Ribbon: TFmrRibbon;
     Memo: TMemo;
     constructor Create(const AFrame: Boolean; const AWidth: Integer = 1100; const AHeight: Integer = 480;
-      const ATemplate: TFmrRibbonTemplate = TFmrRibbonTemplate.Word);
+      const ATemplate: TFmrRibbonTemplate = TFmrRibbonTemplate.Document);
     destructor Destroy; override;
     function Item(const AName: string): TFmrBarItem;
     function ViewOf(const AName: string): TFmrItemView;
@@ -504,11 +504,11 @@ begin
         end;
         // with a popup open while the theme changes
         Check(W.DropDown('btnPaste'), 'paste drop-down');
-        W.Ribbon.Theme := 'FluentDark';
+        W.Ribbon.Theme := 'SoftDark';
         Pump(30);
         W.Ribbon.ClosePopups;
         W.Ribbon.ShowKeyTipsNow;
-        W.Ribbon.Theme := 'Office2007Blue';
+        W.Ribbon.Theme := 'GlassBlue';
         Pump(30);
         W.Ribbon.HideKeyTips;
       finally
@@ -534,7 +534,7 @@ begin
       Log(Format('   CreateTheme x40: heap %s KB', [Signed((HeapBytes - H) div 1024)]));
       for Fr in [True, False] do
       begin
-        W := TTestWindow.Create(Fr, 1100, 480, TFmrRibbonTemplate.Word);
+        W := TTestWindow.Create(Fr, 1100, 480, TFmrRibbonTemplate.Document);
         try
           if not Fr then
           begin
@@ -872,7 +872,7 @@ begin
                 end;
                 W.Invoke('ApplicationButton');
                 Pump(30);
-                W.Ribbon.Theme := 'FluentDark';
+                W.Ribbon.Theme := 'SoftDark';
                 Pump(30);
                 BS.Hide;
                 Pump(20);
@@ -1149,7 +1149,7 @@ begin
         Pump(20);
         W.Ribbon.AccentColor := TAlphaColors.Null;
         Pump(20);
-        W.Ribbon.Theme := 'office2007black';
+        W.Ribbon.Theme := 'glassblack';
         Pump(20);
       finally
         W.Free;
@@ -1195,7 +1195,7 @@ begin
         SB.Free;
         Pump(30);
         Check(not W.Ribbon.ThemeObject.IsOverridden(TFmrToken.TabText), 'override gone after the StyleBook was freed');
-        W.Ribbon.Theme := 'FluentDark';
+        W.Ribbon.Theme := 'SoftDark';
         Pump(20);
       finally
         W.Free;

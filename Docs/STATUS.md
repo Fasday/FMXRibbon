@@ -7,12 +7,12 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux6
 
 | | |
 |---|---|
-| ![FMR Write](images/fmr-write.png) | ![NCProof, FullNC](images/ncproof-fullnc.png) |
-| FMR Write (Office 365 Colorful, FullNC frame) | NCProof: FMX controls in the real non-client area, live geometry |
-| ![Office 2007](images/office2007.png) | ![Windows 11 dark](images/fluent-dark.png) |
-| Office 2007 Blue, orb, reduced Styles group | Windows 11 Dark, Dwm frame |
-| ![Backstage](images/backstage.png) | ![Design time](images/design-time.png) |
-| Backstage view (Office 2016 Colorful) | Design-time simulation: selection frame and insertion mark |
+| ![FMR Notes](images/fmr-notes.png) | ![NCProof, FullNC](images/ncproof-fullnc.png) |
+| FMR Notes (Modern 2024 Dark, Dwm frame over Mica) | NCProof: FMX controls in the real non-client area, live geometry |
+| ![Glass Blue](images/glass-blue.png) | ![Soft Dark](images/soft-dark.png) |
+| Glass Blue (in the style of Office 2007), orb | Soft Dark (in the style of Windows 11), Dwm frame |
+| ![Backstage](images/backstage-banner.png) | ![Design time](images/design-time.png) |
+| Backstage view (Banner Colorful) | Design-time simulation: selection frame and insertion mark |
 
 ## Done
 
@@ -22,22 +22,22 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux6
 | FMX controls in the non-client area: typing, selection, clipboard, drop-down lists, hints, cursor | done | NCProof screenshots |
 | Window behavior: drag, double-click maximize, system menu, Snap Layouts, sizing borders, maximize into work area | done | NCProof |
 | Bar manager, items, links, actions, image sources (ImageList, SVG, icon font, path) | done | 33 unit tests |
-| Ribbon structure, streaming of tabs/groups/links/context groups | done | unit tests; FMR Write loads its whole form from `.fmx` |
+| Ribbon structure, streaming of tabs/groups/links/context groups | done | unit tests; FMR Notes loads its whole form from `.fmx` |
 | Layout calculator: reduction, collapse, galleries, simplified overflow, RTL mirroring | done | 31 unit tests; screenshots at several widths |
-| Ribbon control: caption/tab rows in the frame host, groups, every button kind, editor controls, contextual tabs, QAT above/below, minimized, auto-hide, simplified, touch, RTL, command search | done | RibbonBasic, Customize, WordLike screenshots |
+| Ribbon control: caption/tab rows in the frame host, groups, every button kind, editor controls, contextual tabs, QAT above/below, minimized, auto-hide, simplified, touch, RTL, command search | done | RibbonBasic, Customize, Notes screenshots |
 | Popups and menus, collapsed group popups, key tips (incl. non-Latin layouts), screen tips | done | screenshots and driven interactions |
-| Galleries (in-ribbon, drop-down, filter, resize, live preview), color gallery, styles gallery | done | RibbonBasic, WordLike |
-| Office 2007 application menu, backstage view, status bar, mini toolbar, radial menu | done | screenshots |
+| Galleries (in-ribbon, drop-down, filter, resize, live preview), color gallery, styles gallery | done | RibbonBasic, Notes |
+| Application menu, backstage view, status bar, mini toolbar, radial menu | done | screenshots |
 | Customization dialog (ribbon + QAT), JSON layout, import/export/reset | done | 14 model tests, screenshots |
 | Ribbon merge | done | 11 unit tests, Showcase merge page |
-| 18 themes, accent colors, StyleBook token overrides | done | ThemeSheet renders, screenshots |
-| Localization EN/RU | done | tests, WordLike in Russian |
+| 21 themes (the names of the first release as aliases), accent colors, StyleBook token overrides | done | ThemeSheet renders, screenshots, alias tests |
+| Localization EN/RU | done | tests, Notes in Russian |
 | UI Automation provider (tabs, groups, buttons, editors with Value) | done (basic) | `Demos\Customize\uia-test.ps1` |
 | Packages (runtime + design, Win32/Win64), registration, property and component editors, items and structure editors, image picker, templates | done | compiled with 0 warnings, `LoadPackage` test, DesignPreview screenshots |
 | In-form design (tab click, selection, drag & drop, insertion marks, drop from items editor) | done | `DesignPreview /realtest`: 45/45 checks with the real ribbon in design state |
-| Demos: NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize | done | screenshots, leak check on close |
-| Tests | 171 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
-| Linux64 with FMXWayland (2026-10-14) | every runtime unit and the runtime package compile with `dcclinux64`; RibbonBasic and Showcase run; themes, reduction, galleries and menus as `xdg_popup`, key tips, fontconfig font list, theme font fallback, Segoe icon codes from the bundled Fluent UI System Icons subset; the integrated title bar is ready on FMR's side (`IFMXWaylandWindowFrame`), FMXWayland does not offer the service yet | headless Weston 14 screenshots and frame dumps (`tools\linux-run.ps1`, `Docs\LINUX.md`) |
+| Demos: NCProof, RibbonBasic, Notes, Showcase, Extras, Customize | done | screenshots, leak check on close |
+| Tests | 175 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; theme name aliases; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
+| Linux64 with FMXWayland (2026-10-14) | every runtime unit and the runtime package compile with `dcclinux64`; RibbonBasic and Showcase run; themes, reduction, galleries and menus as `xdg_popup`, key tips, fontconfig font list, theme font fallback, Segoe icon codes from the bundled "FMR Icons" (a Fluent UI System Icons subset); the integrated title bar with FMXWayland's frame service (`IFMXWaylandWindowFrame`) | headless Weston 14 screenshots and frame dumps (`tools\linux-run.ps1`, `Docs\LINUX.md`) |
 | Stress and destroy paths (QA round, 2026-10-14) | 25 scenarios pass on Win64/Win32, Debug/Release: 50 theme switches, frame modes with maximize/restore, 50 popup and key tip cycles, display modes, ribbon or manager freed first, manager set to nil, items/groups/tabs deleted while hot, pressed or shown in open menus, form closed with each kind of popup open, frame/application menu/backstage/mini toolbar/radial menu freed while open, unknown theme, StyleBook set/freed, focus after menus and deactivation; GDI, USER and heap do not grow; no leak report | `tools\Stress\FmrStress.dpr` |
 
 ## Not verified (no environment here)
@@ -63,15 +63,14 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux6
   image-list indexes.
 - Other platforms: the frame units compile for macOS (not linked, no SDK here); the ribbon was not built or run on
   macOS, iOS or Android. Linux (FMXWayland): built and run on a headless Weston only — no real input, no WSLg or
-  desktop compositor; the ribbon sits under FMXWayland's title bar until FMXWayland offers `IFMXWaylandWindowFrame`;
-  UI Automation is Windows only; WordLike, Extras and Customize were not ported (`Docs\LINUX.md`).
+  desktop compositor; without FMXWayland's `IFMXWaylandWindowFrame` the ribbon sits under its title bar;
+  UI Automation is Windows only; Notes, Extras and Customize were not ported (`Docs\LINUX.md`).
 - Popup contents written by an application (own `IFmrPopupContent` controls) are closed when an item or link they
   show is destroyed only if they implement `IFmrItemDisplay`; the library's menus, color palettes and drop-down
   galleries do.
 - `BarManager := nil` at run time does not hide the commands: links reference their items directly, so the views
   stay (without the manager's image list and change notifications) until the links or items go away.
-- Office 2007 themes: the top-level key tips of the quick access toolbar hang over the tab captions (as in Office
-  2007); the "File" text on the glass orb has a gradient behind it (lower contrast than a flat button).
+- Glass themes: the top-level key tips of the quick access toolbar hang over the tab captions; the "File" text on the glass orb has a gradient behind it (lower contrast than a flat button).
 - Many theme switches without processing messages in between (a loop in code) queue their repaint work; memory is
   given back as soon as the message loop runs.
 - Not verified by automation: real mouse double-click on the non-client caption (the drive tool posts client
@@ -83,5 +82,5 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32; Linux6
 1. Install the design package in the IDE and go through `Docs\DESIGNTIME.md` (the checklist names what to confirm).
 2. Test on Windows 10, with multiple monitors and with a screen reader.
 3. Fill the gaps above (UIA events, RTL in editors, layout of unnamed objects).
-4. Linux: implement `IFMXWaylandWindowFrame` in FMXWayland (`Docs\LINUX.md`, "What FMXWayland has to implement") and
-   test the integrated title bar with real input on WSLg/GNOME/KDE; port WordLike, Extras and Customize.
+4. Linux: test the integrated title bar (`IFMXWaylandWindowFrame`, `Docs\LINUX.md`) with real input on
+   WSLg/GNOME/KDE; port Notes, Extras and Customize.

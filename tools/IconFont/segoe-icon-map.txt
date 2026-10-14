@@ -1,0 +1,276 @@
+# Segoe Fluent Icons / Segoe MDL2 Assets code point -> Fluent UI System Icons name (MIT, microsoft/fluentui-system-icons).
+# The name is the icon of FluentSystemIcons-Resizable.ttf without "ic_fluent_" and "_20_regular" ("_20_filled" with
+# ":filled"). tools\IconFont\make-icon-font.ps1 builds Assets\Fonts\FmrIcons.ttf (only these icons) and
+# Source\Core\FMR.Ribbon.IconFont.inc (the table TFmrImageSource uses when the Segoe icon font is not installed).
+# Only code points and names here: no outline of the Segoe fonts is used (they must not be redistributed).
+#
+# Covered: every code of the image picker catalog (Source\Design\FMR.Ribbon.Design.Graphics.pas), of the templates
+# (FMR.Ribbon.Templates), of the customization form and of the demos.
+#
+# code  fluent name                      Segoe name
+E700  navigation                         # GlobalNavigationButton (Justify in the templates)
+E70D  chevron_down                       # ChevronDown
+E70E  chevron_up                         # ChevronUp
+E70F  edit                               # Edit
+E710  add                                # Add
+E711  dismiss                            # Cancel
+E712  more_horizontal                    # More
+E713  settings                           # Settings
+E714  video                              # Video
+E715  mail                               # Mail
+E716  people                             # People
+E717  phone                              # Phone
+E718  pin                                # Pin
+E719  shopping_bag                       # Shop
+E71A  stop                               # Stop
+E71B  link                               # Link
+E71C  filter                             # Filter
+E71D  apps                               # AllApps
+E71E  zoom_fit                           # Zoom
+E71F  zoom_out                           # ZoomOut
+E720  mic                                # Microphone
+E721  search                             # Search
+E722  camera                             # Camera
+E723  attach                             # Attach
+E724  send                               # Send
+E72A  arrow_forward                      # Forward
+E72B  arrow_left                         # Back
+E72C  arrow_clockwise                    # Refresh
+E72D  share                              # Share
+E72E  lock_closed                        # Lock
+E734  star                               # FavoriteStar
+E735  star:filled                        # FavoriteStarFill
+E736  book_open                          # ReadingMode
+E737  window                             # Favicon / window
+E738  subtract                           # Remove
+E739  checkbox_unchecked                 # Checkbox
+E73E  checkmark                          # CheckMark
+E740  full_screen_maximize               # FullScreen
+E748  person_swap                        # SwitchUser
+E749  print                              # Print
+E74A  arrow_up                           # Up
+E74B  arrow_down                         # Down
+E74D  delete                             # Delete
+E74E  save                               # Save
+E74F  speaker_mute                       # Mute
+E751  arrow_enter_left                   # ReturnKey
+E753  cloud                              # Cloud
+E756  window_console                     # CommandPrompt
+E75A  textbox                            # TextBox (Rectangle)
+E75B  document_footer                    # Footer (Bar)
+E75C  eraser                             # EraseTool
+E762  multiselect_ltr                    # MultiSelect
+E765  keyboard                           # KeyboardClassic
+E767  speaker_2                          # Volume
+E768  play                               # Play
+E769  pause                              # Pause
+E76B  chevron_left                       # ChevronLeft
+E76C  chevron_right                      # ChevronRight
+E76E  emoji                              # Emoji2
+E770  laptop                             # System
+E771  paint_brush                        # Personalize (format painter)
+E772  phone_laptop                       # Devices
+E774  globe                              # Globe
+E775  local_language                     # TimeLanguage
+E776  accessibility                      # EaseOfAccess
+E777  arrow_reset                        # UpdateRestore
+E779  contact_card                       # ContactInfo
+E77B  person                             # Contact
+E77F  clipboard_paste                    # Paste
+E781  lightbulb                          # LEDLight
+E783  error_circle                       # Error
+E785  lock_open                          # Unlock
+E786  slide_play                         # Slideshow
+E787  calendar_ltr                       # Calendar
+E789  megaphone                          # Megaphone
+E78B  window_new                         # NewWindow
+E78C  save_arrow_right                   # SaveLocal
+E790  color                              # Color
+E792  save_edit                          # SaveAs
+E793  brightness_high                    # Brightness
+E799  document_margins                   # AspectRatio (margins)
+E7A6  arrow_redo                         # Redo
+E7A7  arrow_undo                         # Undo
+E7A8  crop                               # Crop
+E7AD  arrow_rotate_clockwise             # Rotate
+E7B3  eye                                # RedEye
+E7B8  box                                # Package
+E7BA  warning                            # Warning
+E7BE  hat_graduation                     # Education
+E7BF  cart                               # ShoppingCart
+E7C1  flag                               # Flag (bookmark)
+E7C3  document                           # Page
+E7C4  window_multiple                    # TaskView
+E7C8  record                             # Record
+E7E6  highlight                          # Highlight
+E7E8  power                              # PowerButton
+E7EF  person_key                         # Admin
+E7F4  desktop                            # TVMonitor
+E7F6  headphones                         # Headphone
+E7FC  games                              # Game
+E80A  table                              # Table
+E80F  home                               # Home
+E815  tap_single                         # Touch
+E81C  history                            # History
+E81D  location                           # Location
+E81E  layer                              # MapLayers
+E821  briefcase                          # Work
+E823  clock                              # Recent
+E825  building_bank                      # Bank
+E82D  book                               # Dictionary
+E82F  lightbulb_filament                 # Lightbulb
+E838  folder_open                        # FolderOpen
+E83D  shield                             # DefenderApp
+E84A  text_case_lowercase                # LowerCase
+E84B  text_case_uppercase                # UpperCase
+E879  shapes                             # (shapes gallery)
+E890  eye                                # View
+E894  dismiss                            # Clear
+E895  arrow_sync                         # Sync
+E896  arrow_download                     # Download
+E897  question_circle                    # Help
+E898  arrow_upload                       # Upload
+E899  emoji_smile_slight                 # Emoji
+E89A  document_multiple                  # TwoPage
+E89F  panel_left_contract                # ClosePane
+E8A0  panel_left_expand                  # OpenPane
+E8A1  text_wrap                          # PreviewLink (wrap text)
+E8A3  zoom_in                            # ZoomIn
+E8A4  bookmark_multiple                  # Bookmarks
+E8A5  document_add                       # Document (new)
+E8A6  document_lock                      # ProtectedDocument
+E8A7  open                               # OpenInNewWindow
+E8A9  grid                               # ViewAll
+E8AB  arrow_swap                         # Switch (replace)
+E8AC  rename                             # Rename
+E8AD  arrow_right                        # Go
+E8B1  arrow_shuffle                      # Shuffle
+E8B3  select_all_on                      # SelectAll
+E8B4  orientation                        # Orientation
+E8B5  text_indent_increase_ltr           # Import (increase indent)
+E8B7  folder                             # Folder
+E8B9  image                              # Picture
+E8BA  closed_caption                     # Caption
+E8BB  dismiss                            # ChromeClose
+E8BC  text_bullet_list_square            # ShowResults
+E8BD  chat                               # Message
+E8C1  symbols                            # Characters
+E8C3  mail_read                          # Read
+E8C6  cut                                # Cut
+E8C7  payment                            # PaymentCard (currency)
+E8C8  copy                               # Copy
+E8C9  important                          # Important
+E8CA  arrow_reply                        # MailReply
+E8CB  arrow_sort                         # Sort
+E8D1  calendar_today                     # GotoToday
+E8D2  text_font                          # Font
+E8D3  text_color                         # FontColor
+E8D4  person_circle                      # Contact2
+E8D5  folder:filled                      # FolderFill
+E8D6  music_note_2                       # Audio
+E8D7  key                                # Permissions
+E8DB  text_italic                        # Italic
+E8DC  text_underline                     # Underline
+E8DD  text_bold                          # Bold
+E8DE  folder_arrow_right                 # MoveToFolder
+E8E0  thumb_dislike                      # Dislike
+E8E1  thumb_like                         # Like
+E8E2  text_align_right                   # AlignRight
+E8E3  text_align_center                  # AlignCenter
+E8E4  text_align_left                    # AlignLeft
+E8E5  folder_open                        # OpenFile
+E8E6  select_all_off                     # ClearSelection
+E8E7  font_decrease                      # FontDecrease
+E8E8  font_increase                      # FontIncrease
+E8E9  text_font_size                     # FontSize
+E8EC  tag                                # Tag
+E8ED  arrow_repeat_1                     # RepeatOne
+E8EE  arrow_repeat_all                   # RepeatAll
+E8EF  calculator                         # Calculator (sum)
+E8F1  library                            # Library
+E8F2  chat_multiple                      # ChatBubbles
+E8F4  folder_add                         # NewFolder
+E8FA  person_add                         # AddFriend
+E8FB  checkmark                          # Accept
+E8FD  text_bullet_list_ltr               # BulletedList
+E8FE  scan                               # Scan
+E8FF  document_search                    # Preview
+E902  group                              # Group
+E90A  comment                            # Comment
+E90F  wrench                             # Repair
+E910  person_accounts                    # Accounts
+E916  timer                              # Stopwatch
+E917  clock                              # Clock
+E91B  camera                             # WebcamPhoto
+E924  screenshot                         # Screenshot (clip)
+E92C  full_screen_minimize               # BackToWindow
+E92D  full_screen_maximize               # FullScreen
+E943  math_formula                       # Code (function)
+E946  info                               # Info
+E947  dismiss                            # Multiply
+E948  decimal_arrow_left                 # Plus (increase decimal)
+E949  decimal_arrow_right                # Minus (decrease decimal)
+E94A  calculator_multiple                # Divide
+E94B  math_symbols                       # SquareRoot (equation)
+E94C  text_percent                       # Percent
+E94E  equal_circle                       # Equal
+E97E  text_effects                       # Letter A (drop cap)
+E9A6  page_fit                           # FitPage (size)
+E9AA  text_paragraph                     # ParagraphMark
+E9B2  text_quote                         # (quotes)
+E9CA  temperature                        # Thermometer
+E9CE  question                           # Unknown
+E9D2  data_area                          # AreaChart
+E9D5  clipboard_task_list_ltr            # CheckList (conditional formatting)
+E9D9  pulse                              # Diagnostic
+E9E9  options                            # Equalizer
+E9F5  settings_cog_multiple              # Processing
+E9F9  document_data                      # ReportDocument
+EA37  list                               # List
+EA3C  table_cells_merge                  # Merge
+EA40  text_bullet_list_tree              # MultilevelList
+EA52  text_indent_decrease_ltr           # DecreaseIndent
+EA86  puzzle_piece                       # Puzzle (add-ins)
+EA90  document_pdf                       # PDF
+EA99  broom                              # Broom (clear)
+EABB  flowchart                          # Flowchart (SmartArt)
+EAFC  data_trending                      # Trending (line chart)
+EB05  data_pie                           # PieChart
+EB3C  design_ideas                       # Design
+EB42  paint_bucket                       # Droplet (shading)
+EB51  heart                              # Heart
+EB91  shapes                             # Shapes
+EB95  certificate                        # Certificate
+EB9F  image_multiple                     # Photo (pictures)
+EC92  calendar_clock                     # DateTime
+ECA5  grid                               # Tiles
+ECE7  text_line_spacing                  # LineSpacing
+ED0E  document_one_page                  # NewNote (blank page)
+ED25  folder_open                        # OpenFolder
+ED5E  ruler                              # Ruler
+ED60  text_clear_formatting              # EraseToolFill (clear formatting)
+ED63  pen                                # Marker
+ED6E  document_header                    # Header
+ED6F  table_freeze_row                   # Position / freeze panes
+EDE0  text_strikethrough                 # Strikethrough
+EDE1  arrow_export_ltr                   # Export
+EDFB  calligraphy_pen                    # FountainPen
+EE40  position_forward                   # BringForward
+EE47  arrow_expand                       # Expand
+EE4D  text_column_two                    # Columns
+EE4E  split_vertical                     # Split
+EE4F  grid                               # Gridlines
+EE50  position_backward                  # SendBackward
+EE56  signature                          # Signature
+EE94  database                           # Database (get data)
+EF60  text_effects                       # Text effects
+EFDA  table_add                          # InsertTable (insert cells)
+F003  share                              # Relationship
+F0E2  grid                               # GridView
+F0E3  clipboard_task_list_ltr            # ClipboardList
+F111  number_symbol                      # Comma (number format)
+F146  document_page_number               # Number1 (page number)
+F156  layer                              # Layers
+F158  cube                               # Cube
+F168  text_number_list_ltr               # NumberedList
+F404  data_bar_vertical                  # ColumnChart

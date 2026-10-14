@@ -19,7 +19,7 @@ unit FMR.Ribbon.CustomizeModel;
 /// were removed are freed, the links of user-defined groups and of the quick access toolbar are replaced when they
 /// differ.
 ///
-/// Office rules: commands can be added only to user-defined (custom) groups; commands of designed groups cannot be
+/// Rules: commands can be added only to user-defined (custom) groups; commands of designed groups cannot be
 /// removed or reordered; designed tabs and groups are hidden (unchecked), not deleted; a custom tab can be removed
 /// when it contains only custom groups.
 

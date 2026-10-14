@@ -1,7 +1,7 @@
 {*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
-{  Office-style status bar                              }
+{  Status bar                                           }
 {                                                       }
 {  MIT License. Copyright (c) 2026 Fasday               }
 {                                                       }
@@ -9,10 +9,10 @@
 
 unit FMR.Ribbon.StatusBar;
 
-/// TFmrStatusBar: an Office-like status bar (Align = Bottom, height from the theme metric StatusBarHeight). Its
+/// TFmrStatusBar: a status bar (Align = Bottom, height from the theme metric StatusBarHeight). Its
 /// panels are child controls (TFmrStatusBarPanel), so they are designed, selected and reordered like any FMX control
 /// and get mouse events and hints of their own. A panel shows text with an optional glyph, hosts child controls
-/// (Container), shows the links of a bar manager as small buttons (ItemLinks), a Word-like zoom slider (ZoomSlider)
+/// (Container), shows the links of a bar manager as small buttons (ItemLinks), a zoom slider (ZoomSlider)
 /// or the three view buttons Read / Print / Web (ViewButtons). Left panels are placed from the left in their child
 /// order, right panels end at the right edge; panels that do not fit shrink to MinWidth and are hidden from the end
 /// of the left group (FMR.Ribbon.Extras.Layout).
@@ -44,14 +44,14 @@ type
     Container,
     /// <summary>The links of ItemLinks as small buttons painted by the panel.</summary>
     ItemLinks,
-    /// <summary>Word-like zoom slider: - button, track with the 100 % tick, + button, percentage.</summary>
+    /// <summary>Zoom slider: - button, track with the 100 % tick, + button, percentage.</summary>
     ZoomSlider,
     /// <summary>Three toggle buttons: Read Mode, Print Layout, Web Layout.</summary>
     ViewButtons);
 
   /// <summary>Line drawn around or next to a panel.</summary>
   TFmrStatusPanelBevel = (
-    /// <summary>Separator line for the Office 2007/2010 themes, nothing for the flat themes.</summary>
+    /// <summary>Separator line for the Glass and Classic themes, nothing for the flat themes.</summary>
     Auto,
     None,
     /// <summary>A vertical line between the panel and its neighbor.</summary>
@@ -137,7 +137,7 @@ type
     function Painter: TFmrRibbonPainter;
     function Theme: TFmrTheme;
     function FontSize: Single;
-    { view buttons: Office 2024 has wider buttons over the full height, without gaps }
+    { view buttons: the Modern 2024 themes have wider buttons over the full height, without gaps }
     function ViewW: Single;
     function ViewGap: Single;
     function ViewInset: Single;
@@ -243,13 +243,13 @@ type
     { events }
     /// <summary>Zoom changed (slider, buttons or code).</summary>
     property OnZoomChange: TNotifyEvent read FOnZoomChange write FOnZoomChange;
-    /// <summary>Click on the percentage (Word opens its Zoom dialog).</summary>
+    /// <summary>Click on the percentage (for example to open a zoom dialog).</summary>
     property OnZoomClick: TNotifyEvent read FOnZoomClick write FOnZoomClick;
     /// <summary>ActiveView changed by a click on a view button or by code.</summary>
     property OnViewChange: TNotifyEvent read FOnViewChange write FOnViewChange;
   end;
 
-  /// <summary>Office-like status bar; see the unit description.</summary>
+  /// <summary>Status bar; see the unit description.</summary>
   TFmrStatusBar = class(TControl, IFmrThemeProvider, IFmrBarManagerListener)
   private
     FThemeLink: TFmrThemeLink;
@@ -477,7 +477,7 @@ end;
 
 function TFmrStatusBarPanel.ViewW: Single;
 begin
-  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  if Theme.Style.Family = TFmrThemeFamily.Modern2024 then
     Result := 40
   else
     Result := ViewButtonWidth;
@@ -485,7 +485,7 @@ end;
 
 function TFmrStatusBarPanel.ViewGap: Single;
 begin
-  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  if Theme.Style.Family = TFmrThemeFamily.Modern2024 then
     Result := 0
   else
     Result := ViewButtonGap;
@@ -493,8 +493,8 @@ end;
 
 function TFmrStatusBarPanel.PadH: Single;
 begin
-  // Office 2024 leaves more room between the texts of the status bar
-  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  // Modern 2024 leaves more room between the texts of the status bar
+  if Theme.Style.Family = TFmrThemeFamily.Modern2024 then
     Result := 11
   else
     Result := PanelPaddingH;
@@ -502,7 +502,7 @@ end;
 
 function TFmrStatusBarPanel.ViewInset: Single;
 begin
-  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  if Theme.Style.Family = TFmrThemeFamily.Modern2024 then
     Result := 0
   else
     Result := 1;
@@ -517,7 +517,7 @@ function TFmrStatusBarPanel.EffectiveBevel: TFmrStatusPanelBevel;
 begin
   Result := FBevel;
   if Result = TFmrStatusPanelBevel.Auto then
-    if Theme.Style.Family in [TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010] then
+    if Theme.Style.Family in [TFmrThemeFamily.Glass, TFmrThemeFamily.Classic] then
       Result := TFmrStatusPanelBevel.Separator
     else
       Result := TFmrStatusPanelBevel.None;
@@ -1219,9 +1219,9 @@ begin
   Hot := Theme.Fills[TFmrToken.StatusBarItemHotFill];
   Rad := Min(Theme.Metrics.ButtonRadius, 3);
   C := Hot.MainColor;
-  if Theme.Style.Family = TFmrThemeFamily.Office2024 then
+  if Theme.Style.Family = TFmrThemeFamily.Modern2024 then
   begin
-    // Office 2024: the active view is a plain square of the hot color, no frame
+    // Modern 2024: the active view is a plain square of the hot color, no frame
     if APressed or (AChecked and AHot) then
       Painter.Fill(Canvas, R, TFmrFill.Solid(FmrBlend(C, TextColor, 0.08)), 0, [], AbsoluteOpacity)
     else if AChecked or AHot then

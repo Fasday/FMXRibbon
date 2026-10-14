@@ -69,7 +69,7 @@ type
   /// <summary>Classic (three rows, group captions) or simplified (single line) ribbon.</summary>
   TFmrRibbonDisplayMode = (Classic, Simplified);
 
-  /// <summary>Office "Ribbon display options".</summary>
+  /// <summary>"Ribbon display options" of the caption row.</summary>
   TFmrRibbonShowMode = (
     /// <summary>Tabs and the commands of the active tab are always shown.</summary>
     TabsAndCommands,

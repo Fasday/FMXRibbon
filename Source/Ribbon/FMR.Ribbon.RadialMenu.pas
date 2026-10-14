@@ -9,7 +9,7 @@
 
 unit FMR.Ribbon.RadialMenu;
 
-/// TFmrRibbonRadialMenu: the OneNote style radial (pie) menu. ItemLinks fill up to 8 sectors clockwise from the top;
+/// TFmrRibbonRadialMenu: a radial (pie) menu for touch. ItemLinks fill up to 8 sectors clockwise from the top;
 /// links whose items have sub items (TFmrSubItem.ItemLinks, TFmrButtonItem.DropDownLinks) show an arrow in the outer
 /// ring and open a nested ring; the center button closes the menu (top level) or goes back one ring. The popup is a
 /// round transparent window painted with the Radial* tokens (RadialFill, RadialBorder, RadialSectorHotFill,
@@ -706,10 +706,10 @@ end;
 
 procedure TFmrRibbonRadialMenu.SetThemeName(const Value: string);
 begin
-  if FThemeName <> Value then
+  if FThemeName <> TFmrTheme.ResolveThemeName(Value) then
   begin
     ClosePopup;
-    FThemeName := Value;
+    FThemeName := TFmrTheme.ResolveThemeName(Value);
     FreeAndNil(FPainter);
     FreeAndNil(FTheme);
   end;

@@ -13,7 +13,7 @@ unit FMR.Ribbon.Layout;
 /// (dp) and passes records; the calculator returns the level of every link, its rectangle in its group and the
 /// groups that collapse into a drop-down button.
 ///
-/// Arrangement of a group (Office rules): links flow left to right in columns. A Large link (and an in-ribbon
+/// Arrangement of a group: links flow left to right in columns. A Large link (and an in-ribbon
 /// gallery) takes a full-height column; small links (SmallWithText, Small) stack in columns of up to RowCount rows.
 /// A link with ButtonGroup = Member continues the row of the previous link (button groups, editors side by side);
 /// on such a link BeginGroup starts a new segment of the row instead of a new column. BeginGroup on other links and
@@ -63,7 +63,7 @@ type
     /// top-aligned.</summary>
     DistributeRows: Boolean;
     /// <summary>Largest gap between the rows of such a column; with a larger gap the rows are top-aligned with
-    /// this gap (Office 2024: two rows below each other at the top). 0 = no limit.</summary>
+    /// this gap (Modern 2024: two rows below each other at the top). 0 = no limit.</summary>
     MaxRowGap: Single;
     { simplified (single line) layout }
     SimplifiedHeight: Single;
@@ -71,7 +71,7 @@ type
     /// <summary>Width of a separator between groups in the simplified layout.</summary>
     SimplifiedSeparatorWidth: Single;
     OverflowButtonWidth: Single;
-    /// <summary>Office 365 like defaults: 3 rows of 22 dp.</summary>
+    /// <summary>Defaults of the Modern themes: 3 rows of 22 dp.</summary>
     class function Default: TFmrLayoutMetrics; static;
   end;
 

@@ -180,7 +180,7 @@ var
   Replace: Boolean;
   First: TComponent;
 begin
-  T := TFmrRibbonTemplate.Word;
+  T := TFmrRibbonTemplate.Document;
   Replace := False;
   Result := FmrChooseTemplate(T, Replace, TFmrRibbonStructure.TabCount(ARibbon) > 0);
   if Result then

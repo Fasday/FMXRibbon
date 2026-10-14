@@ -5,7 +5,7 @@ unit RealRibbonTest;
 /// The IDE creates a designed form, puts it into the design state (TComponent.SetDesigning) and then creates or
 /// streams its components with the form as owner, so every constructor already sees csDesigning. This test does the
 /// same with an FMX form inside this VCL program (as in the IDE, where the FMX designer runs inside the VCL IDE):
-/// a bar manager and a ribbon built by the Word template, optionally a TFmrFormFrame (the caption row and the tab row
+/// a bar manager and a ribbon built by the Document template, optionally a TFmrFormFrame (the caption row and the tab row
 /// then live in the frame host). The design controller of the package (FMR.Ribbon.Design.Interactive) is installed
 /// with a fake designer bridge whose root is that form.
 ///
@@ -382,7 +382,7 @@ begin
   FRibbon.Parent := FForm;
   FRibbon.BarManager := FManager;
   FRibbon.OnTabChanged := TabChanged;
-  FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Word);
+  FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Document);
   FRibbon.UpdateLayout;
   FmrInstallDesignHooks;
   FmrDesignBridgeFor :=
@@ -452,7 +452,7 @@ begin
       (FForm.Components[I].ClassName.StartsWith('TFmrRibbonCombo')) then
       Internal := True;
   Check(not Internal, 'no internal control is owned by the form (not selectable, not streamed)');
-  Check((Home <> nil) and (Clipboard <> nil) and (Cut <> nil), 'Word template built');
+  Check((Home <> nil) and (Clipboard <> nil) and (Cut <> nil), 'Document template built');
   Check(FRibbon.ActiveTab = Home, 'Home is the active tab');
 
   { hit test }

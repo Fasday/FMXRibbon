@@ -9,7 +9,7 @@
 
 unit FMR.Ribbon;
 
-/// TFmrRibbon: an Office-style ribbon for FMX. The ribbon is made of four lightweight parts (TControl descendants
+/// TFmrRibbon: a ribbon control for FMX. The ribbon is made of four lightweight parts (TControl descendants
 /// that paint lightweight elements, no control per button):
 ///   - the caption bar (quick access toolbar, title, contextual tab group headers, search box, caption buttons);
 ///   - the tab bar (application button, tabs, collapse and help buttons);
@@ -50,7 +50,7 @@ type
     procedure CloseApplicationMenu;
   end;
 
-  /// <summary>The application button ("File" tab, Office 2007 orb).</summary>
+  /// <summary>The application button ("File" tab, or the orb of the Glass themes).</summary>
   TFmrRibbonApplicationButton = class(TPersistent)
   private
     [Weak] FRibbon: TFmrRibbon;
@@ -366,7 +366,7 @@ type
 
   TFmrKeyTipLevel = (None, Top, Tab, GroupPopup);
 
-  /// <summary>Microsoft Office style ribbon.</summary>
+  /// <summary>Ribbon control: caption row, tabs, groups, quick access toolbar; see the unit description.</summary>
   TFmrRibbon = class(TControl, IFmrRibbonStructureOwner, IFmrBarManagerListener, IFmrKeyHandler, IFmrThemeSource,
     IFmrThemeProvider, IFmrRibbonDesignSupport)
   private type
@@ -550,8 +550,8 @@ type
     procedure ApplicationIconChanged(Sender: TObject);
     procedure SetShowInactiveState(const Value: Boolean);
     { focus effect }
-    /// <summary>The window is active, or a popup of the ribbon has the keyboard (Office keeps the caption active
-    /// while its menus are open).</summary>
+    /// <summary>The window is active, or a popup of the ribbon has the keyboard (the caption
+    /// stays active while its menus are open).</summary>
     function WantActive: Boolean;
     /// <summary>Starts the transition to the active or inactive look when it changed.</summary>
     procedure UpdateActiveState;
@@ -613,7 +613,7 @@ type
       const AKind: TFmrSysButtonKind): TFmrSysButtonElement;
     function ContextColor(const AGroup: TFmrRibbonContextGroup): TAlphaColor;
     function IsOrb: Boolean;
-    /// <summary>Rectangle of the Office 2007 orb in the coordinates of a bar whose top is AOffsetY below the top
+    /// <summary>Rectangle of the orb (Glass themes) in the coordinates of a bar whose top is AOffsetY below the top
     /// of the caption row.</summary>
     function OrbRect(const AOffsetY: Single): TRectF;
     function TabBarOffset: Single;
@@ -674,7 +674,7 @@ type
     procedure AddDisplayModeButton(const ABounds: TRectF);
     procedure QueueCustomizationForm(const APage: TFmrCustomizationPage);
     /// <summary>Key tips of the tabs below the tab row while the body is hidden (minimized ribbon): painted by an
-    /// overlay on the form, like Office.</summary>
+    /// overlay on the form.</summary>
     procedure UpdateTabTipOverlay;
     { design time }
     function TabShown(const T: TFmrRibbonTab): Boolean;
@@ -832,8 +832,7 @@ type
     /// <summary>The caption row fades to its inactive look (and back) in about 170 ms when the window loses (gets)
     /// the focus; False switches at once.</summary>
     property AnimateActivation: Boolean read FAnimateActivation write FAnimateActivation default True;
-    /// <summary>Icon at the left end of the caption row (a click shows the window menu), like the application icon
-    /// of Office.</summary>
+    /// <summary>Icon at the left end of the caption row (a click shows the window menu).</summary>
     property ApplicationIcon: TFmrImageSource read FApplicationIcon write SetApplicationIcon;
     /// <summary>Links at the right end of the caption row, left of the window buttons (account picture...).
     /// </summary>
@@ -865,11 +864,11 @@ type
     property RightToLeft: Boolean read FRightToLeft write SetRightToLeft default False;
     property ShowCaption: Boolean read FShowCaption write SetShowCaption default True;
     property ShowCollapseButton: Boolean read FShowCollapseButton write SetShowCollapseButton default True;
-    /// <summary>Office 2016 "Ribbon Display Options" button in the caption row (Auto-hide Ribbon, Show Tabs, Show
+    /// <summary>"Ribbon Display Options" button in the caption row (Auto-hide Ribbon, Show Tabs, Show
     /// Tabs and Commands).</summary>
     property ShowDisplayOptionsButton: Boolean read FShowDisplayOptionsButton write SetShowDisplayOptionsButton
       default False;
-    /// <summary>Office 365 chevron at the right end of the body that switches between the classic and the
+    /// <summary>Chevron at the right end of the body that switches between the classic and the
     /// simplified ribbon.</summary>
     property ShowDisplayModeButton: Boolean read FShowDisplayModeButton write SetShowDisplayModeButton default False;
     property ShowHelpButton: Boolean read FShowHelpButton write SetShowHelpButton default False;
@@ -1035,7 +1034,7 @@ begin
       P.DrawScrollButton(ACanvas, R, TFmrArrowDirection.Right, S);
     TFmrSysButtonKind.DisplayOptions, TFmrSysButtonKind.AutoHideShow:
       begin
-        // Caption-style buttons next to the window buttons (Office 2016).
+        // Caption-style buttons next to the window buttons (in the style of Office 2016).
         if FRibbon.FDroppedElement = Self then
           S := TFmrPartState.Pressed;
         P.DrawCaptionStyleButton(ACanvas, R, S);
@@ -1057,7 +1056,7 @@ begin
         TFmrSysButtonKind.CollapseRibbon:
           if P.Theme.Style.CollapseInBody then
           begin
-            // Office 2024: a chevron in the corner of the card; a pin in the body of a collapsed ribbon.
+            // Modern 2024: a chevron in the corner of the card; a pin in the body of a collapsed ribbon.
             if FRibbon.IsCollapsed then
               P.DrawPinGlyph(ACanvas, R, True, Col)
             else
@@ -1580,7 +1579,7 @@ begin
     if (K.Element = nil) or (K.Element.Host = nil) or not K.Element.Visible or
       not FRibbon.FKeyTipMatcher.IsCandidate(I) then
       Continue;
-    // Like Office, the tips of the tabs hang below the tab row (top of the body) and the tips of the quick access
+    // The tips of the tabs hang below the tab row (top of the body) and the tips of the quick access
     // toolbar below the caption row (top of the tab row).
     HostCtl := K.Element.Host.GetHostControl;
     Disp := HostCtl;
@@ -1651,7 +1650,7 @@ end;
 
 type
   /// Key tips of the tabs while the body is hidden (minimized ribbon): a control on the form right below the tab
-  /// row, so the badges do not cover the tab captions (Office shows them there too).
+  /// row, so the badges do not cover the tab captions.
   TFmrTabTipOverlay = class(TControl)
   private
     [Weak] FRibbon: TFmrRibbon;
@@ -1843,7 +1842,7 @@ procedure TFmrRibbonPart.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var
 begin
   // FMX offers the wheel to the popup forms only when the mouse is over them; otherwise (the mouse still over the
   // combo box that opened its list, or a list already scrolled to its end) the main form gets it and the ribbon
-  // would switch tabs under an open drop-down. Like Office, the wheel scrolls the open list instead.
+  // would switch tabs under an open drop-down. The wheel scrolls the open list instead.
   if not (csDesigning in ComponentState) and RouteWheelToOpenPopup(Shift, WheelDelta) then
   begin
     Handled := True;
@@ -2143,7 +2142,7 @@ begin
     Exit;
   // Double click on the empty caption maximizes (the frame does it in the non-client modes).
   inherited;
-  // Auto-hide without a frame: a click at the top of the window shows the ribbon (Office).
+  // Auto-hide without a frame: a click at the top of the window shows the ribbon.
   if (Button = TMouseButton.mbLeft) and (FRibbon <> nil) and FRibbon.AutoHideActive and not FRibbon.FBarsInHost and
     (FRibbon.FAutoHidePopup = nil) and not FmrPopups.IsOpen and (FindElement(Logical(X, Y)) = nil) and
     (TThread.GetTickCount - FRibbon.FAutoHideClosedTick > 300) and not (csDesigning in ComponentState) then
@@ -2163,24 +2162,24 @@ begin
   P := GetPainter;
   R := LocalRect;
   // The caption theme has the activation level applied: the active look is painted with the blended tokens.
-  // Only themes made for a backdrop (Office 2024, Fluent) let Mica show through; the others keep their opaque
-  // caption (Office 365 Colorful paints it with the accent) also over a Mica window.
+  // Only themes made for a backdrop (Modern 2024, Soft) let Mica show through; the others keep their opaque
+  // caption (ModernColorful paints it with the accent) also over a Mica window.
   if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost or not P.Theme.Style.TransparentCaption then
     P.DrawCaption(ACanvas, R, True)
   else
-    // Over a Mica/Acrylic backdrop: nothing, or the translucent caption of the theme (Office 2024 Dark Gray)
+    // Over a Mica/Acrylic backdrop: nothing, or the translucent caption of the theme (Modern2024DarkGray)
     P.Fill(ACanvas, R, TFmrToken.CaptionBackdropFill);
   for Pair in FRibbon.FContextHeaders do
     P.DrawContextGroupHeader(ACanvas, Pair.Value, FmrStripAccel(Pair.Key.DisplayCaption),
       FRibbon.ContextColor(Pair.Key));
   if not FRibbon.FIconRect.IsEmpty then
-    // Office keeps the icon in its colors when the window is inactive; a glyph or path icon follows the title.
+    // The icon keeps its colors when the window is inactive; a glyph or path icon follows the title.
     FRibbon.FApplicationIcon.Draw(ACanvas, FRibbon.FIconRect, 1, P.Theme.Colors[TFmrToken.CaptionText],
       FRibbon.GetThemeImages);
   if FRibbon.FShowSearchBox and not FSearchRect.IsEmpty then
   begin
     P.DrawSearchBox(ACanvas, FSearchRect, (FSearchEdit <> nil) and FSearchEdit.IsFocused);
-    if P.Theme.Style.Family = TFmrThemeFamily.Office2024 then
+    if P.Theme.Style.Family = TFmrThemeFamily.Modern2024 then
       G := RectF(FSearchRect.Left + 10, FSearchRect.Top, FSearchRect.Left + 32, FSearchRect.Bottom)
     else
       G := RectF(FSearchRect.Left + 4, FSearchRect.Top, FSearchRect.Left + 24, FSearchRect.Bottom);
@@ -2270,8 +2269,8 @@ var
   Clip: TRectF;
 begin
   P := GetPainter;
-  // Only themes made for a backdrop (Office 2024, Fluent) let Mica show through; the others keep their opaque
-  // caption (Office 365 Colorful paints it with the accent) also over a Mica window.
+  // Only themes made for a backdrop (Modern 2024, Soft) let Mica show through; the others keep their opaque
+  // caption (ModernColorful paints it with the accent) also over a Mica window.
   if not FRibbon.FFrameState.Transparent or not FRibbon.FBarsInHost or not P.Theme.Style.TransparentCaption then
     P.DrawTabRow(ACanvas, LocalRect, True)
   else
@@ -2705,7 +2704,7 @@ begin
   F := FmrFormOf(Self);
   if (Key = vkReturn) and (F <> nil) and (F.Focused <> nil) then
   begin
-    // Enter commits the editor and closes the group, like Office.
+    // Enter commits the editor and closes the group.
     F.KeyDown(Key, KeyChar, Shift);
     FmrPopups.CloseAll;
     Exit(True);
@@ -2726,7 +2725,7 @@ procedure TFmrRibbon.TRibbonPopupContext.ItemExecuting(const AItem: TFmrBarItem)
 begin
   if (FRibbon <> nil) and FRibbon.KeyTipsVisible then
     FRibbon.HideKeyTips;
-  // A command run from the search results clears the search box, like Office.
+  // A command run from the search results clears the search box.
   if FSearchResults and (FRibbon <> nil) then
     FRibbon.SearchText := '';
 end;
@@ -2984,8 +2983,8 @@ begin
 end;
 
 /// The caption and tab rows need their own button colors when they are painted with the accent (Colorful themes)
-/// or when the body glyph color does not read on the caption (dark caption of a light theme: Office 2007/2010
-/// Black, Office 2016 Dark Gray, or a StyleBook override).
+/// or when the body glyph color does not read on the caption (dark caption of a light theme: GlassBlack,
+/// ClassicBlack, BannerDarkGray, or a StyleBook override).
 function FmrCaptionNeedsBarColors(const T: TFmrTheme): Boolean;
 var
   Bg: TAlphaColor;
@@ -3090,8 +3089,8 @@ begin
     FFrame.CaptionColor := C;
   if FFrame.CaptionInactiveColor <> CI then
     FFrame.CaptionInactiveColor := CI;
-  // Office 2024 Dark Gray: a light body under a dark caption takes the dark window border.
-  Dark := FTheme.Style.Dark or ((FTheme.Style.Family = TFmrThemeFamily.Office2024) and (FmrLuminance(C) < 0.2));
+  // Modern2024DarkGray: a light body under a dark caption takes the dark window border.
+  Dark := FTheme.Style.Dark or ((FTheme.Style.Family = TFmrThemeFamily.Modern2024) and (FmrLuminance(C) < 0.2));
   if FFrame.DarkMode <> Dark then
     FFrame.DarkMode := Dark;
 end;
@@ -3602,10 +3601,14 @@ begin
 end;
 
 procedure TFmrRibbon.SetThemeName(const Value: string);
+var
+  S: string;
 begin
-  if FThemeName <> Value then
+  // An old theme name (alias) is stored as the name it stands for, so a saved form gets the new name.
+  S := TFmrTheme.ResolveThemeName(Value);
+  if FThemeName <> S then
   begin
-    FThemeName := Value;
+    FThemeName := S;
     ClosePopups;
     BuildTheme;
     InvalidateStructure;
@@ -4354,7 +4357,7 @@ begin
     NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.TabScrollRight).Visible := False;
     if FShowHelpButton then
       NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.Help);
-    // Office 2024 has the collapse chevron in the body (ArrangeBody adds it).
+    // The Modern 2024 themes have the collapse chevron in the body (ArrangeBody adds it).
     if FShowCollapseButton and not FTheme.Style.CollapseInBody then
       NewSysButton(FTabSysElements, FTabBar, TFmrSysButtonKind.CollapseRibbon);
     ValidateViews;
@@ -4369,7 +4372,7 @@ begin
     end;
     NewSysButton(FCaptionSysElements, FCaptionBar, TFmrSysButtonKind.QATOverflow).Visible := False;
     NewSysButton(FQATBarSysElements, FQATBar, TFmrSysButtonKind.QATOverflow).Visible := False;
-    // Caption-style buttons: "..." of the auto-hidden ribbon and the display options (Office 2016).
+    // Caption-style buttons: "..." of the auto-hidden ribbon and the display options (in the style of Office 2016).
     if AutoHideActive then
       NewSysButton(FCaptionSysElements, FCaptionBar, TFmrSysButtonKind.AutoHideShow);
     if FShowDisplayOptionsButton and not (csDesigning in ComponentState) then
@@ -4397,8 +4400,8 @@ begin
     begin
       FCaptionBar.FSearchEdit.TextSettings.FontColor := FCaptionTheme.Colors[TFmrToken.SearchBoxText];
       FCaptionBar.FSearchEdit.TextSettings.Font.Size := FTheme.Metrics.EffectiveTabFontSize;
-      // Office 2024: "Search" (the long "Tell me what you want to do" of older versions otherwise)
-      if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+      // Modern 2024: "Search"; the other themes: the longer "Search commands"
+      if FTheme.Style.Family = TFmrThemeFamily.Modern2024 then
         FCaptionBar.FSearchEdit.TextPrompt := FmrStr(TFmrStringId.SearchPrompt)
       else
         FCaptionBar.FSearchEdit.TextPrompt := FmrStr(TFmrStringId.SearchPromptLong);
@@ -4540,7 +4543,7 @@ begin
   else
     Result := RectF(C.Left + PadH, C.Top + M.BodyPaddingV, C.Right - PadH,
       C.Top + M.BodyPaddingV + M.GroupPaddingTop + M.ContentHeight + M.GroupCaptionHeight);
-  // Room for the classic/simplified switch and the Office 2024 collapse chevron at the right end of the body.
+  // Room for the classic/simplified switch and the collapse chevron of the Modern 2024 themes at the right end of the body.
   if FShowDisplayModeButton then
     Result.Right := Result.Right - 26;
   if FShowCollapseButton and FTheme.Style.CollapseInBody then
@@ -4639,7 +4642,7 @@ begin
     Form := OwnerForm;
     Result := (Form = nil) or Form.Active;
   end;
-  // Office keeps the caption active while its own menus are open: a popup that takes the keyboard (an editor of a
+  // The caption stays active while the ribbon's own menus are open: a popup that takes the keyboard (an editor of a
   // group popup) deactivates the window for a moment, and FMX closes the popups when another window is activated.
   if not Result and FmrPopupsAssigned and FmrPopups.IsOpen then
     Result := True;
@@ -4770,7 +4773,7 @@ begin
   Mix(FCaptionTheme, TFmrToken.CaptionText, TFmrToken.CaptionTextInactive, TFmrToken.CaptionText);
   FCaptionTheme.Fills[TFmrToken.CaptionTextInactive] := FCaptionTheme.Fills[TFmrToken.CaptionText];
   Glyph := B.Colors[TFmrToken.CaptionButtonGlyph];
-  if B.Style.Family = TFmrThemeFamily.Office2024 then
+  if B.Style.Family = TFmrThemeFamily.Modern2024 then
     MixColor(FCaptionTheme, TFmrToken.CaptionButtonGlyph, Dim)
   else
     MixColor(FCaptionTheme, TFmrToken.CaptionButtonGlyph, FmrWithAlpha(Glyph, 0.45 * TAlphaColorRec(Glyph).A / 255));
@@ -4835,12 +4838,12 @@ begin
     else
     begin
       B := Max(54, FPainter.TextWidth(FAppButton.DisplayCaption, M.EffectiveTabFontSize) + 2 * M.TabPaddingH + 6);
-      if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
-        // "File" is a plain tab (Word: its caption 16 dp from the edge, the next tab 23 dp after it)
+      if FTheme.Style.Family = TFmrThemeFamily.Modern2024 then
+        // "File" is a plain tab with a little more room after it
         B := Ceil(FPainter.TextWidth(FAppButton.DisplayCaption, M.EffectiveTabFontSize) + 25);
       FAppElement.Bounds := RectF(2, 1, 2 + B, H);
       X := 2 + B + M.TabSpacing;
-      if FTheme.Style.Family <> TFmrThemeFamily.Office2024 then
+      if FTheme.Style.Family <> TFmrThemeFamily.Modern2024 then
         X := X + 2;
     end;
   end;
@@ -5017,7 +5020,7 @@ begin
   X := 6;
   if IsOrb then
     X := OrbRect(0).Right + 6;
-  // Application icon at the left end (Office: 16 dp from the edge, the window menu on a click).
+  // Application icon at the left end (16 dp from the edge, the window menu on a click).
   FIconRect := TRectF.Empty;
   if not IsOrb and not FApplicationIcon.IsEmpty(GetThemeImages) then
   begin
@@ -5136,8 +5139,8 @@ begin
       SW := Max(60, RightX - 8 - SX);
     Y := Round(Top + (M.CaptionHeight - SH) / 2);
     FCaptionBar.FSearchRect := RectF(SX, Y, SX + SW, Y + SH);
-    // The glyph takes the left of the box (wider in Office 2024), the edit the rest.
-    if FTheme.Style.Family = TFmrThemeFamily.Office2024 then
+    // The glyph takes the left of the box (wider in the Modern 2024 themes), the edit the rest.
+    if FTheme.Style.Family = TFmrThemeFamily.Modern2024 then
       GlyphW := 38
     else
       GlyphW := 24;
@@ -5164,7 +5167,7 @@ begin
     TW := FPainter.TextWidth(Title, M.CaptionFontSize) + 16;
     if FTheme.Style.LeadingTitle and (FContextHeaders = nil) then
     begin
-      // Office 2024: the title follows the quick access toolbar.
+      // Modern 2024: the title follows the quick access toolbar.
       if RightX - 4 - (X + 20) > 30 then
         FCaptionBar.FTitleRect := RectF(X + 20, Top, Min(X + 20 + TW, RightX - 4), CH);
       Exit;
@@ -5249,7 +5252,7 @@ begin
     AddDisplayModeButton(GroupAreaRect);
   if FShowCollapseButton and FTheme.Style.CollapseInBody then
   begin
-    // Office 2024: the collapse chevron in the bottom right corner of the card.
+    // Modern 2024: the collapse chevron in the bottom right corner of the card.
     Card := BodyCardRect;
     Collapse := TFmrSysButtonElement.Create(FBody);
     Collapse.FRibbon := Self;

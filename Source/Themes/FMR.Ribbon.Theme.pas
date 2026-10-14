@@ -67,7 +67,7 @@ type
     SearchBoxFill, SearchBoxHotFill, SearchBoxFillInactive, SearchBoxBorder, SearchBoxText, SearchBoxPrompt,
     { mini toolbar and radial menu }
     MiniToolbarFill, MiniToolbarBorder, RadialFill, RadialBorder, RadialSectorHotFill, RadialText,
-    { accent filled "primary" buttons (Office "Share"), toggle switches }
+    { accent filled "primary" buttons (a "Share" button), toggle switches }
     PrimaryButtonFill, PrimaryButtonHotFill, PrimaryButtonPressedFill, PrimaryButtonText, ToggleSwitchFill,
     ToggleSwitchBorder, ToggleSwitchThumb, ToggleSwitchThumbOn,
     { misc }
@@ -99,28 +99,31 @@ type
     function MainColor: TAlphaColor;
   end;
 
-  TFmrThemeFamily = (Office2007, Office2010, Office2013, Office2016, Office365, Fluent, Office2024);
+  /// <summary>Visual family of a theme: Glass (in the style of Office 2007), Classic (Office 2010), Flat
+  /// (Office 2013), Banner (Office 2016), Modern (Microsoft 365, 2019-2023), Soft (Windows 11), Modern2024
+  /// (Microsoft 365, 2024).</summary>
+  TFmrThemeFamily = (Glass, Classic, Flat, Banner, Modern, Soft, Modern2024);
 
   TFmrTabShape = (
-    /// <summary>Office 2007: rounded top corners, glass fill.</summary>
+    /// <summary>Glass: rounded top corners, glass fill.</summary>
     Rounded,
-    /// <summary>Office 2010/2013/2016: a box open at the bottom, joined to the body.</summary>
+    /// <summary>Classic, Flat, Banner: a box open at the bottom, joined to the body.</summary>
     Box,
-    /// <summary>Office 365 / Fluent: no box, the active tab has an accent line under its text.</summary>
+    /// <summary>Modern, Soft, Modern2024: no box, the active tab has an accent line under its text.</summary>
     Underline);
 
   TFmrAppButtonShape = (
-    /// <summary>Office 2007 round orb over the caption and the tab row.</summary>
+    /// <summary>Glass: a round orb over the caption and the tab row.</summary>
     Orb,
-    /// <summary>Office 2010: a colored "File" tab.</summary>
+    /// <summary>Classic, Flat: a colored "File" tab.</summary>
     ColoredTab,
-    /// <summary>Office 2013+: a "File" tab colored like the caption.</summary>
+    /// <summary>Banner and newer: a "File" tab colored like the caption.</summary>
     TextTab);
 
   TFmrGroupFrame = (
-    /// <summary>Office 2007/2010: every group is a framed box with its caption in a band at the bottom.</summary>
+    /// <summary>Glass, Classic: every group is a framed box with its caption in a band at the bottom.</summary>
     Boxed,
-    /// <summary>Office 2013+: groups are separated by vertical lines, the caption is plain text.</summary>
+    /// <summary>Flat and newer: groups are separated by vertical lines, the caption is plain text.</summary>
     Separated);
 
   /// <summary>Switches that select the drawing variant of a theme.</summary>
@@ -131,27 +134,29 @@ type
     GroupFrame: TFmrGroupFrame;
     /// <summary>Dark theme (text light, glyphs light).</summary>
     Dark: Boolean;
-    /// <summary>The caption and the tab row are painted with the accent color (Office 2016/365 Colorful).</summary>
+    /// <summary>The caption and the tab row are painted with the accent color (BannerColorful, ModernColorful).
+    /// </summary>
     ColoredCaption: Boolean;
-    /// <summary>The body is a floating card with rounded corners (Office 365, Fluent).</summary>
+    /// <summary>The body is a floating card with rounded corners (Modern, Soft, Modern2024).</summary>
     FloatingBody: Boolean;
-    /// <summary>The caption may be transparent over a Mica/Acrylic backdrop (Fluent in Dwm frame mode).</summary>
+    /// <summary>The caption may be transparent over a Mica/Acrylic backdrop (Soft and Modern2024 in Dwm frame mode).
+    /// </summary>
     TransparentCaption: Boolean;
-    /// <summary>Tab captions in capitals (Office 2013).</summary>
+    /// <summary>Tab captions in capitals (Flat).</summary>
     UppercaseTabs: Boolean;
-    /// <summary>Gradients with a glass highlight (Office 2007).</summary>
+    /// <summary>Gradients with a glass highlight (Glass).</summary>
     Glossy: Boolean;
-    /// <summary>Drop-down and scroll arrows are thin stroked chevrons instead of filled triangles (Office 2024).
+    /// <summary>Drop-down and scroll arrows are thin stroked chevrons instead of filled triangles (Modern2024).
     /// </summary>
     ChevronArrows: Boolean;
-    /// <summary>The caption of the active tab is bold; tabs are as wide as their bold caption (Office 2024).
+    /// <summary>The caption of the active tab is bold; tabs are as wide as their bold caption (Modern2024).
     /// </summary>
     BoldActiveTab: Boolean;
-    /// <summary>The window title follows the quick access toolbar instead of being centered (Office 2024).
+    /// <summary>The window title follows the quick access toolbar instead of being centered (Modern2024).
     /// </summary>
     LeadingTitle: Boolean;
     /// <summary>The collapse button is a chevron in the bottom right corner of the body instead of a button of the
-    /// tab row (Office 2024).</summary>
+    /// tab row (Modern2024).</summary>
     CollapseInBody: Boolean;
   end;
 
@@ -202,6 +207,8 @@ type
     /// of the tab row.</summary>
     TabIndicatorHeight: Single;
     TabIndicatorOffset: Single;
+    /// <summary>Corner radius of the accent line under the active tab; 0 = half its height (round ends).</summary>
+    TabIndicatorRadius: Single;
     /// <summary>Width of the window buttons (minimize, maximize, close) drawn by the ribbon.</summary>
     CaptionButtonWidth: Single;
     /// <summary>Largest width of the search box in the caption row; its height (0 = caption height - 8).</summary>
@@ -239,6 +246,8 @@ type
     class var FRegistry: TList<TPair<string, TFmrThemeBuilder>>;
     class var FDisplayNames: TDictionary<string, string>;
     class var FDefaultAccents: TDictionary<string, TAlphaColor>;
+    class var FAliases: TDictionary<string, string>;
+    class function FindRegistered(const AName: string; out AIndex: Integer): Boolean; static;
     function GetFill(const AToken: TFmrToken): TFmrFill; inline;
     procedure SetFill(const AToken: TFmrToken; const AValue: TFmrFill);
     function GetColor(const AToken: TFmrToken): TAlphaColor; inline;
@@ -271,12 +280,22 @@ type
     /// <summary>Registers a theme by name. ADefaultAccent is used when the ribbon does not set an accent.</summary>
     class procedure RegisterTheme(const AName, ADisplayName: string; const ADefaultAccent: TAlphaColor;
       const ABuilder: TFmrThemeBuilder);
+    /// <summary>Registers another (older) name of a theme: CreateTheme, ThemeExists, ThemeDisplayName,
+    /// DefaultAccent and ResolveThemeName accept AOldName (case-insensitive) and use ANewName. ThemeNames does not
+    /// list aliases.</summary>
+    class procedure RegisterThemeAlias(const AOldName, ANewName: string);
+    /// <summary>The registered name of a theme: an alias gives the name it stands for, a registered name its
+    /// registered spelling; other names are returned unchanged.</summary>
+    class function ResolveThemeName(const AName: string): string;
+    /// <summary>True when AName is an alias registered with RegisterThemeAlias.</summary>
+    class function IsThemeAlias(const AName: string): Boolean;
+    /// <summary>Registered theme names (without aliases), in registration order.</summary>
     class function ThemeNames: TArray<string>;
     class function ThemeDisplayName(const AName: string): string;
     class function ThemeExists(const AName: string): Boolean;
     class function DefaultAccent(const AName: string): TAlphaColor;
-    /// <summary>Builds a registered theme; AAccent = 0 takes the theme's default accent. Unknown names give the
-    /// default theme. The caller owns the result.</summary>
+    /// <summary>Builds a registered theme (aliases resolved); AAccent = 0 takes the theme's default accent. Unknown
+    /// names give the default theme. The caller owns the result.</summary>
     class function CreateTheme(const AName: string; const AAccent: TAlphaColor = 0): TFmrTheme;
     class function TokenStyleName(const AToken: TFmrToken): string;
     class function TokenFromStyleName(const AStyleName: string; out AToken: TFmrToken): Boolean;
@@ -300,19 +319,31 @@ type
   end;
 
 const
-  FmrDefaultThemeName = 'Office365White';
+  FmrDefaultThemeName = 'ModernWhite';
   FmrFontStyleName = 'fmr_font';
 
-  { well-known accent colors (Office applications) }
-  FmrAccentWord = TAlphaColor($FF2B579A);
-  FmrAccentExcel = TAlphaColor($FF107C41);
-  FmrAccentPowerPoint = TAlphaColor($FFC43E1C);
-  FmrAccentOutlook = TAlphaColor($FF0072C6);
-  FmrAccentOneNote = TAlphaColor($FF80397B);
-  FmrAccentAccess = TAlphaColor($FFA4373A);
-  FmrAccentFluent = TAlphaColor($FF0067C0);
-  /// <summary>Word blue of the Microsoft 365 / Office 2024 look (default accent of the Office 2024 themes).</summary>
-  FmrAccentWord2024 = TAlphaColor($FF185ABD);
+  { accent colors }
+  /// <summary>Default accent of most built-in themes.</summary>
+  FmrAccentBlue = TAlphaColor($FF2B579A);
+  FmrAccentGreen = TAlphaColor($FF107C41);
+  FmrAccentOrange = TAlphaColor($FFC43E1C);
+  FmrAccentAzure = TAlphaColor($FF0072C6);
+  FmrAccentPurple = TAlphaColor($FF80397B);
+  FmrAccentCrimson = TAlphaColor($FFA4373A);
+  /// <summary>Default accent of the Soft themes.</summary>
+  FmrAccentSky = TAlphaColor($FF0067C0);
+  /// <summary>Default accent of the Modern2024 themes.</summary>
+  FmrAccentCobalt = TAlphaColor($FF185ABD);
+
+  { old names of the accent colors }
+  FmrAccentWord = FmrAccentBlue deprecated 'Use FmrAccentBlue';
+  FmrAccentWord2024 = FmrAccentCobalt deprecated 'Use FmrAccentCobalt';
+  FmrAccentExcel = FmrAccentGreen deprecated 'Use FmrAccentGreen';
+  FmrAccentPowerPoint = FmrAccentOrange deprecated 'Use FmrAccentOrange';
+  FmrAccentOutlook = FmrAccentAzure deprecated 'Use FmrAccentAzure';
+  FmrAccentOneNote = FmrAccentPurple deprecated 'Use FmrAccentPurple';
+  FmrAccentAccess = FmrAccentCrimson deprecated 'Use FmrAccentCrimson';
+  FmrAccentFluent = FmrAccentSky deprecated 'Use FmrAccentSky';
 
 { color helpers }
 
@@ -325,9 +356,9 @@ function FmrWithAlpha(const AColor: TAlphaColor; const AAlpha: Single): TAlphaCo
 function FmrLuminance(const AColor: TAlphaColor): Single;
 /// <summary>Black or white, whichever reads better on ABackground.</summary>
 function FmrContrastText(const ABackground: TAlphaColor): TAlphaColor;
-/// <summary>A lighter shade of a brand color for dark backgrounds, like the color ramps of Microsoft 365: ALevel 1
-/// (Word #185ABD -> #598FEC), 2 (-> #82ABF1), 3 (-> #AEC6F0). Fixed OKLCH lightness per level, the hue of the
-/// accent, its chroma limited per level.</summary>
+/// <summary>A lighter shade of a brand color for dark backgrounds (a color ramp): ALevel 1 (FmrAccentCobalt #185ABD
+/// -> #598FEC), 2 (-> #82ABF1), 3 (-> #AEC6F0). Fixed OKLCH lightness per level, the hue of the accent, its chroma
+/// limited per level.</summary>
 function FmrAccentShade(const AAccent: TAlphaColor; const ALevel: Integer): TAlphaColor;
 
 implementation
@@ -398,7 +429,7 @@ end;
 
 function FmrAccentShade(const AAccent: TAlphaColor; const ALevel: Integer): TAlphaColor;
 const
-  // OKLCH lightness and largest chroma of each level (fitted to the Word and Excel ramps)
+  // OKLCH lightness and largest chroma of each level
   LevelL: array [1..3] of Single = (0.656, 0.740, 0.828);
   LevelC: array [1..3] of Single = (0.150, 0.112, 0.068);
 
@@ -585,6 +616,7 @@ begin
   FRegistry := TList<TPair<string, TFmrThemeBuilder>>.Create;
   FDisplayNames := TDictionary<string, string>.Create;
   FDefaultAccents := TDictionary<string, TAlphaColor>.Create;
+  FAliases := TDictionary<string, string>.Create;
 end;
 
 class destructor TFmrTheme.Destroy;
@@ -592,6 +624,7 @@ begin
   FRegistry.Free;
   FDisplayNames.Free;
   FDefaultAccents.Free;
+  FAliases.Free;
 end;
 
 constructor TFmrTheme.Create(const AName: string);
@@ -599,7 +632,7 @@ begin
   inherited Create;
   FName := AName;
   FDisplayName := AName;
-  FAccent := FmrAccentWord;
+  FAccent := FmrAccentBlue;
 end;
 
 procedure TFmrTheme.Assign(const ASource: TFmrTheme);
@@ -795,6 +828,49 @@ begin
   FDefaultAccents.AddOrSetValue(AName.ToLower, ADefaultAccent);
 end;
 
+class function TFmrTheme.FindRegistered(const AName: string; out AIndex: Integer): Boolean;
+var
+  I: Integer;
+begin
+  for I := 0 to FRegistry.Count - 1 do
+    if SameText(FRegistry[I].Key, AName) then
+    begin
+      AIndex := I;
+      Exit(True);
+    end;
+  AIndex := -1;
+  Result := False;
+end;
+
+class procedure TFmrTheme.RegisterThemeAlias(const AOldName, ANewName: string);
+begin
+  if (AOldName.Trim = '') or SameText(AOldName, ANewName) then
+    Exit;
+  FAliases.AddOrSetValue(AOldName.ToLower, ANewName);
+end;
+
+class function TFmrTheme.IsThemeAlias(const AName: string): Boolean;
+begin
+  Result := FAliases.ContainsKey(AName.ToLower);
+end;
+
+class function TFmrTheme.ResolveThemeName(const AName: string): string;
+var
+  I, Hops: Integer;
+  Target: string;
+begin
+  Result := AName;
+  // A registered name wins over an alias of the same spelling; an alias may name another alias.
+  Hops := 0;
+  while not FindRegistered(Result, I) and FAliases.TryGetValue(Result.ToLower, Target) and (Hops < 8) do
+  begin
+    Result := Target;
+    Inc(Hops);
+  end;
+  if FindRegistered(Result, I) then
+    Result := FRegistry[I].Key;
+end;
+
 class function TFmrTheme.ThemeNames: TArray<string>;
 var
   I: Integer;
@@ -806,37 +882,35 @@ end;
 
 class function TFmrTheme.ThemeDisplayName(const AName: string): string;
 begin
-  if not FDisplayNames.TryGetValue(AName.ToLower, Result) then
+  if not FDisplayNames.TryGetValue(ResolveThemeName(AName).ToLower, Result) then
     Result := AName;
 end;
 
 class function TFmrTheme.ThemeExists(const AName: string): Boolean;
 var
-  P: TPair<string, TFmrThemeBuilder>;
+  I: Integer;
 begin
-  for P in FRegistry do
-    if SameText(P.Key, AName) then
-      Exit(True);
-  Result := False;
+  Result := FindRegistered(ResolveThemeName(AName), I);
 end;
 
 class function TFmrTheme.DefaultAccent(const AName: string): TAlphaColor;
 begin
-  if not FDefaultAccents.TryGetValue(AName.ToLower, Result) then
-    Result := FmrAccentWord;
+  if not FDefaultAccents.TryGetValue(ResolveThemeName(AName).ToLower, Result) then
+    Result := FmrAccentBlue;
 end;
 
 class function TFmrTheme.CreateTheme(const AName: string; const AAccent: TAlphaColor): TFmrTheme;
 var
   P: TPair<string, TFmrThemeBuilder>;
   Builder: TFmrThemeBuilder;
-  Name: string;
+  Name, Resolved: string;
   Accent: TAlphaColor;
 begin
   Builder := nil;
   Name := AName;
+  Resolved := ResolveThemeName(AName);
   for P in FRegistry do
-    if SameText(P.Key, AName) then
+    if SameText(P.Key, Resolved) then
     begin
       Builder := P.Value;
       Name := P.Key;

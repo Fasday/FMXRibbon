@@ -10,7 +10,7 @@
 unit FMR.Ribbon.Extras.Layout;
 
 /// Layout arithmetic of the companion controls (TFmrStatusBar, TFmrRibbonBackstageView) without any FMX
-/// dependency, so it is tested by Tests\FMR.Tests.Extras: placement of status bar panels, the Word-like zoom slider
+/// dependency, so it is tested by Tests\FMR.Tests.Extras: placement of status bar panels, the zoom slider
 /// scale (100 % in the middle), zoom steps of the - / + buttons, keyboard navigation over selectable entries and
 /// scroll clamping.
 
@@ -56,7 +56,7 @@ type
 function FmrLayoutStatusPanels(const APanels: array of TFmrStatusPanelMeasure; const AStart, AEnd: Single;
   const ASpacing: Single = 0): TArray<TFmrStatusPanelSlot>;
 
-/// <summary>Position (0..1) of AZoom on a Word-like zoom slider. When AMin &lt; 100 &lt; AMax the middle of the
+/// <summary>Position (0..1) of AZoom on the zoom slider. When AMin &lt; 100 &lt; AMax the middle of the
 /// track is 100 %, the left half is linear from AMin to 100 and the right half from 100 to AMax; otherwise the whole
 /// track is linear from AMin to AMax.</summary>
 function FmrZoomToFraction(const AZoom, AMin, AMax: Integer): Single;

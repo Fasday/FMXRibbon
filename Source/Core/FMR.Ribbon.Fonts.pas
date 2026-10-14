@@ -16,7 +16,7 @@ unit FMR.Ribbon.Fonts;
 ///   name the Windows font and still look right on Linux (FmrUIFontFamily: the UI font of the themes);
 /// - FmrRegisterFont: a private font file or stream for the Skia canvas (FMX.Skia's TSkDefaultProviders; the canvas
 ///   of FMX on Linux, optional on Windows);
-/// - FmrEnsureIconFont: registers "FMR Fluent Icons" (Assets\Fonts\FmrFluentIcons.ttf, icons of Microsoft's Fluent UI
+/// - FmrEnsureIconFont: registers "FMR Icons" (Assets\Fonts\FmrIcons.ttf, icons of Microsoft's Fluent UI
 ///   System Icons, MIT), which TFmrImageSource uses instead of Segoe Fluent Icons where that font is missing.
 /// Everything runs on the main thread.
 
@@ -26,9 +26,9 @@ uses
   System.SysUtils, System.Classes;
 
 const
-  /// <summary>Family of Assets\Fonts\FmrFluentIcons.ttf.</summary>
-  FmrIconFontFamily = 'FMR Fluent Icons';
-  FmrIconFontFileName = 'FmrFluentIcons.ttf';
+  /// <summary>Family of Assets\Fonts\FmrIcons.ttf.</summary>
+  FmrIconFontFamily = 'FMR Icons';
+  FmrIconFontFileName = 'FmrIcons.ttf';
   /// <summary>Environment variable with the full path of the icon font file (overrides the search next to the
   /// program).</summary>
   FmrIconFontEnvVar = 'FMR_ICON_FONT';
@@ -84,7 +84,7 @@ function FmrPreloadFontFamily(const AFamily: string): Boolean;
 /// family the system does not have). Returns False when AFamily is not installed or Skia is not linked.</summary>
 function FmrAliasFontFamily(const AAlias, AFamily: string): Boolean;
 /// <summary>Makes FmrIconFontFamily available: True when it is installed or registered; otherwise registers the
-/// first file found: $FMR_ICON_FONT, then FmrFluentIcons.ttf in 'fonts' next to the program, next to the program,
+/// first file found: $FMR_ICON_FONT, then FmrIcons.ttf in 'fonts' next to the program, next to the program,
 /// in '../share/fmr-ribbon/fonts'. Searches once.</summary>
 function FmrEnsureIconFont: Boolean;
 /// <summary>Where FmrEnsureIconFont looks for the icon font file, in order.</summary>

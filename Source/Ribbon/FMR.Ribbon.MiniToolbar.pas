@@ -9,13 +9,13 @@
 
 unit FMR.Ribbon.MiniToolbar;
 
-/// TFmrRibbonMiniToolbar: the floating formatting toolbar of Office. ItemLinks are shown with the ribbon's own item
+/// TFmrRibbonMiniToolbar: a floating formatting toolbar. ItemLinks are shown with the ribbon's own item
 /// views in the Toolbar place (glyph buttons, split and drop-down buttons, color items, editors such as the font name
 /// and size combos); a TFmrSeparatorItem link starts a new row, BeginGroup leaves a gap.
 ///   - Popup(ScreenPoint): the toolbar appears above the point, semi-transparent; it fades in as the mouse comes near
-///     and fades out as it goes away, and closes beyond FadeDistance (like Office after selecting text).
+///     and fades out as it goes away, and closes beyond FadeDistance (as after selecting text).
 ///   - Popup(ScreenPoint, True) with PopupMenu assigned: the context menu opens at the point and the toolbar above it,
-///     fully opaque while the menu is open (Office right click). Choosing a command of the menu closes both; using the
+///     fully opaque while the menu is open (right click). Choosing a command of the menu closes both; using the
 ///     toolbar closes the menu and keeps the toolbar.
 /// The toolbar window is a popup outside the popup chain (menus of the ribbon do not close it); drop-downs of its
 /// buttons are its child popups.
@@ -82,7 +82,7 @@ type
     property DropPopup: TFmrPopupForm read FDropPopup;
   end;
 
-  /// <summary>Office mini toolbar (floating formatting toolbar near the mouse).</summary>
+  /// <summary>Mini toolbar (floating formatting toolbar near the mouse).</summary>
   TFmrRibbonMiniToolbar = class(TFmxObject, IFmrItemLinksOwner, IFmrKeyHandler)
   private
     FItemLinks: TFmrItemLinks;
@@ -569,10 +569,10 @@ end;
 
 procedure TFmrRibbonMiniToolbar.SetThemeName(const Value: string);
 begin
-  if FThemeName <> Value then
+  if FThemeName <> TFmrTheme.ResolveThemeName(Value) then
   begin
     ClosePopup;
-    FThemeName := Value;
+    FThemeName := TFmrTheme.ResolveThemeName(Value);
     FreeAndNil(FPainter);
     FreeAndNil(FTheme);
   end;
@@ -833,7 +833,7 @@ begin
       end;
     vkReturn, vkTab:
       begin
-        // Enter commits the value (the editor's OnChange) and gives the keyboard back, like Office.
+        // Enter commits the value (the editor's OnChange) and gives the keyboard back.
         FWindow.KeyDown(Key, KeyChar, Shift);
         LeaveEditor;
         Result := True;

@@ -2,7 +2,7 @@
 
 This covers the user-facing additions to `TFmrRibbon`:
 
-- the Office-like **customization form** ("Customize the Ribbon" and "Quick Access Toolbar" pages),
+- the **customization form** ("Customize the Ribbon" and "Quick Access Toolbar" pages),
 - the **Ribbon Display Options** button and real **auto-hide**,
 - the classic/simplified **switch** and its overflow menu,
 - full **right-to-left** mirroring,
@@ -50,8 +50,8 @@ Small additions to existing units:
 | `ShowCustomizationForm(APage = Ribbon): Boolean` | Opens the dialog modally on the given page (`TFmrCustomizationPage.Ribbon` or `QuickAccessToolbar`). Returns True when the user pressed OK. |
 | `DefaultLayout: string` | Layout JSON of the ribbon as designed. "Reset" returns to it. It is captured automatically, before the first `LoadLayoutFrom*`, at `Loaded`, or on the first idle. Set it yourself if the ribbon is built later than that. |
 | `ResetLayout` | Loads `DefaultLayout`. |
-| `ShowDisplayOptionsButton` (published) | The Office 2016 "Ribbon Display Options" caption button. |
-| `ShowDisplayModeButton` (published) | The Office 365 chevron at the right end of the body: classic/simplified switch. |
+| `ShowDisplayOptionsButton` (published) | The "Ribbon Display Options" caption button. |
+| `ShowDisplayModeButton` (published) | The chevron at the right end of the body: classic/simplified switch. |
 | `ShowAutoHiddenRibbon`, `AutoHiddenRibbonShown` | Opens/queries the auto-hide overlay (`ShowMode = AutoHide`). |
 | `EffectiveRightToLeft` | True when `RightToLeft` is set or the form's `BiDiMode` is `bdRightToLeft`. |
 | `AccessibilityNodes`, `AccessibilityInvoke`, `AccessibilitySetValue`, `AccessibilityVersion` | Snapshot and actions for accessibility clients (`Docs\ACCESSIBILITY.md`). |
@@ -97,7 +97,7 @@ Everything is painted with the ribbon's painter and theme, so the dialog follows
 - "Show Quick Access Toolbar below the Ribbon".
 - Reset and Import/Export.
 
-**Office rules**, enforced by the model:
+**Rules**, enforced by the model:
 
 - Commands can be added only to user-defined (custom) groups. The hint below the tree says so.
 - Commands of designed groups cannot be removed or reordered.
@@ -157,14 +157,14 @@ end;
 
 The current mode is checked. Without a frame, the button sits at the right end of the caption row inside the ribbon.
 
-**`ShowMode = AutoHide`** works like Office:
+**`ShowMode = AutoHide`**:
 
 - Only the caption row stays: QAT, title, search, display options, plus a "..." button (`AutoHideShow`, "Show Ribbon").
 - Clicking the "..." button or the empty caption row opens an overlay popup below the caption row. The tab bar and the body are moved into it.
 - The overlay closes on an outside click, Esc, or after a command. The bars then return to the frame host or the ribbon.
 - Key tips (Alt) open the overlay first.
 
-Checked with Office365White, Office2016Colorful (colored caption), FluentDark and `/frame=none`.
+Checked with ModernWhite, BannerColorful (colored caption), SoftDark and `/frame=none`.
 
 ## Classic/simplified switch
 
@@ -181,7 +181,7 @@ The simplified overflow button ("...") opens a menu with the same row style as o
 
 - **Parts keep left-to-right geometry.** The caption bar, tab bar, body, QAT bar, group popups and menus keep their logical left-to-right element geometry. They flip the canvas horizontally while painting (`FmrMirrorCanvas`) and flip mouse coordinates before hit testing. Layout code, key tips and keyboard navigation are therefore unchanged.
 - **Text** reads correctly. `TFmrRibbonPainter.Text`/`TextEx` detect a mirrored canvas (`IsMirrored`, `m11 < 0`), draw the string unmirrored inside its rectangle, and swap leading and trailing alignment.
-- **Icons** are drawn unmirrored (`FmrDrawImage`, like `NOMIRRORBITMAP`), so "B" and "I" glyphs read correctly. Painted chevrons, arrows and launchers are mirrored, as in Office.
+- **Icons** are drawn unmirrored (`FmrDrawImage`, like `NOMIRRORBITMAP`), so "B" and "I" glyphs read correctly. Painted chevrons, arrows and launchers are mirrored.
 - **Real controls** get mirrored bounds: editors, the search box and caption buttons. Window buttons move to the left.
 - **Popups** of a right-to-left ribbon:
   - their context implements `IFmrMirroredHost`;
@@ -196,7 +196,7 @@ The editor controls of `TFmrEditorView` are created from `FMR.Ribbon.EditorStyle
 - `EditFill`, `EditBorder`, `EditBorderHot`, `EditText`;
 - `ButtonArrow`, menu fill/text, accent.
 
-A theme change gives the control the `StyleLookup` of the new color scheme (one name per scheme; the tree built in `GetStyleObject` is tagged with it), so FMX loads the new style, and the old tree is freed. FMX recycles style trees into a global style cache (reparenting, out of view) and takes one back only by its tag: with names per control or per theme change the cache grew with every theme switch (about 6 MB per 50 switches in the Word template) until the application ended. A combo also frees the tree of its list box before the list box style changes (`TCustomListBox.ApplyStyle` adds two clones of `selection` to a recycled tree every time it is used again). Live switching was checked (Office365White to FluentDark; `tools\Stress`: no heap growth over 50 switches).
+A theme change gives the control the `StyleLookup` of the new color scheme (one name per scheme; the tree built in `GetStyleObject` is tagged with it), so FMX loads the new style, and the old tree is freed. FMX recycles style trees into a global style cache (reparenting, out of view) and takes one back only by its tag: with names per control or per theme change the cache grew with every theme switch (about 6 MB per 50 switches in the Document template) until the application ended. A combo also frees the tree of its list box before the list box style changes (`TCustomListBox.ApplyStyle` adds two clones of `selection` to a recycled tree every time it is used again). Live switching was checked (ModernWhite to SoftDark; `tools\Stress`: no heap growth over 50 switches).
 
 FMX creates some objects itself: list items, the combo popup, spin buttons and track bar thumbs. Their styles are registered in the FMX resource pool, one set per color scheme.
 
@@ -214,11 +214,11 @@ No changes were needed. The customization dialog does not change size in touch m
 
 ## Demo (`Demos\Customize`)
 
-`CustomizeDemo.exe` is a Word-like ribbon built in code. Every command has a category; a contextual "Table Tools" tab is included. Switches:
+`CustomizeDemo.exe` is a document-editor style ribbon built in code. Every command has a category; a contextual "Table Tools" tab is included. Switches:
 
 | Switch | Effect |
 |---|---|
-| `/theme=<name>` | Theme. Checked: Office365White, Office2010Blue, FluentDark, Office365Black, Office2016Colorful. |
+| `/theme=<name>` | Theme. Checked: ModernWhite, ClassicBlue, SoftDark, ModernBlack, BannerColorful. |
 | `/frame=fullnc\|dwm\|ncstrip\|none` | Frame mode. |
 | `/open=customize\|qat` | Opens the form on a page after start. |
 | `/rtl` | `RightToLeft`. |
@@ -249,7 +249,7 @@ Screenshots of the checks are in `shots\cust\`:
 | `c39` | Form in Russian |
 | `c04`, `c11` | Bold added to a new tab and group, then applied |
 | `c12`, `c13` | Export/import, reset all |
-| `c14`, `c15` | QAT page in FluentDark |
+| `c14`, `c15` | QAT page in SoftDark |
 | `c16`, `c33`, `c34` | Display options menu |
 | `c45`, `c46` | Auto-hide overlay |
 | `c18`, `c25` | Switch and overflow |

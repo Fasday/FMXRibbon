@@ -18,12 +18,13 @@ type
     FRoot: TFmxObject;
     FManager: TFmrBarManager;
     FRibbon: TFmrRibbon;
-    procedure BuildWord;
+    procedure BuildDocument;
   public
     [Setup] procedure Setup;
     [TearDown] procedure TearDown;
     [Test] procedure CaptionRowGlyphsReadInEveryTheme;
     [Test] procedure UnknownThemeKeepsAWorkingTheme;
+    [Test] procedure OldThemeNameIsStoredAsTheNewName;
     [Test] procedure ManagerFreedBeforeRibbon;
     [Test] procedure RibbonFreedBeforeManager;
     [Test] procedure ManagerSetToNilAndBack;
@@ -62,11 +63,11 @@ begin
   FRibbon := nil;
 end;
 
-procedure TRibbonControlTests.BuildWord;
+procedure TRibbonControlTests.BuildDocument;
 begin
   FRibbon.BeginStructureUpdate;
   try
-    FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Word, FManager);
+    FmrApplyRibbonTemplate(FRibbon, TFmrRibbonTemplate.Document, FManager);
   finally
     FRibbon.EndStructureUpdate;
   end;
@@ -99,7 +100,7 @@ end;
 
 procedure TRibbonControlTests.UnknownThemeKeepsAWorkingTheme;
 begin
-  BuildWord;
+  BuildDocument;
   FRibbon.Theme := 'NoSuchTheme';
   FRibbon.UpdateLayout;
   Assert.IsNotNull(FRibbon.ThemeObject);
@@ -109,9 +110,22 @@ begin
   Assert.IsNotNull(FRibbon.ThemeObject);
 end;
 
+procedure TRibbonControlTests.OldThemeNameIsStoredAsTheNewName;
+begin
+  FRibbon.Theme := 'Office2024Light';
+  Assert.AreEqual('Modern2024Light', FRibbon.Theme);
+  Assert.AreEqual('Modern2024Light', FRibbon.ThemeObject.Name);
+  FRibbon.Theme := 'fluentdark';
+  Assert.AreEqual('SoftDark', FRibbon.Theme);
+  FRibbon.Theme := 'GlassBlue';
+  Assert.AreEqual('GlassBlue', FRibbon.Theme);
+  FRibbon.Theme := 'Office365White';
+  Assert.AreEqual(FmrDefaultThemeName, FRibbon.Theme);
+end;
+
 procedure TRibbonControlTests.ManagerFreedBeforeRibbon;
 begin
-  BuildWord;
+  BuildDocument;
   Assert.IsTrue(Length(FRibbon.AccessibilityNodes) > 20);
   FreeAndNil(FManager);
   Assert.IsNull(FRibbon.BarManager);
@@ -125,7 +139,7 @@ procedure TRibbonControlTests.RibbonFreedBeforeManager;
 var
   I: Integer;
 begin
-  BuildWord;
+  BuildDocument;
   FreeAndNil(FRibbon);
   // Items no longer have views: changing them must not reach the freed ribbon.
   for I := 0 to FManager.ItemCount - 1 do
@@ -139,7 +153,7 @@ procedure TRibbonControlTests.ManagerSetToNilAndBack;
 var
   Before: Integer;
 begin
-  BuildWord;
+  BuildDocument;
   Before := Length(FRibbon.AccessibilityNodes);
   FRibbon.BarManager := nil;
   FRibbon.UpdateLayout;
@@ -156,7 +170,7 @@ procedure TRibbonControlTests.ItemsDeletedWhileShown;
 var
   Before: Integer;
 begin
-  BuildWord;
+  BuildDocument;
   Before := Length(FRibbon.AccessibilityNodes);
   FRibbon.ShowKeyTipsNow;
   FManager.FindItem('btnCut').Free;
@@ -177,7 +191,7 @@ end;
 
 procedure TRibbonControlTests.GroupAndTabDeletedWhileShown;
 begin
-  BuildWord;
+  BuildDocument;
   FRibbon.ActiveTab.Groups[0].Free;
   FRibbon.UpdateLayout;
   FRibbon.ActiveTab.Free;
@@ -209,7 +223,7 @@ var
   Ch: WideChar;
   I: Integer;
 begin
-  BuildWord;
+  BuildDocument;
   Log := TClickLog.Create;
   try
     for I := 0 to FManager.ItemCount - 1 do
@@ -278,8 +292,8 @@ var
   Light, Dark: TFmrTheme;
   First: string;
 begin
-  Light := TFmrTheme.CreateTheme('Office365White');
-  Dark := TFmrTheme.CreateTheme('Office365Black');
+  Light := TFmrTheme.CreateTheme('ModernWhite');
+  Dark := TFmrTheme.CreateTheme('ModernBlack');
   A := TFmrRibbonEdit.Create(nil);
   B := TFmrRibbonEdit.Create(nil);
   try

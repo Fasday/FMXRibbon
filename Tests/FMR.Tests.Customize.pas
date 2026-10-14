@@ -1,6 +1,6 @@
 unit FMR.Tests.Customize;
 
-/// Customization session (FMR.Ribbon.CustomizeModel): the shadow copy, the Office rules of the editing commands,
+/// Customization session (FMR.Ribbon.CustomizeModel): the shadow copy, the rules of the editing commands,
 /// Apply / Cancel, import and export, reset, quick access toolbar.
 
 interface

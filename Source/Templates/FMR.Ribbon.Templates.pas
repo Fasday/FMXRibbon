@@ -1,7 +1,7 @@
 ﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
-{  Ribbon templates (Office-like structures)            }
+{  Ribbon templates                                     }
 {                                                       }
 {  MIT License. Copyright (c) 2026 Fasday               }
 {                                                       }
@@ -9,7 +9,7 @@
 
 unit FMR.Ribbon.Templates;
 
-/// Builds complete Office-like ribbon structures (tabs, groups, items and links, quick access toolbar, a contextual
+/// Builds complete ribbon structures (tabs, groups, items and links, quick access toolbar, a contextual
 /// tab group) into a ribbon and its bar manager. Used by the design package ("Apply template...") and usable at run
 /// time. The builder only needs the structure object (TFmrRibbon or any IFmrRibbonStructureOwner) and a
 /// TFmrBarManager; components are owned by the owner of the ribbon (the form), exactly like the designer creates
@@ -29,10 +29,10 @@ type
   TFmrRibbonTemplate = (
     /// <summary>Home (Clipboard, Font, Editing) and View (Zoom, Show).</summary>
     Simple,
-    /// <summary>Word-like: Home, Insert, Layout, View and a "Table Tools" contextual tab group.</summary>
-    Word,
-    /// <summary>Excel-like: Home, Insert, Formulas, Data, View.</summary>
-    Excel);
+    /// <summary>Document editor: Home, Insert, Layout, View and a "Table Tools" contextual tab group.</summary>
+    Document,
+    /// <summary>Spreadsheet: Home, Insert, Formulas, Data, View.</summary>
+    Spreadsheet);
 
   /// <summary>Returns a component name for a base name ('btnPaste' → 'btnPaste' or 'btnPaste1'). The IDE passes a
   /// function built on Designer.UniqueName.</summary>
@@ -71,8 +71,8 @@ type
     function NewItem(const AClass: TFmrBarItemClass; const ABaseName, ACaption: string): TFmrBarItem;
     procedure AddCategory(const ACategory: string);
     procedure BuildSimple;
-    procedure BuildWord;
-    procedure BuildExcel;
+    procedure BuildDocument;
+    procedure BuildSpreadsheet;
     procedure AddClipboardGroup(const ATab: TFmrRibbonTab; const AFull: Boolean);
     procedure AddStandardQAT;
   public
@@ -196,7 +196,7 @@ const
   FmrGlyphPictures = $EB9F;
   FmrGlyphShapes = $EB91;
   FmrGlyphIcons = $E76E;
-  FmrGlyphSmartArt = $EABB;
+  FmrGlyphDiagram = $EABB;
   FmrGlyphChart = $E9D2;
   FmrGlyphColumnChart = $F404;
   FmrGlyphLineChart = $EAFC;
@@ -210,7 +210,7 @@ const
   FmrGlyphFooter = $E75B;
   FmrGlyphPageNumber = $F146;
   FmrGlyphTextBox = $E75A;
-  FmrGlyphWordArt = $EF60;
+  FmrGlyphTextEffects = $EF60;
   FmrGlyphDropCap = $E97E;
   FmrGlyphEquation = $E94B;
   FmrGlyphSymbol = $E8C1;
@@ -275,6 +275,10 @@ const
   FmrGlyphSpelling = $E8FB;
   FmrGlyphHelp = $E897;
   FmrGlyphNew = $E8A5;
+
+  { old names }
+  FmrGlyphSmartArt = FmrGlyphDiagram deprecated 'Use FmrGlyphDiagram';
+  FmrGlyphWordArt = FmrGlyphTextEffects deprecated 'Use FmrGlyphTextEffects';
 
 implementation
 
@@ -610,10 +614,10 @@ begin
     case ATemplate of
       TFmrRibbonTemplate.Simple:
         BuildSimple;
-      TFmrRibbonTemplate.Word:
-        BuildWord;
-      TFmrRibbonTemplate.Excel:
-        BuildExcel;
+      TFmrRibbonTemplate.Document:
+        BuildDocument;
+      TFmrRibbonTemplate.Spreadsheet:
+        BuildSpreadsheet;
     end;
   finally
     FManager.EndUpdate;
@@ -631,10 +635,10 @@ begin
   case ATemplate of
     TFmrRibbonTemplate.Simple:
       Result := 'Simple';
-    TFmrRibbonTemplate.Word:
-      Result := 'Word-like document editor';
-    TFmrRibbonTemplate.Excel:
-      Result := 'Excel-like spreadsheet';
+    TFmrRibbonTemplate.Document:
+      Result := 'Document';
+    TFmrRibbonTemplate.Spreadsheet:
+      Result := 'Spreadsheet';
   else
     Result := '';
   end;
@@ -646,11 +650,11 @@ begin
     TFmrRibbonTemplate.Simple:
       Result := 'Home (Clipboard, Font, Editing) and View (Zoom, Show); Save, Undo and Redo in the quick access ' +
         'toolbar.';
-    TFmrRibbonTemplate.Word:
+    TFmrRibbonTemplate.Document:
       Result := 'Home (Clipboard, Font, Paragraph, Styles, Editing), Insert (Pages, Tables, Illustrations, Links, ' +
         'Comments, Header & Footer, Text, Symbols), Layout (Page Setup, Paragraph, Arrange), View (Views, Show, ' +
         'Zoom, Window) and the "Table Tools" contextual tabs.';
-    TFmrRibbonTemplate.Excel:
+    TFmrRibbonTemplate.Spreadsheet:
       Result := 'Home (Clipboard, Font, Alignment, Number, Styles, Cells, Editing), Insert (Tables, ' +
         'Illustrations, Charts, Text), Formulas (Function Library, Defined Names, Calculation), Data (Get Data, ' +
         'Sort & Filter, Data Tools) and View (Workbook Views, Show, Zoom, Window).';
@@ -751,7 +755,7 @@ begin
   AddStandardQAT;
 end;
 
-procedure TFmrRibbonTemplateBuilder.BuildWord;
+procedure TFmrRibbonTemplateBuilder.BuildDocument;
 const
   FontSizes: array[0..15] of string = ('8', '9', '10', '10.5', '11', '12', '14', '16', '18', '20', '24', '28', '36',
     '48', '72', '96');
@@ -860,7 +864,7 @@ begin
   AddButton(G, 'btnPictures', 'Pictures', FmrGlyphPictures, TFmrTemplateButtonSize.Large, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnShapes', 'Shapes', FmrGlyphShapes, TFmrTemplateButtonSize.Large, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnIcons', 'Icons', FmrGlyphIcons, TFmrTemplateButtonSize.Large);
-  AddButton(G, 'btnSmartArt', 'SmartArt', FmrGlyphSmartArt);
+  AddButton(G, 'btnDiagram', 'Diagram', FmrGlyphDiagram);
   AddButton(G, 'btnChart', 'Chart', FmrGlyphChart);
   AddButton(G, 'btnScreenshot', 'Screenshot', FmrGlyphScreenshot, TFmrTemplateButtonSize.Small,
     TFmrButtonStyle.DropDown);
@@ -878,7 +882,7 @@ begin
     TFmrButtonStyle.DropDown);
   G := AddGroup(Insert, 'grpText', 'Text');
   AddButton(G, 'btnTextBox', 'Text Box', FmrGlyphTextBox, TFmrTemplateButtonSize.Large, TFmrButtonStyle.DropDown);
-  AddButton(G, 'btnWordArt', 'WordArt', FmrGlyphWordArt, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
+  AddButton(G, 'btnTextEffects', 'Text Effects', FmrGlyphTextEffects, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnDropCap', 'Drop Cap', FmrGlyphDropCap, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
   G := AddGroup(Insert, 'grpSymbols', 'Symbols');
   AddButton(G, 'btnEquation', 'Equation', FmrGlyphEquation, TFmrTemplateButtonSize.Large, TFmrButtonStyle.Split);
@@ -979,7 +983,7 @@ begin
   AddStandardQAT;
 end;
 
-procedure TFmrRibbonTemplateBuilder.BuildExcel;
+procedure TFmrRibbonTemplateBuilder.BuildSpreadsheet;
 const
   FontSizes: array[0..12] of string = ('8', '9', '10', '11', '12', '14', '16', '18', '20', '24', '28', '36', '48');
 var
@@ -1030,7 +1034,7 @@ begin
   Menu := AddButton(G, 'btnMergeCenter', 'Merge && Center', FmrGlyphMerge, TFmrTemplateButtonSize.Small,
     TFmrButtonStyle.Split);
   AddMenuItem(Menu, 'btnMergeAcross', 'Merge Across');
-  AddMenuItem(Menu, 'btnMergeCellsExcel', 'Merge Cells');
+  AddMenuItem(Menu, 'btnMergeCellsMenu', 'Merge Cells');
   AddMenuItem(Menu, 'btnUnmergeCells', 'Unmerge Cells');
 
   G := AddGroup(Home, 'grpNumber', 'Number', True);
@@ -1057,7 +1061,7 @@ begin
   AddButton(G, 'btnFormatCells', 'Format', FmrGlyphFormat, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
 
   G := AddGroup(Home, 'grpEditing', 'Editing');
-  AddButton(G, 'btnAutoSum', 'AutoSum', FmrGlyphAutoSum, TFmrTemplateButtonSize.Small, TFmrButtonStyle.Split);
+  AddButton(G, 'btnAutoSum', 'Sum', FmrGlyphAutoSum, TFmrTemplateButtonSize.Small, TFmrButtonStyle.Split);
   AddButton(G, 'btnFill', 'Fill', FmrGlyphFill, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnClear', 'Clear', FmrGlyphClear, TFmrTemplateButtonSize.Small, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnSortFilter', 'Sort && Filter', FmrGlyphSort, TFmrTemplateButtonSize.Large,
@@ -1071,13 +1075,13 @@ begin
   { Insert }
   Insert := AddTab('tabInsert', 'Insert', 'N');
   G := AddGroup(Insert, 'grpTables', 'Tables');
-  AddButton(G, 'btnPivotTable', 'PivotTable', FmrGlyphPivotTable, TFmrTemplateButtonSize.Large, TFmrButtonStyle.Split);
+  AddButton(G, 'btnPivotTable', 'Pivot Table', FmrGlyphPivotTable, TFmrTemplateButtonSize.Large, TFmrButtonStyle.Split);
   AddButton(G, 'btnTable', 'Table', FmrGlyphTable, TFmrTemplateButtonSize.Large).ShortCut := CtrlKey('T');
   G := AddGroup(Insert, 'grpIllustrations', 'Illustrations');
   AddButton(G, 'btnPictures', 'Pictures', FmrGlyphPictures, TFmrTemplateButtonSize.Large, TFmrButtonStyle.DropDown);
   AddButton(G, 'btnShapes', 'Shapes', FmrGlyphShapes);
   AddButton(G, 'btnIcons', 'Icons', FmrGlyphIcons);
-  AddButton(G, 'btnSmartArt', 'SmartArt', FmrGlyphSmartArt);
+  AddButton(G, 'btnDiagram', 'Diagram', FmrGlyphDiagram);
   G := AddGroup(Insert, 'grpCharts', 'Charts', True);
   AddButton(G, 'btnRecommendedCharts', 'Recommended Charts', FmrGlyphChart, TFmrTemplateButtonSize.Large);
   AddGroupButton(G, 'btnColumnChart', 'Column Chart', FmrGlyphColumnChart, TFmrTemplateRowPos.NewRow,
@@ -1094,7 +1098,7 @@ begin
   Formulas := AddTab('tabFormulas', 'Formulas', 'M');
   G := AddGroup(Formulas, 'grpFunctionLibrary', 'Function Library');
   AddButton(G, 'btnInsertFunction', 'Insert Function', FmrGlyphFunction, TFmrTemplateButtonSize.Large);
-  AddButton(G, 'btnFormulaAutoSum', 'AutoSum', FmrGlyphAutoSum, TFmrTemplateButtonSize.Large, TFmrButtonStyle.Split);
+  AddButton(G, 'btnFormulaAutoSum', 'Sum', FmrGlyphAutoSum, TFmrTemplateButtonSize.Large, TFmrButtonStyle.Split);
   AddButton(G, 'btnRecentlyUsed', 'Recently Used', FmrGlyphRecent, TFmrTemplateButtonSize.Large,
     TFmrButtonStyle.DropDown);
   AddButton(G, 'btnFinancial', 'Financial', FmrGlyphFinancial, TFmrTemplateButtonSize.Large, TFmrButtonStyle.DropDown);

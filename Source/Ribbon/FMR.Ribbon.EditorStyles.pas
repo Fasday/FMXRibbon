@@ -47,7 +47,7 @@ type
     Radius: Single;
     FontFamily: string;
     FontSize: Single;
-    /// <summary>Drop-down arrows are stroked chevrons (Office 2024).</summary>
+    /// <summary>Drop-down arrows are stroked chevrons (Modern 2024).</summary>
     Chevron: Boolean;
     class function FromTheme(const ATheme: TFmrTheme): TFmrEditorColors; static;
     /// <summary>Identity of the scheme (equal keys = equal styles).</summary>
@@ -301,7 +301,7 @@ begin
   Result.WrapMode := TPathWrapMode.Stretch;
   if AChevron then
   begin
-    // Office 2024: a thin chevron
+    // Modern 2024: a thin chevron
     if AUp then
       Result.Data.Data := 'M0,4 L4,0 L8,4'
     else
@@ -771,7 +771,7 @@ procedure TFmrRibbonComboEdit.MouseWheel(Shift: TShiftState; WheelDelta: Integer
 var
   L: TCustomListBox;
 begin
-  // While the list is open the wheel scrolls it (Office), also when the combo box holds the mouse capture or the
+  // While the list is open the wheel scrolls it, also when the combo box holds the mouse capture or the
   // list cannot scroll further; it must not change the text or reach the ribbon behind.
   if DroppedDown and (Presentation is TStyledComboEdit) then
   begin

@@ -5,7 +5,8 @@ unit DesignPreviewMain;
 /// buttons that open the structure editor, the items editor, the image dialog and the template chooser.
 ///
 /// Command line (for automated screenshots):
-///   /template=word|excel|simple   template applied at start (default word)
+///   /template=document|spreadsheet|simple|none   template applied at start (default document; the old switches word and
+///                    excel still work)
 ///   /structure  /items  /image  /templates   open that window at start
 ///   /select=NAME     select the first tree node of the component NAME (or of a link to the item NAME)
 ///   /expand          expand the whole structure tree
@@ -458,11 +459,11 @@ begin
   FImage := TFmrImageSource.Create(nil);
   FImage.GlyphCode := $E8C8;
 
-  T := TFmrRibbonTemplate.Word;
+  T := TFmrRibbonTemplate.Document;
   if Param('template', S) then
   begin
-    if SameText(S, 'excel') then
-      T := TFmrRibbonTemplate.Excel
+    if SameText(S, 'spreadsheet') or SameText(S, 'excel') then
+      T := TFmrRibbonTemplate.Spreadsheet
     else if SameText(S, 'simple') then
       T := TFmrRibbonTemplate.Simple
     else if SameText(S, 'none') then

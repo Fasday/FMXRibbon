@@ -10,14 +10,15 @@
 unit FMR.Ribbon.Themes.Builtin;
 
 /// Registers the built-in themes in TFmrTheme (initialization section):
-///   Office365Colorful, Office365White, Office365DarkGray, Office365Black,
-///   Office2016Colorful, Office2016White, Office2016DarkGray,
-///   Office2013White, Office2013LightGray, Office2013DarkGray,
-///   Office2010Blue, Office2010Silver, Office2010Black,
-///   Office2007Blue, Office2007Silver, Office2007Black,
-///   FluentLight, FluentDark,
-///   Office2024Light, Office2024DarkGray, Office2024Dark (Microsoft 365 / Office 2024 look, measured on Word).
-/// Colors are approximations of the look of the corresponding Office versions, built from an accent color.
+///   ModernColorful, ModernWhite, ModernDarkGray, ModernBlack   (in the style of Microsoft 365, 2019-2023),
+///   BannerColorful, BannerWhite, BannerDarkGray                 (in the style of Office 2016),
+///   FlatWhite, FlatLightGray, FlatDarkGray                      (in the style of Office 2013),
+///   ClassicBlue, ClassicSilver, ClassicBlack                    (in the style of Office 2010),
+///   GlassBlue, GlassSilver, GlassBlack                          (in the style of Office 2007),
+///   SoftLight, SoftDark                                         (in the style of Windows 11),
+///   Modern2024Light, Modern2024DarkGray, Modern2024Dark         (in the style of Microsoft 365, 2024),
+/// and the theme names of the first release as deprecated aliases (Aliases in FmrRegisterBuiltinThemes).
+/// The palettes are our own, built from an accent color; the theme names describe a visual style only.
 
 interface
 
@@ -103,6 +104,7 @@ begin
   M.TabFontSize := 0;
   M.TabIndicatorHeight := 3;
   M.TabIndicatorOffset := 2;
+  M.TabIndicatorRadius := 0;
   M.CaptionButtonWidth := 46;
   M.SearchBoxWidth := 360;
   M.SearchBoxHeight := 0;
@@ -116,7 +118,7 @@ function FamilyMetrics(const AFamily: TFmrThemeFamily): TFmrThemeMetrics;
 begin
   BaseMetrics(Result);
   case AFamily of
-    TFmrThemeFamily.Office2007:
+    TFmrThemeFamily.Glass:
       begin
         Result.CaptionHeight := 30;
         Result.TabRowHeight := 24;
@@ -128,7 +130,7 @@ begin
         Result.ButtonRadius := 3;
         Result.MenuGutterWidth := 26;
       end;
-    TFmrThemeFamily.Office2010:
+    TFmrThemeFamily.Classic:
       begin
         Result.CaptionHeight := 28;
         Result.TabRowHeight := 24;
@@ -139,12 +141,12 @@ begin
         Result.BodyRadius := 2;
         Result.ButtonRadius := 2;
       end;
-    TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2016:
+    TFmrThemeFamily.Flat, TFmrThemeFamily.Banner:
       begin
         Result.CaptionHeight := 30;
         Result.TabRowHeight := 25;
       end;
-    TFmrThemeFamily.Office365:
+    TFmrThemeFamily.Modern:
       begin
         Result.CaptionHeight := 32;
         Result.TabRowHeight := 30;
@@ -157,7 +159,7 @@ begin
         Result.MenuGutterWidth := 32;
         Result.ScrollButtonWidth := 16;
       end;
-    TFmrThemeFamily.Fluent:
+    TFmrThemeFamily.Soft:
       begin
         Result.CaptionHeight := 32;
         Result.TabRowHeight := 32;
@@ -172,18 +174,19 @@ begin
         Result.KeyTipRadius := 4;
         Result.ScrollButtonWidth := 16;
       end;
-    TFmrThemeFamily.Office2024:
+    TFmrThemeFamily.Modern2024:
       begin
-        // Measured on Word (Microsoft 365, 2024 look) at 100 %: caption row 48, tab row 30, a 100 dp body card
-        // 8 dp from the window edges, tab captions 10 pt, commands 9 pt.
-        Result.CaptionHeight := 48;
-        Result.TabRowHeight := 30;
+        // A tall caption row with a centered search box, a card about 100 dp high 8 dp from the window edges, tab
+        // captions 10 pt, commands 9 pt.
+        Result.CaptionHeight := 46;
+        Result.TabRowHeight := 32;
         Result.TabFontSize := 13.33;
         Result.TabPaddingH := 8;
         Result.TabSpacing := 2;
         Result.TabRadius := 4;
-        Result.TabIndicatorHeight := 2;
+        Result.TabIndicatorHeight := 3;
         Result.TabIndicatorOffset := 3;
+        Result.TabIndicatorRadius := 1;
         Result.ContentHeight := 78;
         Result.SmallButtonHeight := 24;
         Result.MaxRowGap := 8;
@@ -193,7 +196,7 @@ begin
         Result.GroupSeparatorInsetTop := 5;
         Result.GroupSeparatorInsetBottom := 6;
         Result.BodyPaddingV := 0;
-        Result.BodyRadius := 8;
+        Result.BodyRadius := 6;
         Result.BodyMargin := 8;
         Result.ButtonRadius := 4;
         Result.ArrowSize := 8;
@@ -208,7 +211,7 @@ begin
         Result.StatusBarFontSize := 11;
         Result.CaptionButtonWidth := 48;
         Result.SearchBoxWidth := 370;
-        Result.SearchBoxHeight := 34;
+        Result.SearchBoxHeight := 32;
       end;
   end;
 end;
@@ -218,37 +221,37 @@ begin
   Result.Family := AFamily;
   Result.Dark := ADark;
   Result.ColoredCaption := AColoredCaption;
-  Result.FloatingBody := AFamily in [TFmrThemeFamily.Office365, TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
-  Result.TransparentCaption := AFamily in [TFmrThemeFamily.Fluent, TFmrThemeFamily.Office2024];
-  Result.UppercaseTabs := AFamily = TFmrThemeFamily.Office2013;
-  Result.Glossy := AFamily = TFmrThemeFamily.Office2007;
-  Result.ChevronArrows := AFamily = TFmrThemeFamily.Office2024;
-  Result.BoldActiveTab := AFamily = TFmrThemeFamily.Office2024;
-  Result.LeadingTitle := AFamily = TFmrThemeFamily.Office2024;
-  Result.CollapseInBody := AFamily = TFmrThemeFamily.Office2024;
+  Result.FloatingBody := AFamily in [TFmrThemeFamily.Modern, TFmrThemeFamily.Soft, TFmrThemeFamily.Modern2024];
+  Result.TransparentCaption := AFamily in [TFmrThemeFamily.Soft, TFmrThemeFamily.Modern2024];
+  Result.UppercaseTabs := AFamily = TFmrThemeFamily.Flat;
+  Result.Glossy := AFamily = TFmrThemeFamily.Glass;
+  Result.ChevronArrows := AFamily = TFmrThemeFamily.Modern2024;
+  Result.BoldActiveTab := AFamily = TFmrThemeFamily.Modern2024;
+  Result.LeadingTitle := AFamily = TFmrThemeFamily.Modern2024;
+  Result.CollapseInBody := AFamily = TFmrThemeFamily.Modern2024;
   case AFamily of
-    TFmrThemeFamily.Office2007:
+    TFmrThemeFamily.Glass:
       Result.TabShape := TFmrTabShape.Rounded;
-    TFmrThemeFamily.Office2010, TFmrThemeFamily.Office2013, TFmrThemeFamily.Office2016:
+    TFmrThemeFamily.Classic, TFmrThemeFamily.Flat, TFmrThemeFamily.Banner:
       Result.TabShape := TFmrTabShape.Box;
   else
     Result.TabShape := TFmrTabShape.Underline;
   end;
   case AFamily of
-    TFmrThemeFamily.Office2007:
+    TFmrThemeFamily.Glass:
       Result.AppButton := TFmrAppButtonShape.Orb;
-    TFmrThemeFamily.Office2010, TFmrThemeFamily.Office2013:
+    TFmrThemeFamily.Classic, TFmrThemeFamily.Flat:
       Result.AppButton := TFmrAppButtonShape.ColoredTab;
   else
     Result.AppButton := TFmrAppButtonShape.TextTab;
   end;
-  if AFamily in [TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010] then
+  if AFamily in [TFmrThemeFamily.Glass, TFmrThemeFamily.Classic] then
     Result.GroupFrame := TFmrGroupFrame.Boxed
   else
     Result.GroupFrame := TFmrGroupFrame.Separated;
 end;
 
-{ flat palettes (Office 2013, 2016, 365, Fluent) }
+{ flat palettes (Flat, Banner, Modern, Soft) }
 
 type
   /// The few colors a flat theme is made of; every token is derived from them.
@@ -598,7 +601,7 @@ begin
   T.Colors[TFmrToken.StatusBarItemHotFill] := Hot;
 end;
 
-/// Backstage of Office 2016: the navigation pane is the accent color in every variant.
+/// Backstage of the Banner themes: the navigation pane is the accent color in every variant.
 procedure ApplyAccentBackstage(const T: TFmrTheme; const AAccent: TAlphaColor);
 begin
   T.Colors[TFmrToken.BackstageNavFill] := AAccent;
@@ -609,7 +612,7 @@ begin
   T.Colors[TFmrToken.BackstageNavSeparator] := FmrLighten(AAccent, 0.3);
 end;
 
-/// Office 2013/2010 highlights: tinted with the accent (light fill, accent border).
+/// Flat theme highlights: tinted with the accent (light fill, accent border).
 procedure ApplyTintedButtons(const T: TFmrTheme; const AAccent: TAlphaColor);
 begin
   T.Colors[TFmrToken.ButtonHotFill] := FmrLighten(AAccent, 0.85);
@@ -650,22 +653,22 @@ begin
   T.Metrics := FamilyMetrics(AFamily);
 end;
 
-{ Office 365 }
+{ Modern }
 
-procedure BuildOffice365White(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModernWhite(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office365, False, False);
+  Init(T, TFmrThemeFamily.Modern, False, False);
   P := LightFlat(A);
   ApplyFlat(T, P);
 end;
 
-procedure BuildOffice365Colorful(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModernColorful(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office365, False, True);
+  Init(T, TFmrThemeFamily.Modern, False, True);
   P := LightFlat(A);
   P.Body := $FFFFFFFF;
   ApplyFlat(T, P);
@@ -673,25 +676,25 @@ begin
   T[TFmrToken.BodyBorder] := N;
 end;
 
-procedure BuildOffice365DarkGray(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModernDarkGray(const T: TFmrTheme; const A: TAlphaColor);
 begin
-  Init(T, TFmrThemeFamily.Office365, True, False);
+  Init(T, TFmrThemeFamily.Modern, True, False);
   ApplyFlat(T, DarkFlat(A, $FF3C3C3C, $FF4A4A4A, $FF5C5C5C, $FF6A6A6A, $FF5E5E5E));
 end;
 
-procedure BuildOffice365Black(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModernBlack(const T: TFmrTheme; const A: TAlphaColor);
 begin
-  Init(T, TFmrThemeFamily.Office365, True, False);
+  Init(T, TFmrThemeFamily.Modern, True, False);
   ApplyFlat(T, DarkFlat(A, $FF1F1F1F, $FF292929, $FF3D3D3D, $FF4A4A4A, $FF3A3A3A));
 end;
 
-{ Office 2016 }
+{ Banner }
 
-procedure BuildOffice2016Colorful(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildBannerColorful(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office2016, False, True);
+  Init(T, TFmrThemeFamily.Banner, False, True);
   P := LightFlat(A);
   P.Body := $FFF1F1F1;
   P.BodyBorder := $FFD4D4D4;
@@ -710,11 +713,11 @@ begin
   ApplyAccentBackstage(T, A);
 end;
 
-procedure BuildOffice2016White(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildBannerWhite(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office2016, False, False);
+  Init(T, TFmrThemeFamily.Banner, False, False);
   P := LightFlat(A);
   P.Caption := $FFFFFFFF;
   P.CaptionHot := $FFE5E5E5;
@@ -731,11 +734,11 @@ begin
   ApplyAccentBackstage(T, A);
 end;
 
-procedure BuildOffice2016DarkGray(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildBannerDarkGray(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office2016, False, False);
+  Init(T, TFmrThemeFamily.Banner, False, False);
   P := LightFlat(A);
   P.Caption := $FF444444;
   P.CaptionText := $FFFFFFFF;
@@ -764,13 +767,13 @@ begin
   ApplyAccentBackstage(T, A);
 end;
 
-{ Office 2013 }
+{ Flat }
 
-procedure Build2013(const T: TFmrTheme; const A: TAlphaColor; const ACaption, ABody: TAlphaColor);
+procedure BuildFlat(const T: TFmrTheme; const A: TAlphaColor; const ACaption, ABody: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Office2013, False, False);
+  Init(T, TFmrThemeFamily.Flat, False, False);
   P := LightFlat(A);
   P.Caption := ACaption;
   P.CaptionText := $FF444444;
@@ -791,22 +794,22 @@ begin
   ApplyAccentBackstage(T, A);
 end;
 
-procedure BuildOffice2013White(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildFlatWhite(const T: TFmrTheme; const A: TAlphaColor);
 begin
-  Build2013(T, A, $FFFFFFFF, $FFFFFFFF);
+  BuildFlat(T, A, $FFFFFFFF, $FFFFFFFF);
 end;
 
-procedure BuildOffice2013LightGray(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildFlatLightGray(const T: TFmrTheme; const A: TAlphaColor);
 begin
-  Build2013(T, A, $FFF3F3F3, $FFF8F8F8);
+  BuildFlat(T, A, $FFF3F3F3, $FFF8F8F8);
 end;
 
-procedure BuildOffice2013DarkGray(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildFlatDarkGray(const T: TFmrTheme; const A: TAlphaColor);
 begin
-  Build2013(T, A, $FFDEDEDE, $FFEBEBEB);
+  BuildFlat(T, A, $FFDEDEDE, $FFEBEBEB);
 end;
 
-{ Office 2010 }
+{ Classic }
 
 type
   TGradientSet = record
@@ -824,7 +827,7 @@ procedure ApplyGradient(const T: TFmrTheme; const A: TAlphaColor; const P: TGrad
 var
   Hot, Pressed, Checked, CheckedHot: TFill;
 begin
-  // Warm highlights shared by Office 2007 and 2010
+  // Warm highlights shared by the Glass and Classic themes
   if AGlass then
   begin
     Hot := G($FFFFFCD9, $FFFFE894, $FFFFD34B, $FFFFE496);
@@ -989,11 +992,11 @@ begin
   ColoredFileTab(T, A, True);
 end;
 
-procedure BuildOffice2010Blue(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildClassicBlue(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
-  Init(T, TFmrThemeFamily.Office2010, False, False);
+  Init(T, TFmrThemeFamily.Classic, False, False);
   P.CaptionTop := $FFE4EDF8; P.CaptionBottom := $FFD7E4F4; P.CaptionInactive := $FFEBF1F8; P.CaptionText := $FF1E395B;
   P.TabRowTop := $FFD7E4F4; P.TabRowBottom := $FFCCDCF0; P.TabText := $FF1E395B; P.TabTextActive := $FF1E395B;
   P.BodyTop := $FFFFFFFF; P.BodyBottom := $FFDDE7F4; P.BodyBorder := $FFA7BAD7;
@@ -1005,11 +1008,11 @@ begin
   ApplyGradient(T, A, P, False);
 end;
 
-procedure BuildOffice2010Silver(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildClassicSilver(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
-  Init(T, TFmrThemeFamily.Office2010, False, False);
+  Init(T, TFmrThemeFamily.Classic, False, False);
   P.CaptionTop := $FFEFF1F4; P.CaptionBottom := $FFE1E5EA; P.CaptionInactive := $FFF2F3F5; P.CaptionText := $FF3B3B3B;
   P.TabRowTop := $FFE1E5EA; P.TabRowBottom := $FFD6DBE2; P.TabText := $FF3B3B3B; P.TabTextActive := $FF3B3B3B;
   P.BodyTop := $FFFFFFFF; P.BodyBottom := $FFE7EAEE; P.BodyBorder := $FFA9B1BC;
@@ -1021,11 +1024,11 @@ begin
   ApplyGradient(T, A, P, False);
 end;
 
-procedure BuildOffice2010Black(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildClassicBlack(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
-  Init(T, TFmrThemeFamily.Office2010, False, False);
+  Init(T, TFmrThemeFamily.Classic, False, False);
   P.CaptionTop := $FF525252; P.CaptionBottom := $FF3D3D3D; P.CaptionInactive := $FF5E5E5E; P.CaptionText := $FFF2F2F2;
   P.TabRowTop := $FF3D3D3D; P.TabRowBottom := $FF2F2F2F; P.TabText := $FFF2F2F2; P.TabTextActive := $FF262626;
   P.BodyTop := $FFEFEFEF; P.BodyBottom := $FFCFCFCF; P.BodyBorder := $FF4C4C4C;
@@ -1043,11 +1046,11 @@ begin
   T.Colors[TFmrToken.StatusBarItemHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
 end;
 
-{ Office 2007 }
+{ Glass }
 
-procedure Apply2007(const T: TFmrTheme; const A: TAlphaColor; const P: TGradientSet);
+procedure ApplyGlass(const T: TFmrTheme; const A: TAlphaColor; const P: TGradientSet);
 begin
-  Init(T, TFmrThemeFamily.Office2007, False, False);
+  Init(T, TFmrThemeFamily.Glass, False, False);
   ApplyGradient(T, A, P, True);
   // Orb: blue glass at rest, orange glass on hover/press (painted radially by the painter)
   T[TFmrToken.AppButtonFill] := G($FFA9C6EE, $FF6B9BE0, $FF285DAF, $FF4B86D6);
@@ -1061,7 +1064,7 @@ begin
   T.Colors[TFmrToken.BackstageNavSelectedText] := P.Text;
 end;
 
-procedure BuildOffice2007Blue(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildGlassBlue(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
@@ -1074,10 +1077,10 @@ begin
   P.Text := $FF15428B; P.TextDisabled := $FF8D8D8D; P.Glyph := $FF1E4E8F;
   P.MenuFill := $FFFAFAFA; P.MenuBorder := $FF868686; P.MenuGutter := $FFE9EEF4; P.MenuSeparator := $FFC5C5C5;
   P.PopupHeaderTop := $FFE6EEF7; P.PopupHeaderBottom := $FFDDE7EE;
-  Apply2007(T, A, P);
+  ApplyGlass(T, A, P);
 end;
 
-procedure BuildOffice2007Silver(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildGlassSilver(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
@@ -1090,10 +1093,10 @@ begin
   P.Text := $FF2E2E2E; P.TextDisabled := $FF8D8D8D; P.Glyph := $FF4C535C;
   P.MenuFill := $FFFAFAFA; P.MenuBorder := $FF868686; P.MenuGutter := $FFEFF0F2; P.MenuSeparator := $FFC5C5C5;
   P.PopupHeaderTop := $FFEFF0F2; P.PopupHeaderBottom := $FFE1E3E7;
-  Apply2007(T, A, P);
+  ApplyGlass(T, A, P);
 end;
 
-procedure BuildOffice2007Black(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildGlassBlack(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TGradientSet;
 begin
@@ -1106,20 +1109,20 @@ begin
   P.Text := $FF1F1F1F; P.TextDisabled := $FF8D8D8D; P.Glyph := $FF333333;
   P.MenuFill := $FFFAFAFA; P.MenuBorder := $FF6E6E6E; P.MenuGutter := $FFEFEFEF; P.MenuSeparator := $FFC5C5C5;
   P.PopupHeaderTop := $FFE6E6E6; P.PopupHeaderBottom := $FFD6D6D6;
-  Apply2007(T, A, P);
+  ApplyGlass(T, A, P);
   T.Colors[TFmrToken.CaptionButtonHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
   T.Colors[TFmrToken.CaptionButtonPressedFill] := FmrWithAlpha($FFFFFFFF, 0.1);
   T.Colors[TFmrToken.StatusBarText] := $FFF0F0F0;
   T.Colors[TFmrToken.StatusBarItemHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
 end;
 
-{ Fluent }
+{ Soft }
 
-procedure BuildFluentLight(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildSoftLight(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
 begin
-  Init(T, TFmrThemeFamily.Fluent, False, False);
+  Init(T, TFmrThemeFamily.Soft, False, False);
   P := LightFlat(A);
   P.Caption := $FFF3F3F3;
   P.CaptionText := $FF1A1A1A;
@@ -1151,12 +1154,12 @@ begin
   T.Colors[TFmrToken.BackstageNavSelectedFill] := $0F000000;
 end;
 
-procedure BuildFluentDark(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildSoftDark(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
   AL: TAlphaColor;
 begin
-  Init(T, TFmrThemeFamily.Fluent, True, False);
+  Init(T, TFmrThemeFamily.Soft, True, False);
   AL := AccentOnDark(A);
   P := DarkFlat(A, $FF202020, $FF2B2B2B, $0FFFFFFF, $0AFFFFFF, $14FFFFFF);
   P.CaptionHot := $0FFFFFFF;
@@ -1180,22 +1183,22 @@ begin
   T.Colors[TFmrToken.BackstageNavSelectedFill] := $0FFFFFFF;
 end;
 
-{ Office 2024 (Microsoft 365, 2023/2024 visual refresh) }
+{ Modern 2024 }
 
-/// The older Office accents give the 2024 brand colors (Word #2B579A -> #185ABD and so on).
-function Brand2024(const A: TAlphaColor): TAlphaColor;
+/// The older accent shades give the brighter ones of the Modern 2024 themes (#2B579A -> #185ABD and so on).
+function Brand2024Accent(const A: TAlphaColor): TAlphaColor;
 begin
-  if A = $FF2B579A then
-    Result := FmrAccentWord2024
+  if A = FmrAccentBlue then
+    Result := FmrAccentCobalt
   else if A = $FF217346 then
-    Result := FmrAccentExcel
+    Result := FmrAccentGreen
   else if A = $FFB7472A then
-    Result := FmrAccentPowerPoint
+    Result := FmrAccentOrange
   else
     Result := A;
 end;
 
-/// Every channel x 0.9: the active tab line of the White theme (Word #185ABD -> #1651AA).
+/// Every channel x 0.9: the active tab line of the Light theme (#185ABD -> #1651AA).
 function Darker09(const A: TAlphaColor): TAlphaColor;
 var
   C: TAlphaColorRec;
@@ -1208,8 +1211,8 @@ begin
 end;
 
 type
-  /// Colors of an Office 2024 theme that the flat palette does not have.
-  T2024 = record
+  /// Colors of a Modern 2024 theme that the flat palette does not have.
+  TModern2024 = record
     Glyph: TAlphaColor;
     GroupCaption: TAlphaColor;
     Underline: TAlphaColor;
@@ -1220,7 +1223,7 @@ type
     KeyTipFill, KeyTipText, KeyTipBorder: TAlphaColor;
   end;
 
-procedure Apply2024(const T: TFmrTheme; const P: TFlat; const X: T2024);
+procedure ApplyModern2024(const T: TFmrTheme; const P: TFlat; const X: TModern2024);
 begin
   ApplyFlat(T, P);
   // The caption has no inactive color of its own: over Mica the system changes the material, painted the caption
@@ -1269,27 +1272,27 @@ begin
   T.Colors[TFmrToken.FocusBorder] := P.Text;
 end;
 
-procedure BuildOffice2024Light(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModern2024Light(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
-  X: T2024;
+  X: TModern2024;
   B: TAlphaColor;
 begin
-  // Word "White" (measured): flat caption #F0F0F0 (#EBEEF2 Mica when active), white card, text #242424.
-  Init(T, TFmrThemeFamily.Office2024, False, False);
-  B := Brand2024(A);
+  // Light: a flat cool light gray caption, a white card, dark text.
+  Init(T, TFmrThemeFamily.Modern2024, False, False);
+  B := Brand2024Accent(A);
   P := LightFlat(B);
-  P.Caption := $FFF0F0F0;
+  P.Caption := $FFF1F2F5;
   P.CaptionText := $FF242424;
-  P.CaptionTextInactive := $FFBDBDBD;
+  P.CaptionTextInactive := $FFB8BABE;
   P.CaptionHot := $0F000000;
   P.CaptionPressed := $1A000000;
   P.TabText := $FF242424;
   P.TabTextHot := $FF242424;
   P.TabTextActive := $FF242424;
   P.Body := $FFFFFFFF;
-  P.BodyBorder := $FFDCDEE1;
-  P.Separator := $FFD1D1D1;
+  P.BodyBorder := $FFD8DADF;
+  P.Separator := $FFD5D6DA;
   P.Text := $FF242424;
   P.TextSecondary := $FF616161;
   P.TextDisabled := $FFBDBDBD;
@@ -1309,57 +1312,57 @@ begin
   X.Share := B;
   X.ShareText := TAlphaColors.White;
   X.BodyShadow := $24000000;
-  X.StatusFill := $FFF5F5F5;
+  X.StatusFill := $FFF3F4F6;
   X.StatusText := $FF242424;
   X.StatusLine := $FFFFFFFF;
-  X.StatusHot := $FFE0E0E0;
-  X.SearchFill := $FFFAFAFA;
-  X.SearchFillInactive := $FFF0F0F0;
-  X.SearchBorder := $FFD6D6D6;
+  X.StatusHot := $FFE1E2E5;
+  X.SearchFill := $FFFAFAFB;
+  X.SearchFillInactive := $FFF1F2F5;
+  X.SearchBorder := $FFD2D4D8;
   X.SearchText := $FF242424;
   X.SearchPrompt := $FF616161;
   X.KeyTipFill := $FFFFFFFF;
   X.KeyTipText := $FF242424;
   X.KeyTipBorder := $FF8A8A8A;
-  Apply2024(T, P, X);
-  T.Colors[TFmrToken.FrameBorder] := $FFC8C8C8;
-  T.Colors[TFmrToken.FrameBorderInactive] := $FFD6D6D6;
+  ApplyModern2024(T, P, X);
+  T.Colors[TFmrToken.FrameBorder] := $FFC4C6CB;
+  T.Colors[TFmrToken.FrameBorderInactive] := $FFD3D5D9;
   T.Colors[TFmrToken.PopupShadow] := $30000000;
 end;
 
-procedure BuildOffice2024DarkGray(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModern2024DarkGray(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
-  X: T2024;
+  X: TModern2024;
   B: TAlphaColor;
 begin
-  // Word "Dark Gray" (measured): dark gray caption #525252 with white text, LIGHT GRAY card #BDBDBD with dark text.
-  Init(T, TFmrThemeFamily.Office2024, False, False);
-  B := Brand2024(A);
+  // Dark Gray: a dark gray caption with white text over a light gray card with dark text.
+  Init(T, TFmrThemeFamily.Modern2024, False, False);
+  B := Brand2024Accent(A);
   P := LightFlat(B);
   P.AccentText := FmrAccentShade(B, 3);
-  P.Caption := $FF525252;
+  P.Caption := $FF4D4F52;
   P.CaptionText := $FFFFFFFF;
-  P.CaptionTextInactive := $FF9E9E9E;
+  P.CaptionTextInactive := $FFA2A4A8;
   P.CaptionHot := $1AFFFFFF;
   P.CaptionPressed := $10FFFFFF;
   P.TabText := $FFFFFFFF;
   P.TabTextHot := $FFFFFFFF;
   P.TabTextActive := $FFFFFFFF;
-  P.Body := $FFBDBDBD;
-  P.BodyBorder := $FF464748;
-  P.Separator := $FF858585;
+  P.Body := $FFC3C4C6;
+  P.BodyBorder := $FF414346;
+  P.Separator := $FF898A8E;
   P.Text := $FF242424;
   P.TextSecondary := $FF424242;
-  P.TextDisabled := $FF858585;
-  P.Hot := $FFCDCDCD;
-  P.Pressed := $FFDADADA;
-  P.Checked := $FFCCCCCC;
-  P.CheckedBorder := $FF7A7A7A;
-  P.CheckedHot := $FFD6D6D6;
+  P.TextDisabled := $FF85878A;
+  P.Hot := $FFD1D2D4;
+  P.Pressed := $FFDCDDDF;
+  P.Checked := $FFCFD0D2;
+  P.CheckedBorder := $FF77797C;
+  P.CheckedHot := $FFD8D9DB;
   P.Popup := $FFEFEFEF;
   P.PopupBorder := $FF9A9A9A;
-  P.Edit := $FFBDBDBD;
+  P.Edit := $FFC3C4C6;
   P.EditBorder := $FF666666;
   P.EditBorderHot := $FF424242;
   X.Glyph := $FF3F3F3F;
@@ -1368,47 +1371,46 @@ begin
   X.Share := FmrAccentShade(B, 2);
   X.ShareText := $FF242424;
   X.BodyShadow := $66000000;
-  X.StatusFill := $FF525252;
+  X.StatusFill := $FF4D4F52;
   X.StatusText := $FFFFFFFF;
-  X.StatusLine := $FF3B3A39;
-  X.StatusHot := $FF5C5C5C;
-  X.SearchFill := $FFBDBDBD;
-  X.SearchFillInactive := $FF858585;
-  X.SearchBorder := $FF808080;
+  X.StatusLine := $FF37383B;
+  X.StatusHot := $FF5A5C60;
+  X.SearchFill := $FFC3C4C6;
+  X.SearchFillInactive := $FF898A8E;
+  X.SearchBorder := $FF7D7F83;
   X.SearchText := $FF242424;
   X.SearchPrompt := $FF424242;
   X.KeyTipFill := $FFEFEFEF;
   X.KeyTipText := $FF242424;
   X.KeyTipBorder := $FF666666;
-  Apply2024(T, P, X);
+  ApplyModern2024(T, P, X);
   // The menus and the backstage are light; the hot fill of the popup rows a shade darker than the menu.
   T.Colors[TFmrToken.MenuItemHotFill] := $FFD9D9D9;
   T.Colors[TFmrToken.BackstageNavText] := TAlphaColors.White;
   T.Colors[TFmrToken.BackstageNavSelectedText] := TAlphaColors.White;
   T.Colors[TFmrToken.BackstageNavHotFill] := $1AFFFFFF;
   T.Colors[TFmrToken.BackstageNavSelectedFill] := $33FFFFFF;
-  T.Colors[TFmrToken.BackstageNavSeparator] := $FF6A6A6A;
+  T.Colors[TFmrToken.BackstageNavSeparator] := $FF67696D;
   // Over Mica the gray caption (and the document background) is nearly opaque, the material shows a little.
-  T.Colors[TFmrToken.CaptionBackdropFill] := $F0525252;
-  T.Colors[TFmrToken.FrameBorder] := $FF3C3C3C;
+  T.Colors[TFmrToken.CaptionBackdropFill] := $F04D4F52;
+  T.Colors[TFmrToken.FrameBorder] := $FF393B3E;
   T.Colors[TFmrToken.FrameBorderInactive] := $FF464646;
   T.Colors[TFmrToken.PopupShadow] := $50000000;
 end;
 
-procedure BuildOffice2024Dark(const T: TFmrTheme; const A: TAlphaColor);
+procedure BuildModern2024Dark(const T: TFmrTheme; const A: TAlphaColor);
 var
   P: TFlat;
-  X: T2024;
+  X: TModern2024;
   B: TAlphaColor;
 begin
-  // Word "Black" (measured on all Office apps): flat caption and document #0A0A0A (Mica tint #1D222A only while active),
-  // card #292929, white text, inactive caption content #5C5C5C, light brand shades for the accents.
-  Init(T, TFmrThemeFamily.Office2024, True, False);
-  B := Brand2024(A);
-  P := DarkFlat(B, $FF0A0A0A, $FF292929, $FF3D3D3D, $FF474747, $FF666666);
+  // Dark: a near-black caption, a dark gray card, white text, light shades of the accent.
+  Init(T, TFmrThemeFamily.Modern2024, True, False);
+  B := Brand2024Accent(A);
+  P := DarkFlat(B, $FF121316, $FF292929, $FF3D3D3D, $FF474747, $FF606165);
   P.AccentText := FmrAccentShade(B, 2);
   P.CaptionText := $FFFFFFFF;
-  P.CaptionTextInactive := $FF5C5C5C;
+  P.CaptionTextInactive := $FF63656A;
   P.CaptionHot := $14FFFFFF;
   P.CaptionPressed := $0CFFFFFF;
   P.TabText := $FFFFFFFF;
@@ -1432,46 +1434,63 @@ begin
   X.Share := FmrAccentShade(B, 1);
   X.ShareText := TAlphaColors.Black;
   X.BodyShadow := $60000000;
-  X.StatusFill := $FF141414;
+  X.StatusFill := $FF17181B;
   X.StatusText := $FFFFFFFF;
-  X.StatusLine := $FF3B3A39;
-  X.StatusHot := $FF242424;
-  X.SearchFill := $FF1F1F1F;
-  X.SearchFillInactive := $FF141414;
+  X.StatusLine := $FF36373A;
+  X.StatusHot := $FF27282C;
+  X.SearchFill := $FF222326;
+  X.SearchFillInactive := $FF17181B;
   X.SearchBorder := $40000000;
   X.SearchText := $FFFFFFFF;
   X.SearchPrompt := $FFADADAD;
   X.KeyTipFill := $FF2B2B2B;
   X.KeyTipText := $FFFFFFFF;
   X.KeyTipBorder := $FFADADAD;
-  Apply2024(T, P, X);
+  ApplyModern2024(T, P, X);
   T.Colors[TFmrToken.MenuItemHotFill] := $FF3D3D3D;
   T.Colors[TFmrToken.PopupShadow] := $66000000;
 end;
 
 procedure FmrRegisterBuiltinThemes;
+const
+  // The theme names of the first release (deprecated); forms and settings that store them keep working.
+  Aliases: array [0..20, 0..1] of string = (
+    ('Office365Colorful', 'ModernColorful'), ('Office365White', 'ModernWhite'),
+    ('Office365DarkGray', 'ModernDarkGray'), ('Office365Black', 'ModernBlack'),
+    ('Office2016Colorful', 'BannerColorful'), ('Office2016White', 'BannerWhite'),
+    ('Office2016DarkGray', 'BannerDarkGray'),
+    ('Office2013White', 'FlatWhite'), ('Office2013LightGray', 'FlatLightGray'), ('Office2013DarkGray', 'FlatDarkGray'),
+    ('Office2010Blue', 'ClassicBlue'), ('Office2010Silver', 'ClassicSilver'), ('Office2010Black', 'ClassicBlack'),
+    ('Office2007Blue', 'GlassBlue'), ('Office2007Silver', 'GlassSilver'), ('Office2007Black', 'GlassBlack'),
+    ('FluentLight', 'SoftLight'), ('FluentDark', 'SoftDark'),
+    ('Office2024Light', 'Modern2024Light'), ('Office2024DarkGray', 'Modern2024DarkGray'),
+    ('Office2024Dark', 'Modern2024Dark'));
+var
+  I: Integer;
 begin
-  TFmrTheme.RegisterTheme('Office365Colorful', 'Office 365 Colorful', FmrAccentWord, BuildOffice365Colorful);
-  TFmrTheme.RegisterTheme('Office365White', 'Office 365 White', FmrAccentWord, BuildOffice365White);
-  TFmrTheme.RegisterTheme('Office365DarkGray', 'Office 365 Dark Gray', FmrAccentWord, BuildOffice365DarkGray);
-  TFmrTheme.RegisterTheme('Office365Black', 'Office 365 Black', FmrAccentWord, BuildOffice365Black);
-  TFmrTheme.RegisterTheme('Office2016Colorful', 'Office 2016 Colorful', FmrAccentWord, BuildOffice2016Colorful);
-  TFmrTheme.RegisterTheme('Office2016White', 'Office 2016 White', FmrAccentWord, BuildOffice2016White);
-  TFmrTheme.RegisterTheme('Office2016DarkGray', 'Office 2016 Dark Gray', FmrAccentWord, BuildOffice2016DarkGray);
-  TFmrTheme.RegisterTheme('Office2013White', 'Office 2013 White', FmrAccentWord, BuildOffice2013White);
-  TFmrTheme.RegisterTheme('Office2013LightGray', 'Office 2013 Light Gray', FmrAccentWord, BuildOffice2013LightGray);
-  TFmrTheme.RegisterTheme('Office2013DarkGray', 'Office 2013 Dark Gray', FmrAccentWord, BuildOffice2013DarkGray);
-  TFmrTheme.RegisterTheme('Office2010Blue', 'Office 2010 Blue', $FF2B579A, BuildOffice2010Blue);
-  TFmrTheme.RegisterTheme('Office2010Silver', 'Office 2010 Silver', $FF2B579A, BuildOffice2010Silver);
-  TFmrTheme.RegisterTheme('Office2010Black', 'Office 2010 Black', $FF2B579A, BuildOffice2010Black);
-  TFmrTheme.RegisterTheme('Office2007Blue', 'Office 2007 Blue', $FF2B579A, BuildOffice2007Blue);
-  TFmrTheme.RegisterTheme('Office2007Silver', 'Office 2007 Silver', $FF2B579A, BuildOffice2007Silver);
-  TFmrTheme.RegisterTheme('Office2007Black', 'Office 2007 Black', $FF2B579A, BuildOffice2007Black);
-  TFmrTheme.RegisterTheme('FluentLight', 'Windows 11 Light', FmrAccentFluent, BuildFluentLight);
-  TFmrTheme.RegisterTheme('FluentDark', 'Windows 11 Dark', FmrAccentFluent, BuildFluentDark);
-  TFmrTheme.RegisterTheme('Office2024Light', 'Office 2024 Light', FmrAccentWord2024, BuildOffice2024Light);
-  TFmrTheme.RegisterTheme('Office2024DarkGray', 'Office 2024 Dark Gray', FmrAccentWord2024, BuildOffice2024DarkGray);
-  TFmrTheme.RegisterTheme('Office2024Dark', 'Office 2024 Dark', FmrAccentWord2024, BuildOffice2024Dark);
+  TFmrTheme.RegisterTheme('ModernColorful', 'Modern Colorful', FmrAccentBlue, BuildModernColorful);
+  TFmrTheme.RegisterTheme('ModernWhite', 'Modern White', FmrAccentBlue, BuildModernWhite);
+  TFmrTheme.RegisterTheme('ModernDarkGray', 'Modern Dark Gray', FmrAccentBlue, BuildModernDarkGray);
+  TFmrTheme.RegisterTheme('ModernBlack', 'Modern Black', FmrAccentBlue, BuildModernBlack);
+  TFmrTheme.RegisterTheme('BannerColorful', 'Banner Colorful', FmrAccentBlue, BuildBannerColorful);
+  TFmrTheme.RegisterTheme('BannerWhite', 'Banner White', FmrAccentBlue, BuildBannerWhite);
+  TFmrTheme.RegisterTheme('BannerDarkGray', 'Banner Dark Gray', FmrAccentBlue, BuildBannerDarkGray);
+  TFmrTheme.RegisterTheme('FlatWhite', 'Flat White', FmrAccentBlue, BuildFlatWhite);
+  TFmrTheme.RegisterTheme('FlatLightGray', 'Flat Light Gray', FmrAccentBlue, BuildFlatLightGray);
+  TFmrTheme.RegisterTheme('FlatDarkGray', 'Flat Dark Gray', FmrAccentBlue, BuildFlatDarkGray);
+  TFmrTheme.RegisterTheme('ClassicBlue', 'Classic Blue', FmrAccentBlue, BuildClassicBlue);
+  TFmrTheme.RegisterTheme('ClassicSilver', 'Classic Silver', FmrAccentBlue, BuildClassicSilver);
+  TFmrTheme.RegisterTheme('ClassicBlack', 'Classic Black', FmrAccentBlue, BuildClassicBlack);
+  TFmrTheme.RegisterTheme('GlassBlue', 'Glass Blue', FmrAccentBlue, BuildGlassBlue);
+  TFmrTheme.RegisterTheme('GlassSilver', 'Glass Silver', FmrAccentBlue, BuildGlassSilver);
+  TFmrTheme.RegisterTheme('GlassBlack', 'Glass Black', FmrAccentBlue, BuildGlassBlack);
+  TFmrTheme.RegisterTheme('SoftLight', 'Soft Light', FmrAccentSky, BuildSoftLight);
+  TFmrTheme.RegisterTheme('SoftDark', 'Soft Dark', FmrAccentSky, BuildSoftDark);
+  TFmrTheme.RegisterTheme('Modern2024Light', 'Modern 2024 Light', FmrAccentCobalt, BuildModern2024Light);
+  TFmrTheme.RegisterTheme('Modern2024DarkGray', 'Modern 2024 Dark Gray', FmrAccentCobalt, BuildModern2024DarkGray);
+  TFmrTheme.RegisterTheme('Modern2024Dark', 'Modern 2024 Dark', FmrAccentCobalt, BuildModern2024Dark);
+  for I := Low(Aliases) to High(Aliases) do
+    TFmrTheme.RegisterThemeAlias(Aliases[I, 0], Aliases[I, 1]);
 end;
 
 initialization

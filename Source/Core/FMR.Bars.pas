@@ -394,7 +394,7 @@ type
     function ItemByName(const AName: string): TFmrBarItem;
     function IndexOfItem(const AItem: TFmrBarItem): Integer;
     function ItemsInCategory(const ACategory: string): TArray<TFmrBarItem>;
-    /// <summary>Command search ("Tell me"): visible items whose caption, description, hint, keywords or category
+    /// <summary>Command search: visible items whose caption, description, hint, keywords or category
     /// contain every word of AText (case-insensitive, '&amp;' ignored). Captions starting with the text come
     /// first, then captions containing it, then the other matches; ties keep the item order. AMaxCount 0 = all.
     /// </summary>

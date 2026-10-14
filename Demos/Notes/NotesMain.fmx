@@ -1,0 +1,4132 @@
+object NotesForm: TNotesForm
+  Left = 100
+  Top = 100
+  Caption = 'Note1 - FMR Notes'
+  ClientHeight = 800
+  ClientWidth = 1280
+  Fill.Color = claNull
+  Fill.Kind = Solid
+  Position = ScreenCenter
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop, iPhone, iPad]
+  OnCreate = FormCreate
+  OnClose = FormClose
+  OnDestroy = FormDestroy
+  DesignerMasterStyle = 0
+  object BarManager1: TFmrBarManager
+    Categories.Strings = (
+      'File'
+      'Home'
+      'Insert'
+      'Layout'
+      'View'
+      'Selection')
+    Images = ImageList1
+    Left = 520
+    Top = 520
+    object chkAutoSave: TFmrCheckItem
+      Caption = 'AutoSave'
+      Category = 'File'
+      ScreenTip.Header = 'AutoSave'
+      ScreenTip.Description = 
+        'Save the document on every change (a Save of the demo when it ha' +
+        's a file name).'
+      OnClick = AutoSaveClick
+      CheckStyle = ToggleSwitch
+    end
+    object btnSave: TFmrButtonItem
+      Caption = 'Save'
+      Category = 'File'
+      Glyph.GlyphCode = 59214
+      ScreenTip.Header = 'Save (Ctrl+S)'
+      ScreenTip.Description = 
+        'Save the document. A new document opens Save As in the backstage' +
+        ' view.'
+      ShortCut = 16467
+      OnClick = SaveClick
+    end
+    object btnUndo: TFmrButtonItem
+      Caption = 'Undo'
+      Category = 'File'
+      Glyph.GlyphCode = 59303
+      ShortCut = 16474
+      OnClick = UndoClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnUndoAll
+        end>
+    end
+    object btnUndoAll: TFmrButtonItem
+      Caption = 'Undo All Changes'
+      Category = 'File'
+      OnClick = UndoAllClick
+    end
+    object btnRedo: TFmrButtonItem
+      Caption = 'Redo'
+      Category = 'File'
+      Glyph.GlyphCode = 59302
+      ShortCut = 16473
+      OnClick = RedoClick
+    end
+    object btnNew: TFmrButtonItem
+      Caption = 'New'
+      Category = 'File'
+      Glyph.GlyphCode = 59557
+      ShortCut = 16462
+      OnClick = NewClick
+    end
+    object btnOpen: TFmrButtonItem
+      Caption = 'Open'
+      Category = 'File'
+      Glyph.GlyphCode = 59621
+      ShortCut = 16463
+      OnClick = OpenClick
+    end
+    object btnPrint: TFmrButtonItem
+      Caption = 'Print'
+      Category = 'File'
+      Glyph.GlyphCode = 59209
+      ShortCut = 16464
+      OnClick = PrintClick
+    end
+    object btnAccount: TFmrAvatarItem
+      Caption = 'Account'
+      Category = 'File'
+      ScreenTip.Header = 'FMR Notes user'
+      ScreenTip.Description = 'The account of the document (a demo menu).'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnAccountName
+        end
+        item
+          Item = btnAccountSwitch
+          BeginGroup = True
+        end>
+      Initials = 'FN'
+      Color = xFFA4262C
+    end
+    object btnAccountName: TFmrStaticItem
+      Caption = 'FMR Notes user'
+      Alignment = Center
+    end
+    object btnAccountSwitch: TFmrButtonItem
+      Caption = 'Switch account'
+      Glyph.GlyphCode = 59208
+      OnClick = CommandClick
+    end
+    object btnComments: TFmrButtonItem
+      Caption = 'Comments'
+      Category = 'File'
+      Glyph.GlyphCode = 59658
+      OnClick = CommandClick
+    end
+    object btnShare: TFmrButtonItem
+      Caption = 'Share'
+      Category = 'File'
+      Glyph.GlyphCode = 59181
+      ScreenTip.Header = 'Share'
+      ScreenTip.Description = 'Invite others to work on the document together.'
+      OnClick = CommandClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnShareLink
+        end
+        item
+          Item = btnShareCopy
+        end>
+      Primary = True
+    end
+    object btnShareLink: TFmrButtonItem
+      Caption = 'Copy Link'
+      Glyph.GlyphCode = 59163
+      OnClick = CommandClick
+    end
+    object btnShareCopy: TFmrButtonItem
+      Caption = 'Send a Copy'
+      Glyph.GlyphCode = 59172
+      OnClick = CommandClick
+    end
+    object btnPaste: TFmrButtonItem
+      Caption = 'Paste'
+      Glyph.GlyphCode = 59263
+      LargeGlyph.GlyphCode = 59263
+      KeyTip = 'V'
+      ScreenTip.Header = 'Paste (Ctrl+V)'
+      ScreenTip.Description = 'Add content from the clipboard to the document.'
+      ScreenTip.ShowShortcut = False
+      OnClick = PasteClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnPasteKeep
+        end
+        item
+          Item = btnPasteText
+        end>
+    end
+    object btnPasteKeep: TFmrButtonItem
+      Caption = 'Keep Source Formatting'
+      Description = 'Paste the clipboard as it is.'
+      Glyph.GlyphCode = 59263
+      OnClick = PasteClick
+    end
+    object btnPasteText: TFmrButtonItem
+      Caption = 'Keep Text Only'
+      Description = 'Paste plain text: line breaks normalized, spaces trimmed.'
+      Glyph.GlyphCode = 59625
+      OnClick = PasteTextClick
+    end
+    object btnCut: TFmrButtonItem
+      Caption = 'Cut'
+      Glyph.GlyphCode = 59590
+      LargeGlyph.GlyphCode = 59590
+      KeyTip = 'X'
+      ScreenTip.Header = 'Cut (Ctrl+X)'
+      ScreenTip.Description = 'Remove the selection and put it on the clipboard.'
+      OnClick = CutClick
+    end
+    object btnCopy: TFmrButtonItem
+      Caption = 'Copy'
+      Glyph.GlyphCode = 59592
+      LargeGlyph.GlyphCode = 59592
+      KeyTip = 'C'
+      ScreenTip.Header = 'Copy (Ctrl+C)'
+      ScreenTip.Description = 'Put a copy of the selection on the clipboard.'
+      OnClick = CopyClick
+    end
+    object btnFormatPainter: TFmrButtonItem
+      Caption = 'Format Painter'
+      Glyph.GlyphCode = 59249
+      KeyTip = 'FP'
+      ScreenTip.Header = 'Format Painter'
+      ScreenTip.Description = 'Copy the formatting of the selection and apply it to other text.'
+      OnClick = FormatPainterClick
+      ButtonStyle = Check
+    end
+    object btnSelectAll: TFmrButtonItem
+      Caption = 'Select All'
+      Glyph.GlyphCode = 59571
+      KeyTip = 'SA'
+      OnClick = SelectAllClick
+    end
+    object cbFontName: TFmrFontNameItem
+      Caption = 'Font'
+      KeyTip = 'FF'
+      ScreenTip.Header = 'Font'
+      ScreenTip.Description = 'Pick a new font for the document.'
+      Width = 112.00000000000000000
+      OnChange = FontNameChange
+      Text = 'Segoe UI'
+    end
+    object cbFontSize: TFmrComboItem
+      Caption = 'Font Size'
+      KeyTip = 'FS'
+      ScreenTip.Header = 'Font Size'
+      ScreenTip.Description = 'Change the size of the text.'
+      Width = 62.00000000000000000
+      OnChange = FontSizeChange
+      Editable = True
+      Items.Strings = (
+        '8'
+        '9'
+        '10'
+        '11'
+        '12'
+        '14'
+        '16'
+        '18'
+        '20'
+        '24'
+        '28'
+        '36'
+        '48'
+        '72')
+      ItemIndex = 4
+    end
+    object btnGrowFont: TFmrButtonItem
+      Caption = 'Grow Font'
+      Glyph.GlyphCode = 59624
+      KeyTip = 'FG'
+      ScreenTip.Header = 'Increase Font Size'
+      ScreenTip.Description = 'Make the text a bit larger.'
+      OnClick = GrowFontClick
+    end
+    object btnShrinkFont: TFmrButtonItem
+      Caption = 'Shrink Font'
+      Glyph.GlyphCode = 59623
+      KeyTip = 'FK'
+      ScreenTip.Header = 'Decrease Font Size'
+      ScreenTip.Description = 'Make the text a bit smaller.'
+      OnClick = ShrinkFontClick
+    end
+    object btnChangeCase: TFmrButtonItem
+      Caption = 'Change Case'
+      Glyph.GlyphCode = 59625
+      KeyTip = '7'
+      ScreenTip.Header = 'Change Case'
+      ScreenTip.Description = 
+        'Change the selected text to uppercase, lowercase or other capita' +
+        'lizations.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnCaseSentence
+        end
+        item
+          Item = btnCaseLower
+        end
+        item
+          Item = btnCaseUpper
+        end
+        item
+          Item = btnCaseTitle
+        end
+        item
+          Item = btnCaseToggle
+        end>
+    end
+    object btnCaseSentence: TFmrButtonItem
+      Caption = 'Sentence case.'
+      Category = 'Home'
+      OnClick = ChangeCaseClick
+    end
+    object btnCaseLower: TFmrButtonItem
+      Tag = 1
+      Caption = 'lowercase'
+      Category = 'Home'
+      Glyph.GlyphCode = 59602
+      LargeGlyph.GlyphCode = 59602
+      OnClick = ChangeCaseClick
+    end
+    object btnCaseUpper: TFmrButtonItem
+      Tag = 2
+      Caption = 'UPPERCASE'
+      Category = 'Home'
+      Glyph.GlyphCode = 59625
+      LargeGlyph.GlyphCode = 59625
+      OnClick = ChangeCaseClick
+    end
+    object btnCaseTitle: TFmrButtonItem
+      Tag = 3
+      Caption = 'Capitalize Each Word'
+      Category = 'Home'
+      OnClick = ChangeCaseClick
+    end
+    object btnCaseToggle: TFmrButtonItem
+      Tag = 4
+      Caption = 'tOGGLE cASE'
+      Category = 'Home'
+      OnClick = ChangeCaseClick
+    end
+    object btnClearFormatting: TFmrButtonItem
+      Caption = 'Clear Formatting'
+      Glyph.GlyphCode = 60768
+      KeyTip = 'E'
+      ScreenTip.Header = 'Clear All Formatting'
+      ScreenTip.Description = 'Remove all the formatting: back to the Normal style.'
+      OnClick = ClearFormattingClick
+    end
+    object btnBold: TFmrButtonItem
+      Caption = 'Bold'
+      Glyph.GlyphCode = 59613
+      KeyTip = '1'
+      ScreenTip.Header = 'Bold (Ctrl+B)'
+      ScreenTip.Description = 'Make the text bold.'
+      ShortCut = 16450
+      OnClick = FontStyleClick
+      ButtonStyle = Check
+    end
+    object btnItalic: TFmrButtonItem
+      Caption = 'Italic'
+      Glyph.GlyphCode = 59611
+      KeyTip = '2'
+      ScreenTip.Header = 'Italic (Ctrl+I)'
+      ScreenTip.Description = 'Italicize the text.'
+      ShortCut = 16457
+      OnClick = FontStyleClick
+      ButtonStyle = Check
+    end
+    object btnUnderline: TFmrButtonItem
+      Caption = 'Underline'
+      Glyph.GlyphCode = 59612
+      KeyTip = '3'
+      ScreenTip.Header = 'Underline (Ctrl+U)'
+      ScreenTip.Description = 'Underline the text.'
+      ShortCut = 16469
+      OnClick = FontStyleClick
+      ButtonStyle = Check
+    end
+    object btnStrike: TFmrButtonItem
+      Caption = 'Strikethrough'
+      Glyph.GlyphCode = 60896
+      KeyTip = '4'
+      ScreenTip.Header = 'Strikethrough'
+      ScreenTip.Description = 'Cross something out by drawing a line through it.'
+      OnClick = FontStyleClick
+      ButtonStyle = Check
+    end
+    object btnSubscript: TFmrButtonItem
+      Caption = 'x'#8322
+      KeyTip = '5'
+      ScreenTip.Header = 'Subscript (Ctrl+=)'
+      ScreenTip.Description = 'Type very small letters just below the line of text.'
+      OnClick = CommandClick
+      AllowAllUp = True
+      ButtonStyle = Check
+      GroupIndex = 21
+    end
+    object btnSuperscript: TFmrButtonItem
+      Caption = 'x'#178
+      KeyTip = '6'
+      ScreenTip.Header = 'Superscript (Ctrl+Shift++)'
+      ScreenTip.Description = 'Type very small letters just above the line of text.'
+      OnClick = CommandClick
+      AllowAllUp = True
+      ButtonStyle = Check
+      GroupIndex = 21
+    end
+    object btnTextEffects: TFmrButtonItem
+      Caption = 'Text Effects and Typography'
+      Glyph.GlyphCode = 61280
+      KeyTip = 'FT'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnClearFormatting
+        end>
+    end
+    object clrHighlight: TFmrColorGalleryItem
+      Caption = 'Text Highlight Color'
+      Glyph.GlyphCode = 59366
+      KeyTip = 'I'
+      ScreenTip.Header = 'Text Highlight Color'
+      ScreenTip.Description = 'Make the text look like it was marked with a highlighter pen.'
+      OnClick = CommandClick
+      Color = claYellow
+    end
+    object clrFontColor: TFmrColorGalleryItem
+      Caption = 'Font Color'
+      Glyph.GlyphCode = 59603
+      KeyTip = 'FC'
+      ScreenTip.Header = 'Font Color'
+      ScreenTip.Description = 'Change the color of the text. Point at a color to preview it.'
+      OnClick = FontColorClick
+      Color = claRed
+      OnPreview = FontColorPreview
+    end
+    object btnBullets: TFmrButtonItem
+      Caption = 'Bullets'
+      Glyph.GlyphCode = 59645
+      KeyTip = 'U'
+      ScreenTip.Header = 'Bullets'
+      ScreenTip.Description = 
+        'Start a bulleted list (or remove the bullets of the selected lin' +
+        'es).'
+      OnClick = BulletsClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnBulletDot
+        end
+        item
+          Item = btnBulletDash
+        end>
+    end
+    object btnBulletDot: TFmrButtonItem
+      Caption = #8226'  Bullet'
+      OnClick = BulletsClick
+    end
+    object btnBulletDash: TFmrButtonItem
+      Tag = 1
+      Caption = #8211'  Dash'
+      OnClick = BulletsClick
+    end
+    object btnNumbering: TFmrButtonItem
+      Caption = 'Numbering'
+      Glyph.GlyphCode = 61800
+      KeyTip = 'N'
+      ScreenTip.Header = 'Numbering'
+      ScreenTip.Description = 
+        'Start a numbered list (or remove the numbers of the selected lin' +
+        'es).'
+      OnClick = NumberingClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnNumber1
+        end>
+    end
+    object btnNumber1: TFmrButtonItem
+      Caption = '1.  2.  3.'
+      OnClick = NumberingClick
+    end
+    object btnMultilevel: TFmrButtonItem
+      Caption = 'Multilevel List'
+      Glyph.GlyphCode = 59968
+      KeyTip = 'M'
+      OnClick = CommandClick
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnBulletDot
+        end
+        item
+          Item = btnNumber1
+        end>
+    end
+    object btnIndentDec: TFmrButtonItem
+      Tag = -1
+      Caption = 'Decrease Indent'
+      Glyph.GlyphCode = 59986
+      KeyTip = 'AO'
+      OnClick = IndentClick
+    end
+    object btnIndentInc: TFmrButtonItem
+      Tag = 1
+      Caption = 'Increase Indent'
+      Glyph.GlyphCode = 59573
+      KeyTip = 'AI'
+      OnClick = IndentClick
+    end
+    object btnSort: TFmrButtonItem
+      Caption = 'Sort'
+      Glyph.GlyphCode = 59595
+      LargeGlyph.GlyphCode = 59595
+      KeyTip = 'SO'
+      ScreenTip.Header = 'Sort'
+      ScreenTip.Description = 'Sort the selected lines alphabetically.'
+      OnClick = SortClick
+    end
+    object btnShowMarks: TFmrButtonItem
+      Caption = 'Show/Hide'
+      Glyph.PathData = 
+        'M18,4 L18,5.6 L16.4,5.6 L16.4,20 L14.8,20 L14.8,5.6 L12.8,5.6 L1' +
+        '2.8,20 L11.2,20 L11.2,12.4 A4.2,4.2 0 0 1 11.2,4 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      KeyTip = '8'
+      ScreenTip.Header = 'Show/Hide '#182' (Ctrl+*)'
+      ScreenTip.Description = 'Show paragraph marks and other hidden formatting symbols.'
+      OnClick = CommandClick
+      ButtonStyle = Check
+    end
+    object btnAlignLeft: TFmrButtonItem
+      Caption = 'Align Left'
+      Glyph.GlyphCode = 59620
+      KeyTip = 'AL'
+      ShortCut = 16460
+      OnClick = AlignClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 1
+    end
+    object btnAlignCenter: TFmrButtonItem
+      Tag = 1
+      Caption = 'Center'
+      Glyph.GlyphCode = 59619
+      KeyTip = 'AC'
+      ShortCut = 16453
+      OnClick = AlignClick
+      ButtonStyle = Check
+      GroupIndex = 1
+    end
+    object btnAlignRight: TFmrButtonItem
+      Tag = 2
+      Caption = 'Align Right'
+      Glyph.GlyphCode = 59618
+      KeyTip = 'AR'
+      ShortCut = 16466
+      OnClick = AlignClick
+      ButtonStyle = Check
+      GroupIndex = 1
+    end
+    object btnJustify: TFmrButtonItem
+      Tag = 3
+      Caption = 'Justify'
+      Glyph.GlyphCode = 59136
+      KeyTip = 'AJ'
+      ShortCut = 16458
+      OnClick = AlignClick
+      ButtonStyle = Check
+      GroupIndex = 1
+    end
+    object btnLineSpacing: TFmrButtonItem
+      Caption = 'Line and Paragraph Spacing'
+      Glyph.GlyphCode = 60647
+      KeyTip = 'K'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnSpacing10
+        end
+        item
+          Item = btnSpacing115
+        end
+        item
+          Item = btnSpacing15
+        end
+        item
+          Item = btnSpacing20
+        end>
+    end
+    object btnSpacing10: TFmrButtonItem
+      Caption = '1.0'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object btnSpacing115: TFmrButtonItem
+      Tag = 1
+      Caption = '1.15'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 22
+    end
+    object btnSpacing15: TFmrButtonItem
+      Tag = 2
+      Caption = '1.5'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object btnSpacing20: TFmrButtonItem
+      Tag = 3
+      Caption = '2.0'
+      OnClick = CommandClick
+      ButtonStyle = Check
+      GroupIndex = 22
+    end
+    object clrShading: TFmrColorItem
+      Caption = 'Shading'
+      Glyph.GlyphCode = 60226
+      KeyTip = 'H'
+      OnClick = CommandClick
+      AutomaticColor = claNull
+    end
+    object btnBorders: TFmrButtonItem
+      Caption = 'Borders'
+      Glyph.GlyphCode = 59193
+      KeyTip = 'B'
+      OnClick = CommandClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnBorderBottom
+        end
+        item
+          Item = btnBorderNone
+        end>
+    end
+    object btnBorderBottom: TFmrButtonItem
+      Caption = 'Bottom Border'
+      Glyph.GlyphCode = 59193
+      OnClick = CommandClick
+    end
+    object btnBorderNone: TFmrButtonItem
+      Caption = 'No Border'
+      OnClick = CommandClick
+    end
+    object galStyles: TFmrRibbonGalleryItem
+      Caption = 'Styles'
+      Glyph.PathData = 
+        'M3,19 L8,5 L10,5 L15,19 L12.8,19 L11.6,15.5 L6.4,15.5 L5.2,19 Z ' +
+        'M7.1,13.5 L10.9,13.5 L9,8 Z M16,13 L21,13 L21,14.5 L16,14.5 Z M1' +
+        '6,17 L21,17 L21,18.5 L16,18.5 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M3,19 L8,5 L10,5 L15,19 L12.8,19 L11.6,15.5 L6.4,15.5 L5.2,19 Z ' +
+        'M7.1,13.5 L10.9,13.5 L9,8 Z M16,13 L21,13 L21,14.5 L16,14.5 Z M1' +
+        '6,17 L21,17 L21,18.5 L16,18.5 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'L'
+      ScreenTip.Header = 'Styles'
+      ScreenTip.Description = 'Choose a style for the document. Point at a style to preview it.'
+      DropDownColumns = 6
+      DropDownLinks = <
+        item
+          Item = btnClearFormatting
+        end>
+      Groups = <
+        item
+          Caption = 'Styles'
+          Items = <
+            item
+              Caption = 'Normal'
+            end
+            item
+              Caption = 'Compact'
+              Tag = 1
+            end
+            item
+              Caption = 'Heading 1'
+              Tag = 2
+            end
+            item
+              Caption = 'Heading 2'
+              Tag = 3
+            end
+            item
+              Caption = 'Title'
+              Tag = 4
+            end
+            item
+              Caption = 'Subtitle'
+              Tag = 5
+            end
+            item
+              Caption = 'Aside'
+              Tag = 6
+            end
+            item
+              Caption = 'Emphasis'
+              Tag = 7
+            end
+            item
+              Caption = 'Key Point'
+              Tag = 8
+            end
+            item
+              Caption = 'Strong'
+              Tag = 9
+            end
+            item
+              Caption = 'Quote'
+              Tag = 10
+            end
+            item
+              Caption = 'Callout'
+              Tag = 11
+            end
+            item
+              Caption = 'Note'
+              Tag = 12
+            end
+            item
+              Caption = 'Code'
+              Tag = 13
+            end
+            item
+              Caption = 'Caption'
+              Tag = 14
+            end
+            item
+              Caption = 'List'
+              Tag = 15
+            end>
+        end>
+      ItemHeight = 56.00000000000000000
+      ItemWidth = 72.00000000000000000
+      MaxColumns = 16
+      SelectedIndex = 0
+      ShowGroupHeaders = False
+      OnHotTrack = StylesHotTrack
+      OnItemClick = StylesItemClick
+      OnDrawItem = StylesDrawItem
+    end
+    object btnFind: TFmrButtonItem
+      Caption = 'Find'
+      Glyph.GlyphCode = 59169
+      KeyTip = 'FD'
+      ScreenTip.Header = 'Find (Ctrl+F)'
+      ScreenTip.Description = 'Find text in the document.'
+      ShortCut = 16454
+      OnClick = FindClick
+      ButtonStyle = Split
+      DropDownLinks = <
+        item
+          Item = btnAdvancedFind
+        end
+        item
+          Item = btnGoTo
+        end>
+    end
+    object btnAdvancedFind: TFmrButtonItem
+      Caption = 'Advanced Find...'
+      Glyph.GlyphCode = 59169
+      OnClick = FindClick
+    end
+    object btnGoTo: TFmrButtonItem
+      Caption = 'Go To...'
+      Glyph.GlyphCode = 59565
+      OnClick = CommandClick
+    end
+    object btnReplace: TFmrButtonItem
+      Caption = 'Replace'
+      Glyph.GlyphCode = 59563
+      KeyTip = 'R'
+      ScreenTip.Header = 'Replace (Ctrl+H)'
+      ScreenTip.Description = 'Search for text and replace it.'
+      ShortCut = 16456
+      OnClick = ReplaceClick
+    end
+    object btnSelect: TFmrButtonItem
+      Caption = 'Select'
+      Glyph.GlyphCode = 59571
+      KeyTip = 'SL'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnSelectAll
+        end
+        item
+          Item = btnSelectSimilar
+        end>
+    end
+    object btnSelectSimilar: TFmrButtonItem
+      Caption = 'Select Text with Similar Formatting'
+      Enabled = False
+      OnClick = CommandClick
+    end
+    object btnAddins: TFmrButtonItem
+      Caption = 'Add-ins'
+      Glyph.SvgSource = 
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g f' +
+        'ill="none" stroke="#3E7CB1" stroke-width="1.6"><rect x="3.8" y="' +
+        '3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.' +
+        '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
+        '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
+        '" y="16.8" width="7.4" height="7.4"/></g></svg>'
+      LargeGlyph.SvgSource = 
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g f' +
+        'ill="none" stroke="#3E7CB1" stroke-width="1.6"><rect x="3.8" y="' +
+        '3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.' +
+        '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
+        '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
+        '" y="16.8" width="7.4" height="7.4"/></g></svg>'
+      KeyTip = 'Y2'
+      ScreenTip.Header = 'Add-ins'
+      ScreenTip.Description = 'Find add-ins and manage them.'
+      OnClick = CommandClick
+    end
+    object btnBlankPage: TFmrButtonItem
+      Tag = 1
+      Caption = 'Blank Page'
+      Glyph.GlyphCode = 60686
+      LargeGlyph.GlyphCode = 60686
+      ScreenTip.Header = 'Blank Page'
+      ScreenTip.Description = 'Insert empty lines at the cursor.'
+      OnClick = InsertTextClick
+    end
+    object btnPageBreak: TFmrButtonItem
+      Caption = 'Page Break'
+      Glyph.GlyphCode = 59217
+      LargeGlyph.GlyphCode = 59217
+      ScreenTip.Header = 'Page Break'
+      ScreenTip.Description = 'Insert a page break line at the cursor.'
+      OnClick = InsertTextClick
+    end
+    object galTable: TFmrRibbonGalleryItem
+      Caption = 'Table'
+      Glyph.PathData = 
+        'M3,4 L8,4 L8,8 L3,8 Z M9.5,4 L14.5,4 L14.5,8 L9.5,8 Z M16,4 L21,' +
+        '4 L21,8 L16,8 Z M3,10 L8,10 L8,14 L3,14 Z M9.5,10 L14.5,10 L14.5' +
+        ',14 L9.5,14 Z M16,10 L21,10 L21,14 L16,14 Z M3,16 L8,16 L8,20 L3' +
+        ',20 Z M9.5,16 L14.5,16 L14.5,20 L9.5,20 Z M16,16 L21,16 L21,20 L' +
+        '16,20 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M3,4 L8,4 L8,8 L3,8 Z M9.5,4 L14.5,4 L14.5,8 L9.5,8 Z M16,4 L21,' +
+        '4 L21,8 L16,8 Z M3,10 L8,10 L8,14 L3,14 Z M9.5,10 L14.5,10 L14.5' +
+        ',14 L9.5,14 Z M16,10 L21,10 L21,14 L16,14 Z M3,16 L8,16 L8,20 L3' +
+        ',20 Z M9.5,16 L14.5,16 L14.5,20 L9.5,20 Z M16,16 L21,16 L21,20 L' +
+        '16,20 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'T'
+      ScreenTip.Header = 'Add a Table'
+      ScreenTip.Description = 'Insert a text table: pick its number of columns and rows.'
+      DropDownColumns = 3
+      DropDownLinks = <
+        item
+          Item = btnInsertTable
+        end>
+      Groups = <
+        item
+          Caption = 'Quick Tables'
+          Items = <
+            item
+              Caption = 'Table 2 x 2'
+            end
+            item
+              Caption = 'Table 3 x 2'
+              Tag = 1
+            end
+            item
+              Caption = 'Table 3 x 3'
+              Tag = 2
+            end
+            item
+              Caption = 'Table 4 x 2'
+              Tag = 3
+            end
+            item
+              Caption = 'Table 4 x 3'
+              Tag = 4
+            end
+            item
+              Caption = 'Table 4 x 4'
+              Tag = 5
+            end
+            item
+              Caption = 'Table 5 x 3'
+              Tag = 6
+            end
+            item
+              Caption = 'Table 5 x 5'
+              Tag = 7
+            end
+            item
+              Caption = 'Table 6 x 4'
+              Tag = 8
+            end>
+        end>
+      ItemHeight = 70.00000000000000000
+      ItemWidth = 84.00000000000000000
+      SelectionMode = None
+      ShowInRibbon = False
+      OnItemClick = TableItemClick
+      DropDownResize = None
+      OnDrawItem = TableDrawItem
+    end
+    object btnInsertTable: TFmrButtonItem
+      Caption = 'Insert Table...'
+      Glyph.GlyphCode = 59402
+      OnClick = InsertTableClick
+    end
+    object btnShapes: TFmrButtonItem
+      Caption = 'Shapes'
+      Glyph.PathData = 
+        'M3,12 L11,12 L11,20 L3,20 Z M17,3 L22,12 L12,12 Z M14,15 L21,15 ' +
+        'L21,21 L14,21 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M3,12 L11,12 L11,20 L3,20 Z M17,3 L22,12 L12,12 Z M14,15 L21,15 ' +
+        'L21,21 L14,21 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'SH'
+      ScreenTip.Header = 'Shapes'
+      ScreenTip.Description = 
+        'Insert a symbol shape (square, circle, arrow, star...) at the cu' +
+        'rsor.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = galShapes
+        end
+        item
+          Item = btnHorizontalLine
+          BeginGroup = True
+        end>
+    end
+    object galShapes: TFmrGalleryItem
+      Caption = 'Shapes'
+      DropDownColumns = 8
+      Groups = <
+        item
+          Caption = 'Basic Shapes'
+          Items = <
+            item
+              Caption = 'Square'
+              Glyph.PathData = 'M4,4 L20,4 L20,20 L4,20 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+            end
+            item
+              Caption = 'Hollow Square'
+              Glyph.PathData = 'M4,4 L20,4 L20,20 L4,20 Z M6,6 L6,18 L18,18 L18,6 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 1
+            end
+            item
+              Caption = 'Circle'
+              Glyph.PathData = 'M12,4 A8,8 0 1 1 11.99,4 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 2
+            end
+            item
+              Caption = 'Hollow Circle'
+              Glyph.PathData = 'M12,4 A8,8 0 1 1 11.99,4 Z M12,6 A6,6 0 1 0 12.01,6 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 3
+            end
+            item
+              Caption = 'Triangle'
+              Glyph.PathData = 'M12,3 L22,20 L2,20 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 4
+            end
+            item
+              Caption = 'Diamond'
+              Glyph.PathData = 'M12,2 L22,12 L12,22 L2,12 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 5
+            end
+            item
+              Caption = 'Star'
+              Glyph.PathData = 
+                'M12,2 L14.9,8.6 L22,9.3 L16.6,14 L18.2,21 L12,17.3 L5.8,21 L7.4,' +
+                '14 L2,9.3 L9.1,8.6 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 6
+            end
+            item
+              Caption = 'Heart'
+              Glyph.PathData = 'M12,21 L4,13 Q1,9.5 4,6 Q8,3 12,7.5 Q16,3 20,6 Q23,9.5 20,13 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 7
+            end>
+        end
+        item
+          Caption = 'Arrows'
+          Items = <
+            item
+              Caption = 'Right Arrow'
+              Glyph.PathData = 'M2,8 L13,8 L13,3 L22,12 L13,21 L13,16 L2,16 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 8
+            end
+            item
+              Caption = 'Left Arrow'
+              Glyph.PathData = 'M22,8 L11,8 L11,3 L2,12 L11,21 L11,16 L22,16 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 9
+            end
+            item
+              Caption = 'Up Arrow'
+              Glyph.PathData = 'M8,22 L8,11 L3,11 L12,2 L21,11 L16,11 L16,22 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 10
+            end
+            item
+              Caption = 'Down Arrow'
+              Glyph.PathData = 'M8,2 L8,13 L3,13 L12,22 L21,13 L16,13 L16,2 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 11
+            end
+            item
+              Caption = 'Double Arrow'
+              Glyph.PathData = 
+                'M2,9 L15,9 L15,4 L22,12 L15,20 L15,15 L2,15 Z M5,11 L5,13 L17,13' +
+                ' L17,11 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 12
+            end>
+        end
+        item
+          Caption = 'Marks'
+          Items = <
+            item
+              Caption = 'Check Mark'
+              Glyph.PathData = 'M3,13 L6,10 L10,14 L19,4 L22,7 L10,20 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 13
+            end
+            item
+              Caption = 'Cross'
+              Glyph.PathData = 
+                'M5,3 L12,10 L19,3 L21,5 L14,12 L21,19 L19,21 L12,14 L5,21 L3,19 ' +
+                'L10,12 L3,5 Z'
+              Glyph.PathViewBox = 24.00000000000000000
+              Tag = 14
+            end>
+        end>
+      ItemHeight = 30.00000000000000000
+      ItemWidth = 30.00000000000000000
+      SelectionMode = None
+      ShowInRibbon = False
+      OnItemClick = ShapesItemClick
+    end
+    object btnHorizontalLine: TFmrButtonItem
+      Tag = 7
+      Caption = 'Horizontal Line'
+      Glyph.GlyphCode = 59192
+      OnClick = InsertTextClick
+    end
+    object btnTextBox: TFmrButtonItem
+      Tag = 4
+      Caption = 'Text Box'
+      Glyph.GlyphCode = 59226
+      LargeGlyph.GlyphCode = 59226
+      OnClick = InsertTextClick
+    end
+    object btnDateTime: TFmrButtonItem
+      Tag = 2
+      Caption = 'Date && Time'
+      Glyph.GlyphCode = 59271
+      OnClick = InsertTextClick
+    end
+    object btnSignature: TFmrButtonItem
+      Tag = 3
+      Caption = 'Signature Line'
+      Glyph.GlyphCode = 59151
+      OnClick = InsertTextClick
+    end
+    object btnComment: TFmrButtonItem
+      Tag = 6
+      Caption = 'Comment'
+      Glyph.GlyphCode = 59658
+      OnClick = InsertTextClick
+    end
+    object btnLink: TFmrButtonItem
+      Tag = 5
+      Caption = 'Link'
+      Glyph.GlyphCode = 59163
+      LargeGlyph.GlyphCode = 59163
+      OnClick = InsertTextClick
+    end
+    object galSymbols: TFmrRibbonGalleryItem
+      Caption = 'Symbol'
+      Glyph.GlyphCode = 59585
+      LargeGlyph.GlyphCode = 59585
+      KeyTip = 'U'
+      ScreenTip.Header = 'Symbol'
+      ScreenTip.Description = 'Insert a symbol at the cursor.'
+      DropDownColumns = 8
+      Groups = <
+        item
+          Caption = 'Symbols'
+          Items = <
+            item
+              Caption = #169
+            end
+            item
+              Caption = #174
+              Tag = 1
+            end
+            item
+              Caption = #8482
+              Tag = 2
+            end
+            item
+              Caption = #8364
+              Tag = 3
+            end
+            item
+              Caption = #163
+              Tag = 4
+            end
+            item
+              Caption = #165
+              Tag = 5
+            end
+            item
+              Caption = #167
+              Tag = 6
+            end
+            item
+              Caption = #182
+              Tag = 7
+            end
+            item
+              Caption = #177
+              Tag = 8
+            end
+            item
+              Caption = #215
+              Tag = 9
+            end
+            item
+              Caption = #247
+              Tag = 10
+            end
+            item
+              Caption = #8800
+              Tag = 11
+            end
+            item
+              Caption = #8804
+              Tag = 12
+            end
+            item
+              Caption = #8805
+              Tag = 13
+            end
+            item
+              Caption = #8734
+              Tag = 14
+            end
+            item
+              Caption = #176
+              Tag = 15
+            end
+            item
+              Caption = #181
+              Tag = 16
+            end
+            item
+              Caption = #945
+              Tag = 17
+            end
+            item
+              Caption = #946
+              Tag = 18
+            end
+            item
+              Caption = #960
+              Tag = 19
+            end
+            item
+              Caption = #937
+              Tag = 20
+            end
+            item
+              Caption = #8721
+              Tag = 21
+            end
+            item
+              Caption = #8730
+              Tag = 22
+            end
+            item
+              Caption = #8230
+              Tag = 23
+            end>
+        end>
+      ItemHeight = 30.00000000000000000
+      ItemWidth = 32.00000000000000000
+      MaxColumns = 8
+      MinColumns = 3
+      SelectionMode = None
+      ShowGroupHeaders = False
+      OnItemClick = SymbolItemClick
+      OnDrawItem = SymbolDrawItem
+    end
+    object btnMargins: TFmrButtonItem
+      Caption = 'Margins'
+      Glyph.GlyphCode = 59289
+      LargeGlyph.GlyphCode = 59289
+      KeyTip = 'M'
+      ScreenTip.Header = 'Adjust Margins'
+      ScreenTip.Description = 'Set the margins of the page.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnMarginsNormal
+        end
+        item
+          Item = btnMarginsNarrow
+        end
+        item
+          Item = btnMarginsModerate
+        end
+        item
+          Item = btnMarginsWide
+        end>
+    end
+    object btnMarginsNormal: TFmrButtonItem
+      Caption = 'Normal'
+      OnClick = MarginsClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 10
+    end
+    object btnMarginsNarrow: TFmrButtonItem
+      Tag = 1
+      Caption = 'Narrow'
+      OnClick = MarginsClick
+      ButtonStyle = Check
+      GroupIndex = 10
+    end
+    object btnMarginsModerate: TFmrButtonItem
+      Tag = 2
+      Caption = 'Moderate'
+      OnClick = MarginsClick
+      ButtonStyle = Check
+      GroupIndex = 10
+    end
+    object btnMarginsWide: TFmrButtonItem
+      Tag = 3
+      Caption = 'Wide'
+      OnClick = MarginsClick
+      ButtonStyle = Check
+      GroupIndex = 10
+    end
+    object btnOrientation: TFmrButtonItem
+      Caption = 'Orientation'
+      Glyph.GlyphCode = 59572
+      LargeGlyph.GlyphCode = 59572
+      KeyTip = 'O'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnPortrait
+        end
+        item
+          Item = btnLandscape
+        end>
+    end
+    object btnPortrait: TFmrButtonItem
+      Caption = 'Portrait'
+      OnClick = OrientationClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 11
+    end
+    object btnLandscape: TFmrButtonItem
+      Tag = 1
+      Caption = 'Landscape'
+      OnClick = OrientationClick
+      ButtonStyle = Check
+      GroupIndex = 11
+    end
+    object btnSize: TFmrButtonItem
+      Caption = 'Size'
+      Glyph.GlyphCode = 59814
+      LargeGlyph.GlyphCode = 59814
+      KeyTip = 'SZ'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnSizeLetter
+        end
+        item
+          Item = btnSizeA4
+        end
+        item
+          Item = btnSizeA5
+        end>
+    end
+    object btnSizeLetter: TFmrButtonItem
+      Caption = 'Letter (21.59 x 27.94 cm)'
+      OnClick = PageSizeClick
+      ButtonStyle = Check
+      GroupIndex = 12
+    end
+    object btnSizeA4: TFmrButtonItem
+      Tag = 1
+      Caption = 'A4 (21 x 29.7 cm)'
+      OnClick = PageSizeClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 12
+    end
+    object btnSizeA5: TFmrButtonItem
+      Tag = 2
+      Caption = 'A5 (14.8 x 21 cm)'
+      OnClick = PageSizeClick
+      ButtonStyle = Check
+      GroupIndex = 12
+    end
+    object btnWatermark: TFmrButtonItem
+      Caption = 'Watermark'
+      Glyph.PathData = 
+        'M4,3 L20,3 L20,21 L4,21 Z M6,5 L6,19 L18,19 L18,5 Z M7.5,15 L15,' +
+        '7.5 L16.5,9 L9,16.5 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M4,3 L20,3 L20,21 L4,21 Z M6,5 L6,19 L18,19 L18,5 Z M7.5,15 L15,' +
+        '7.5 L16.5,9 L9,16.5 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'W'
+      ScreenTip.Header = 'Watermark'
+      ScreenTip.Description = 'Add ghosted text behind the content of the page.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnWmNone
+        end
+        item
+          Item = btnWmDraft
+        end
+        item
+          Item = btnWmConfidential
+        end
+        item
+          Item = btnWmSample
+        end>
+    end
+    object btnWmNone: TFmrButtonItem
+      Caption = 'No Watermark'
+      OnClick = WatermarkClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 13
+    end
+    object btnWmDraft: TFmrButtonItem
+      Tag = 1
+      Caption = 'DRAFT'
+      OnClick = WatermarkClick
+      ButtonStyle = Check
+      GroupIndex = 13
+    end
+    object btnWmConfidential: TFmrButtonItem
+      Tag = 2
+      Caption = 'CONFIDENTIAL'
+      OnClick = WatermarkClick
+      ButtonStyle = Check
+      GroupIndex = 13
+    end
+    object btnWmSample: TFmrButtonItem
+      Tag = 3
+      Caption = 'SAMPLE'
+      OnClick = WatermarkClick
+      ButtonStyle = Check
+      GroupIndex = 13
+    end
+    object clrPageColor: TFmrColorItem
+      Caption = 'Page Color'
+      Glyph.PathData = 
+        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
+        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
+        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
+        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
+        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
+        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
+        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'PC'
+      ScreenTip.Header = 'Page Color'
+      ScreenTip.Description = 'Change the color of the page.'
+      OnClick = PageColorClick
+      AutomaticColor = claWhite
+    end
+    object btnPageBorders: TFmrButtonItem
+      Caption = 'Page Borders'
+      Glyph.GlyphCode = 59193
+      LargeGlyph.GlyphCode = 59193
+      KeyTip = 'PB'
+      OnClick = PageBordersClick
+      ButtonStyle = Check
+    end
+    object spIndentLeft: TFmrSpinItem
+      Caption = 'Indent Left'
+      KeyTip = 'IL'
+      Width = 70.00000000000000000
+      OnChange = IndentSpinChange
+      Increment = 12.00000000000000000
+      Max = 240.00000000000000000
+    end
+    object spIndentRight: TFmrSpinItem
+      Caption = 'Indent Right'
+      KeyTip = 'IR'
+      Width = 70.00000000000000000
+      OnChange = IndentSpinChange
+      Increment = 12.00000000000000000
+      Max = 240.00000000000000000
+    end
+    object btnReadMode: TFmrButtonItem
+      Caption = 'Read Mode'
+      Glyph.GlyphCode = 59190
+      LargeGlyph.GlyphCode = 59190
+      KeyTip = 'F'
+      OnClick = ViewModeClick
+      ButtonStyle = Check
+      GroupIndex = 3
+    end
+    object btnPrintLayout: TFmrButtonItem
+      Tag = 1
+      Caption = 'Print Layout'
+      Glyph.GlyphCode = 59331
+      LargeGlyph.GlyphCode = 59331
+      KeyTip = 'P'
+      OnClick = ViewModeClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 3
+    end
+    object btnWebLayout: TFmrButtonItem
+      Tag = 2
+      Caption = 'Web Layout'
+      Glyph.GlyphCode = 59252
+      LargeGlyph.GlyphCode = 59252
+      KeyTip = 'L'
+      OnClick = ViewModeClick
+      ButtonStyle = Check
+      GroupIndex = 3
+    end
+    object chkStatusBar: TFmrCheckItem
+      Caption = 'Status Bar'
+      OnClick = ShowCheckClick
+      Checked = True
+    end
+    object chkWordWrap: TFmrCheckItem
+      Caption = 'Word Wrap'
+      OnClick = ShowCheckClick
+      Checked = True
+    end
+    object chkFindPane: TFmrCheckItem
+      Caption = 'Find Pane'
+      OnClick = ShowCheckClick
+    end
+    object btnZoom: TFmrButtonItem
+      Caption = 'Zoom'
+      Glyph.GlyphCode = 59166
+      LargeGlyph.GlyphCode = 59166
+      KeyTip = 'Q'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnZoom50
+        end
+        item
+          Item = btnZoom75
+        end
+        item
+          Item = btnZoom125
+        end
+        item
+          Item = btnZoom150
+        end
+        item
+          Item = btnZoom200
+        end>
+    end
+    object btnZoom50: TFmrButtonItem
+      Tag = 50
+      Caption = '50%'
+      OnClick = ZoomClick
+    end
+    object btnZoom75: TFmrButtonItem
+      Tag = 75
+      Caption = '75%'
+      OnClick = ZoomClick
+    end
+    object btnZoom125: TFmrButtonItem
+      Tag = 125
+      Caption = '125%'
+      OnClick = ZoomClick
+    end
+    object btnZoom150: TFmrButtonItem
+      Tag = 150
+      Caption = '150%'
+      OnClick = ZoomClick
+    end
+    object btnZoom200: TFmrButtonItem
+      Tag = 200
+      Caption = '200%'
+      OnClick = ZoomClick
+    end
+    object btnZoom100: TFmrButtonItem
+      Tag = 100
+      Caption = '100%'
+      Glyph.GlyphCode = 59724
+      LargeGlyph.GlyphCode = 59724
+      KeyTip = 'J'
+      OnClick = ZoomClick
+    end
+    object btnZoomIn: TFmrButtonItem
+      Tag = 1
+      Caption = 'Zoom In'
+      Glyph.GlyphCode = 59555
+      OnClick = ZoomClick
+    end
+    object btnZoomOut: TFmrButtonItem
+      Tag = 2
+      Caption = 'Zoom Out'
+      Glyph.GlyphCode = 59167
+      OnClick = ZoomClick
+    end
+    object btnPageWidth: TFmrButtonItem
+      Tag = 3
+      Caption = 'Page Width'
+      Glyph.GlyphCode = 59200
+      OnClick = ZoomClick
+    end
+    object galThemes: TFmrRibbonGalleryItem
+      Caption = 'Themes'
+      Glyph.PathData = 
+        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
+        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
+        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
+        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
+      Glyph.PathViewBox = 24.00000000000000000
+      LargeGlyph.PathData = 
+        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
+        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
+        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
+        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
+      LargeGlyph.PathViewBox = 24.00000000000000000
+      KeyTip = 'TH'
+      ScreenTip.Header = 'Themes'
+      ScreenTip.Description = 
+        'Switch the theme of the whole window: ribbon, backstage view, st' +
+        'atus bar and popups.'
+      DropDownColumns = 4
+      Groups = <
+        item
+          Caption = 'Themes'
+          Items = <
+            item
+              Caption = 'Modern Colorful'
+              Hint = 'ModernColorful'
+            end
+            item
+              Caption = 'Modern White'
+              Hint = 'ModernWhite'
+              Tag = 1
+            end
+            item
+              Caption = 'Modern Dark Gray'
+              Hint = 'ModernDarkGray'
+              Tag = 2
+            end
+            item
+              Caption = 'Modern Black'
+              Hint = 'ModernBlack'
+              Tag = 3
+            end
+            item
+              Caption = 'Banner Colorful'
+              Hint = 'BannerColorful'
+              Tag = 4
+            end
+            item
+              Caption = 'Banner White'
+              Hint = 'BannerWhite'
+              Tag = 5
+            end
+            item
+              Caption = 'Banner Dark Gray'
+              Hint = 'BannerDarkGray'
+              Tag = 6
+            end
+            item
+              Caption = 'Flat White'
+              Hint = 'FlatWhite'
+              Tag = 7
+            end
+            item
+              Caption = 'Flat Light Gray'
+              Hint = 'FlatLightGray'
+              Tag = 8
+            end
+            item
+              Caption = 'Flat Dark Gray'
+              Hint = 'FlatDarkGray'
+              Tag = 9
+            end
+            item
+              Caption = 'Classic Blue'
+              Hint = 'ClassicBlue'
+              Tag = 10
+            end
+            item
+              Caption = 'Classic Silver'
+              Hint = 'ClassicSilver'
+              Tag = 11
+            end
+            item
+              Caption = 'Classic Black'
+              Hint = 'ClassicBlack'
+              Tag = 12
+            end
+            item
+              Caption = 'Glass Blue'
+              Hint = 'GlassBlue'
+              Tag = 13
+            end
+            item
+              Caption = 'Glass Silver'
+              Hint = 'GlassSilver'
+              Tag = 14
+            end
+            item
+              Caption = 'Glass Black'
+              Hint = 'GlassBlack'
+              Tag = 15
+            end
+            item
+              Caption = 'Soft Light'
+              Hint = 'SoftLight'
+              Tag = 16
+            end
+            item
+              Caption = 'Soft Dark'
+              Hint = 'SoftDark'
+              Tag = 17
+            end
+            item
+              Caption = 'Modern 2024 Light'
+              Hint = 'Modern2024Light'
+              Tag = 18
+            end
+            item
+              Caption = 'Modern 2024 Dark Gray'
+              Hint = 'Modern2024DarkGray'
+              Tag = 19
+            end
+            item
+              Caption = 'Modern 2024 Dark'
+              Hint = 'Modern2024Dark'
+              Tag = 20
+            end>
+        end>
+      ItemHeight = 60.00000000000000000
+      ItemWidth = 78.00000000000000000
+      MaxColumns = 5
+      OnItemClick = ThemeItemClick
+      OnDrawItem = ThemeDrawItem
+    end
+    object btnTheme: TFmrButtonItem
+      Caption = 'Theme'
+      Glyph.GlyphCode = 59280
+      LargeGlyph.GlyphCode = 59280
+      KeyTip = 'OT'
+      ScreenTip.Header = 'Theme'
+      ScreenTip.Description = 
+        'Modern 2024 Light, Dark Gray or Dark, or the light or dark mode ' +
+        'of Windows.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnThemeLight
+        end
+        item
+          Item = btnThemeDarkGray
+        end
+        item
+          Item = btnThemeDark
+        end
+        item
+          Item = btnThemeSystem
+        end>
+    end
+    object btnThemeLight: TFmrButtonItem
+      Caption = 'Light'
+      OnClick = ThemeMenuClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeDarkGray: TFmrButtonItem
+      Tag = 1
+      Caption = 'Dark Gray'
+      OnClick = ThemeMenuClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeDark: TFmrButtonItem
+      Tag = 2
+      Caption = 'Dark'
+      OnClick = ThemeMenuClick
+      ButtonStyle = Check
+      GroupIndex = 23
+    end
+    object btnThemeSystem: TFmrButtonItem
+      Tag = 3
+      Caption = 'Use System Setting'
+      OnClick = ThemeMenuClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 23
+    end
+    object galAccent: TFmrRibbonGalleryItem
+      Caption = 'Accent'
+      Glyph.GlyphCode = 59280
+      LargeGlyph.GlyphCode = 59280
+      KeyTip = 'AC'
+      ScreenTip.Header = 'Accent Color'
+      ScreenTip.Description = 
+        'The color of Colorful captions, active tabs, the File tab and se' +
+        'lections.'
+      DropDownColumns = 1
+      Groups = <
+        item
+          Caption = 'Accent'
+          Items = <
+            item
+              Caption = 'Theme default'
+            end
+            item
+              Caption = 'Blue'
+              Tag = 1
+            end
+            item
+              Caption = 'Green'
+              Tag = 2
+            end
+            item
+              Caption = 'Orange'
+              Tag = 3
+            end
+            item
+              Caption = 'Azure'
+              Tag = 4
+            end
+            item
+              Caption = 'Purple'
+              Tag = 5
+            end
+            item
+              Caption = 'Crimson'
+              Tag = 6
+            end
+            item
+              Caption = 'Sky'
+              Tag = 7
+            end>
+        end>
+      ItemHeight = 30.00000000000000000
+      ItemWidth = 150.00000000000000000
+      SelectedIndex = 0
+      ShowInRibbon = False
+      OnItemClick = AccentItemClick
+      DropDownResize = None
+      OnDrawItem = AccentDrawItem
+    end
+    object chkSimplified: TFmrCheckItem
+      Caption = 'Simplified Ribbon'
+      OnClick = RibbonOptionClick
+    end
+    object chkTouch: TFmrCheckItem
+      Caption = 'Touch Mode'
+      OnClick = RibbonOptionClick
+    end
+    object btnLanguage: TFmrButtonItem
+      Caption = 'Language'
+      Glyph.GlyphCode = 59252
+      KeyTip = 'LA'
+      ScreenTip.Header = 'Language'
+      ScreenTip.Description = 'Switch the user interface between English and Russian.'
+      ButtonStyle = DropDown
+      DropDownLinks = <
+        item
+          Item = btnLangEn
+        end
+        item
+          Item = btnLangRu
+        end>
+    end
+    object btnLangEn: TFmrButtonItem
+      Caption = 'English'
+      OnClick = LanguageClick
+      ButtonStyle = Check
+      Down = True
+      GroupIndex = 15
+    end
+    object btnLangRu: TFmrButtonItem
+      Tag = 1
+      Caption = #1056#1091#1089#1089#1082#1080#1081
+      OnClick = LanguageClick
+      ButtonStyle = Check
+      GroupIndex = 15
+    end
+    object btnCustomize: TFmrButtonItem
+      Caption = 'Customize Ribbon...'
+      Glyph.GlyphCode = 59155
+      LargeGlyph.GlyphCode = 59155
+      KeyTip = 'CR'
+      ScreenTip.Header = 'Customize the Ribbon'
+      ScreenTip.Description = 'Add, remove, rename and reorder tabs, groups and commands.'
+      OnClick = CustomizeClick
+    end
+    object btnResetRibbon: TFmrButtonItem
+      Caption = 'Reset Ribbon'
+      Glyph.GlyphCode = 59180
+      LargeGlyph.GlyphCode = 59180
+      KeyTip = 'RR'
+      ScreenTip.Header = 'Reset the Ribbon'
+      ScreenTip.Description = 'Go back to the designed layout (undoes every customization).'
+      OnClick = ResetRibbonClick
+    end
+    object btnDeleteSel: TFmrButtonItem
+      Caption = 'Delete'
+      Category = 'Selection'
+      Glyph.GlyphCode = 59213
+      LargeGlyph.GlyphCode = 59213
+      OnClick = DeleteSelClick
+    end
+    object btnQuote: TFmrButtonItem
+      Caption = 'Add Quotes'
+      Category = 'Selection'
+      Glyph.GlyphCode = 59826
+      LargeGlyph.GlyphCode = 59826
+      OnClick = QuoteClick
+    end
+    object stSelInfo: TFmrStaticItem
+      Caption = '0 words, 0 characters'
+      Alignment = Center
+      Width = 170.00000000000000000
+    end
+    object btnReverse: TFmrButtonItem
+      Caption = 'Reverse Lines'
+      Category = 'Selection'
+      Glyph.GlyphCode = 59595
+      LargeGlyph.GlyphCode = 59595
+      OnClick = ReverseLinesClick
+    end
+    object btnTrim: TFmrButtonItem
+      Caption = 'Trim Spaces'
+      Category = 'Selection'
+      Glyph.GlyphCode = 59228
+      LargeGlyph.GlyphCode = 59228
+      OnClick = TrimClick
+    end
+    object sepMini: TFmrSeparatorItem
+    end
+  end
+  object Ribbon1: TFmrRibbon
+    ActiveTab = tabHome
+    ApplicationIcon.SvgSource = 
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rec' +
+      't x="5" y="4" width="22" height="25" rx="3" fill="#F6C343"/><pat' +
+      'h d="M5 7a3 3 0 0 1 3-3h16a3 3 0 0 1 3 3v4H5z" fill="#D4911A"/><' +
+      'circle cx="11" cy="7.5" r="1.3" fill="#FFF3D6"/><circle cx="16" ' +
+      'cy="7.5" r="1.3" fill="#FFF3D6"/><circle cx="21" cy="7.5" r="1.3' +
+      '" fill="#FFF3D6"/><path d="M9.5 16h13M9.5 20h13M9.5 24h8" stroke' +
+      '="#8A5A00" stroke-width="1.6" stroke-linecap="round"/></svg>'
+    CaptionToolbar.ItemLinks = <
+      item
+        Item = btnAccount
+      end>
+    TabAreaToolbar.ItemLinks = <
+      item
+        Item = btnComments
+        ViewLevels = [SmallWithText]
+        Visible = False
+      end
+      item
+        Item = btnShare
+        ViewLevels = [SmallWithText]
+      end>
+    ApplicationButton.ScreenTip.Header = 'File'
+    ApplicationButton.ScreenTip.Description = 'Open the backstage view: new, open, save, print and options.'
+    ApplicationMenu = BackstageView1
+    BarManager = BarManager1
+    Frame = Frame1
+    Position.Y = 78.00000000000000000
+    QuickAccessToolbar.ItemLinks = <
+      item
+        Item = chkAutoSave
+      end
+      item
+        Item = btnSave
+      end
+      item
+        Item = btnUndo
+      end
+      item
+        Item = btnRedo
+      end>
+    ShowSearchBox = True
+    Size.Width = 1280.00000000000000000
+    Size.Height = 108.00000000000000000
+    Size.PlatformDefault = False
+    Theme = 'Modern2024Light'
+    OnDisplayModeChanged = RibbonDisplayModeChanged
+    OnSearch = RibbonSearch
+    object tabHome: TFmrRibbonTab
+      Caption = 'Home'
+      KeyTip = 'H'
+      object grpClipboard: TFmrRibbonGroup
+        Caption = 'Clipboard'
+        DialogLauncherKeyTip = 'FO'
+        ItemLinks = <
+          item
+            Item = btnPaste
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnCut
+            ViewLevels = [SmallWithText, Small]
+          end
+          item
+            Item = btnCopy
+            ViewLevels = [SmallWithText, Small]
+          end
+          item
+            Item = btnFormatPainter
+            ViewLevels = [SmallWithText, Small]
+          end>
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = ClipboardLauncherClick
+      end
+      object grpFont: TFmrRibbonGroup
+        Caption = 'Font'
+        DialogLauncherKeyTip = 'FN'
+        ItemLinks = <
+          item
+            Item = cbFontName
+            ButtonGroup = Start
+            ViewLevels = [Small]
+          end
+          item
+            Item = cbFontSize
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnGrowFont
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnShrinkFont
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnChangeCase
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnClearFormatting
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnBold
+            ButtonGroup = Start
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnItalic
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnUnderline
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnStrike
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnSubscript
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnSuperscript
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnTextEffects
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = clrHighlight
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = clrFontColor
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end>
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = FontLauncherClick
+      end
+      object grpParagraph: TFmrRibbonGroup
+        Caption = 'Paragraph'
+        DialogLauncherKeyTip = 'PG'
+        ItemLinks = <
+          item
+            Item = btnBullets
+            ButtonGroup = Start
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnNumbering
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnMultilevel
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnIndentDec
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnIndentInc
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnSort
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnShowMarks
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnAlignLeft
+            ButtonGroup = Start
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnAlignCenter
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnAlignRight
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnJustify
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnLineSpacing
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = clrShading
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end
+          item
+            Item = btnBorders
+            BeginGroup = True
+            ButtonGroup = Member
+            ViewLevels = [Small]
+          end>
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = FontLauncherClick
+      end
+      object grpStyles: TFmrRibbonGroup
+        Caption = 'Styles'
+        DialogLauncherKeyTip = 'FY'
+        ItemLinks = <
+          item
+            Item = galStyles
+          end>
+        ReductionPriority = -1
+        ShowDialogLauncher = True
+        OnDialogLauncherClick = FontLauncherClick
+      end
+      object grpEditing: TFmrRibbonGroup
+        Caption = 'Editing'
+        ItemLinks = <
+          item
+            Item = btnFind
+            ViewLevels = [SmallWithText, Small]
+          end
+          item
+            Item = btnReplace
+            ViewLevels = [SmallWithText, Small]
+          end
+          item
+            Item = btnSelect
+            ViewLevels = [SmallWithText, Small]
+          end>
+      end
+      object grpAddins: TFmrRibbonGroup
+        Caption = 'Add-ins'
+        ItemLinks = <
+          item
+            Item = btnAddins
+            ViewLevels = [Large]
+          end>
+      end
+    end
+    object tabInsert: TFmrRibbonTab
+      Caption = 'Insert'
+      KeyTip = 'N'
+      object grpPages: TFmrRibbonGroup
+        Caption = 'Pages'
+        ItemLinks = <
+          item
+            Item = btnBlankPage
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnPageBreak
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+      object grpTables: TFmrRibbonGroup
+        Caption = 'Tables'
+        ItemLinks = <
+          item
+            Item = galTable
+            ViewLevels = [Large]
+          end>
+      end
+      object grpIllustrations: TFmrRibbonGroup
+        Caption = 'Illustrations'
+        ItemLinks = <
+          item
+            Item = btnShapes
+            ViewLevels = [Large]
+          end>
+      end
+      object grpText: TFmrRibbonGroup
+        Caption = 'Text'
+        ItemLinks = <
+          item
+            Item = btnTextBox
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnDateTime
+          end
+          item
+            Item = btnSignature
+          end
+          item
+            Item = btnComment
+          end>
+      end
+      object grpLinks: TFmrRibbonGroup
+        Caption = 'Links'
+        ItemLinks = <
+          item
+            Item = btnLink
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+      object grpSymbols: TFmrRibbonGroup
+        Caption = 'Symbols'
+        ItemLinks = <
+          item
+            Item = galSymbols
+          end>
+      end
+    end
+    object tabLayout: TFmrRibbonTab
+      Caption = 'Layout'
+      KeyTip = 'P'
+      object grpPageSetup: TFmrRibbonGroup
+        Caption = 'Page Setup'
+        ItemLinks = <
+          item
+            Item = btnMargins
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnOrientation
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnSize
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+      object grpPageBackground: TFmrRibbonGroup
+        Caption = 'Page Background'
+        ItemLinks = <
+          item
+            Item = btnWatermark
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = clrPageColor
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnPageBorders
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+      object grpIndent: TFmrRibbonGroup
+        Caption = 'Paragraph'
+        ItemLinks = <
+          item
+            Item = spIndentLeft
+          end
+          item
+            Item = spIndentRight
+          end>
+      end
+    end
+    object tabView: TFmrRibbonTab
+      Caption = 'View'
+      KeyTip = 'W'
+      object grpViews: TFmrRibbonGroup
+        Caption = 'Views'
+        ItemLinks = <
+          item
+            Item = btnReadMode
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnPrintLayout
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnWebLayout
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+      object grpShow: TFmrRibbonGroup
+        Caption = 'Show'
+        ItemLinks = <
+          item
+            Item = chkStatusBar
+          end
+          item
+            Item = chkWordWrap
+          end
+          item
+            Item = chkFindPane
+          end>
+      end
+      object grpZoom: TFmrRibbonGroup
+        Caption = 'Zoom'
+        ItemLinks = <
+          item
+            Item = btnZoom
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnZoom100
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnZoomIn
+          end
+          item
+            Item = btnZoomOut
+          end
+          item
+            Item = btnPageWidth
+          end>
+      end
+      object grpThemes: TFmrRibbonGroup
+        Caption = 'Themes'
+        ItemLinks = <
+          item
+            Item = galThemes
+          end
+          item
+            Item = btnTheme
+            ViewLevels = [Large]
+          end
+          item
+            Item = galAccent
+            ViewLevels = [Large]
+          end>
+        ReductionPriority = -1
+      end
+      object grpRibbon: TFmrRibbonGroup
+        Caption = 'Ribbon'
+        ItemLinks = <
+          item
+            Item = chkSimplified
+          end
+          item
+            Item = chkTouch
+          end
+          item
+            Item = btnLanguage
+          end
+          item
+            Item = btnCustomize
+            BeginGroup = True
+            ViewLevels = [Large, SmallWithText]
+          end
+          item
+            Item = btnResetRibbon
+            ViewLevels = [Large, SmallWithText]
+          end>
+      end
+    end
+    object tabSelection: TFmrRibbonTab
+      Caption = 'Text'
+      KeyTip = 'JT'
+      ContextGroup = ctxSelection
+      object grpSelCase: TFmrRibbonGroup
+        Caption = 'Change Case'
+        ItemLinks = <
+          item
+            Item = btnCaseUpper
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnCaseLower
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnCaseTitle
+            ViewLevels = [SmallWithText]
+          end
+          item
+            Item = btnCaseSentence
+            ViewLevels = [SmallWithText]
+          end
+          item
+            Item = btnCaseToggle
+            ViewLevels = [SmallWithText]
+          end>
+      end
+      object grpSelEdit: TFmrRibbonGroup
+        Caption = 'Edit'
+        ItemLinks = <
+          item
+            Item = btnCut
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnCopy
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnDeleteSel
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnQuote
+            ViewLevels = [Large]
+          end>
+      end
+      object grpSelInfo: TFmrRibbonGroup
+        Caption = 'Selection'
+        ItemLinks = <
+          item
+            Item = stSelInfo
+          end>
+      end
+    end
+    object tabSelLines: TFmrRibbonTab
+      Caption = 'Lines'
+      KeyTip = 'JL'
+      ContextGroup = ctxSelection
+      object grpSelLines: TFmrRibbonGroup
+        Caption = 'Lines'
+        ItemLinks = <
+          item
+            Item = btnSort
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnReverse
+            ViewLevels = [Large]
+          end
+          item
+            Item = btnTrim
+            ViewLevels = [Large]
+          end>
+      end
+      object grpSelLists: TFmrRibbonGroup
+        Caption = 'Lists'
+        ItemLinks = <
+          item
+            Item = btnBullets
+          end
+          item
+            Item = btnNumbering
+          end
+          item
+            Item = btnIndentInc
+          end>
+      end
+    end
+    object ctxSelection: TFmrRibbonContextGroup
+      Caption = 'Selection Tools'
+      Color = xFFE07B25
+    end
+  end
+  object StatusBar1: TFmrStatusBar
+    BarManager = BarManager1
+    Position.Y = 778.00000000000000000
+    Size.Width = 1280.00000000000000000
+    Size.Height = 22.00000000000000000
+    Size.PlatformDefault = False
+    ThemeProvider = Ribbon1
+    object spPage: TFmrStatusBarPanel
+      Text = 'Page 1 of 1'
+      ItemLinks = <>
+      Hint = 'Page number in the document'
+      TabOrder = 0
+    end
+    object spWords: TFmrStatusBarPanel
+      Text = '0 words'
+      ItemLinks = <>
+      Hint = 'Word count. Click for details.'
+      TabOrder = 1
+      OnClick = StatusWordsClick
+    end
+    object spChars: TFmrStatusBarPanel
+      Text = '0 characters'
+      ItemLinks = <>
+      Visible = False
+      TabOrder = 2
+    end
+    object spLanguage: TFmrStatusBarPanel
+      Text = 'English (United States)'
+      ItemLinks = <>
+      Hint = 'Click to switch the user interface language (English / Russian)'
+      TabOrder = 3
+      OnClick = StatusLanguageClick
+    end
+    object spAccessibility: TFmrStatusBarPanel
+      Text = 'Accessibility: OK'
+      Glyph.GlyphCode = 59254
+      ItemLinks = <>
+      TabOrder = 4
+    end
+    object spMessage: TFmrStatusBarPanel
+      Stretch = True
+      ItemLinks = <>
+      TabOrder = 5
+    end
+    object spDisplay: TFmrStatusBarPanel
+      Side = Right
+      Text = 'Display Settings'
+      Glyph.GlyphCode = 59380
+      ItemLinks = <>
+      TabOrder = 6
+    end
+    object spFocus: TFmrStatusBarPanel
+      Side = Right
+      Text = 'Focus'
+      Glyph.GlyphCode = 59200
+      ItemLinks = <>
+      TabOrder = 7
+    end
+    object spView: TFmrStatusBarPanel
+      Kind = ViewButtons
+      Side = Right
+      ItemLinks = <>
+      TabOrder = 8
+      OnViewChange = StatusViewChange
+    end
+    object spZoom: TFmrStatusBarPanel
+      Kind = ZoomSlider
+      Side = Right
+      ItemLinks = <>
+      TabOrder = 9
+      OnZoomChange = StatusZoomChange
+      OnZoomClick = StatusZoomClick
+    end
+  end
+  object DocArea: TRectangle
+    Align = Client
+    ClipChildren = True
+    Fill.Color = xFFE6E6E6
+    Size.Width = 1280.00000000000000000
+    Size.Height = 592.00000000000000000
+    Size.PlatformDefault = False
+    Stroke.Kind = None
+    OnResize = DocAreaResize
+    object FindPanel: TRectangle
+      Align = Top
+      Fill.Color = xFFF3F3F3
+      Padding.Left = 8.00000000000000000
+      Padding.Top = 3.00000000000000000
+      Padding.Right = 8.00000000000000000
+      Padding.Bottom = 3.00000000000000000
+      Sides = [Bottom]
+      Size.Width = 50.00000000000000000
+      Size.Height = 42.00000000000000000
+      Size.PlatformDefault = False
+      Stroke.Color = xFFE1E1E1
+      Visible = False
+      object lblFind: TLabel
+        Align = Left
+        StyledSettings = [Family, Size, Style]
+        Margins.Left = 6.00000000000000000
+        Position.X = 14.00000000000000000
+        Position.Y = 3.00000000000000000
+        Size.Width = 44.00000000000000000
+        Size.Height = 36.00000000000000000
+        Size.PlatformDefault = False
+        Text = 'Find'
+        TabOrder = 0
+      end
+      object edFind: TEdit
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        Align = Left
+        TabOrder = 1
+        Position.X = 62.00000000000000000
+        Position.Y = 7.00000000000000000
+        Margins.Left = 4.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 4.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Size.Width = 220.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TextPrompt = 'Search the document'
+        OnKeyDown = FindEditKeyDown
+      end
+      object btnFindPrev: TButton
+        Align = Left
+        Margins.Left = 2.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 2.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Position.X = 288.00000000000000000
+        Position.Y = 7.00000000000000000
+        Size.Width = 84.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Text = 'Previous'
+        OnClick = FindPrevClick
+      end
+      object btnFindNext: TButton
+        Align = Left
+        Margins.Left = 2.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 2.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Position.X = 376.00000000000000000
+        Position.Y = 7.00000000000000000
+        Size.Width = 72.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        Text = 'Next'
+        OnClick = FindNextClick
+      end
+      object lblReplace: TLabel
+        Align = Left
+        StyledSettings = [Family, Size, Style]
+        Margins.Left = 18.00000000000000000
+        Position.X = 468.00000000000000000
+        Position.Y = 3.00000000000000000
+        Size.Width = 96.00000000000000000
+        Size.Height = 36.00000000000000000
+        Size.PlatformDefault = False
+        Text = 'Replace with'
+        TabOrder = 4
+      end
+      object edReplace: TEdit
+        Touch.InteractiveGestures = [LongTap, DoubleTap]
+        Align = Left
+        TabOrder = 5
+        Position.X = 568.00000000000000000
+        Position.Y = 7.00000000000000000
+        Margins.Left = 4.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 4.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Size.Width = 180.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TextPrompt = 'Replacement text'
+        OnKeyDown = FindEditKeyDown
+      end
+      object btnReplaceOne: TButton
+        Align = Left
+        Margins.Left = 2.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 2.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Position.X = 754.00000000000000000
+        Position.Y = 7.00000000000000000
+        Size.Width = 80.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 6
+        Text = 'Replace'
+        OnClick = ReplaceOneClick
+      end
+      object btnReplaceAll: TButton
+        Align = Left
+        Margins.Left = 2.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 2.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Position.X = 838.00000000000000000
+        Position.Y = 7.00000000000000000
+        Size.Width = 96.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 7
+        Text = 'Replace All'
+        OnClick = ReplaceAllClick
+      end
+      object btnFindClose: TButton
+        Align = Right
+        Margins.Left = 2.00000000000000000
+        Margins.Top = 4.00000000000000000
+        Margins.Right = 2.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Position.X = 6.00000000000000000
+        Position.Y = 7.00000000000000000
+        Size.Width = 34.00000000000000000
+        Size.Height = 28.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 8
+        Text = #10005
+        OnClick = FindCloseClick
+      end
+      object lblFindResult: TLabel
+        Align = Client
+        StyledSettings = [Family, Size, Style]
+        Margins.Left = 14.00000000000000000
+        Size.Width = 0.00000000000000000
+        Size.Height = 36.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 9
+      end
+    end
+    object Page: TRectangle
+      Fill.Color = claWhite
+      Position.X = 232.00000000000000000
+      Position.Y = 20.00000000000000000
+      Size.Width = 794.00000000000000000
+      Size.Height = 700.00000000000000000
+      Size.PlatformDefault = False
+      Stroke.Color = xFFD4D4D4
+      object PageShadow: TShadowEffect
+        Distance = 2.00000000000000000
+        Direction = 90.00000000000000000
+        Softness = 0.25000000000000000
+        Opacity = 0.30000001192092900
+        ShadowColor = claBlack
+      end
+      object Memo: TMemo
+        Touch.InteractiveGestures = [Pan, LongTap, DoubleTap]
+        DataDetectorTypes = []
+        HideSelectionOnExit = False
+        Lines.Strings = (
+          'Welcome to FMR Notes'
+          ''
+          
+            'FMR Notes is a small notes editor, a showcase of FMR Ribbon for ' +
+            'Delphi FireMonkey. The whole window - the ribbon, the backstage ' +
+            'view, the status bar and this page - is loaded from NotesMain.fm' +
+            'x, exactly as if it had been designed in the IDE.'
+          ''
+          'Things to try:'
+          
+            #8226' Home: paste, cut and copy; choose a font, a size, Bold, Italic' +
+            ', Underline, a font color or a style - the page follows. Point a' +
+            't a style or a color to preview it.'
+          
+            #8226' Select some text: the "Selection Tools" contextual tab appears' +
+            ' and the mini toolbar fades in.'
+          #8226' Insert: quick tables, shapes, symbols, the date, a text box.'
+          
+            #8226' Layout: margins, orientation, page size, watermark, page color' +
+            ' and borders.'
+          
+            #8226' View: zoom, read mode, web layout, every theme with a preview,' +
+            ' accent colors, simplified ribbon, touch mode, English and Russi' +
+            'an.'
+          
+            #8226' File: the backstage view with note templates, recent notes, Sa' +
+            've As, a print preview and the options.'
+          
+            #8226' Press Alt for key tips, Ctrl+F1 to collapse the ribbon, right-' +
+            'click a command to add it to the Quick Access Toolbar, or custom' +
+            'ize the whole ribbon (View > Customize Ribbon).')
+        StyledSettings = []
+        TextSettings.Font.Size = 16.00000000000000000
+        TextSettings.WordWrap = True
+        OnChangeTracking = MemoChangeTracking
+        Align = Client
+        Margins.Left = 96.00000000000000000
+        Margins.Top = 96.00000000000000000
+        Margins.Right = 96.00000000000000000
+        Margins.Bottom = 4.00000000000000000
+        Size.Width = 602.00000000000000000
+        Size.Height = 600.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 0
+        OnApplyStyleLookup = MemoApplyStyleLookup
+        OnKeyDown = MemoKeyDown
+        OnMouseUp = MemoMouseUp
+        Viewport.Width = 602.00000000000000000
+        Viewport.Height = 600.00000000000000000
+      end
+      object Watermark: TText
+        HitTest = False
+        Opacity = 0.11999999731779100
+        Position.Y = 260.00000000000000000
+        RotationAngle = -32.00000000000000000
+        Size.Width = 794.00000000000000000
+        Size.Height = 160.00000000000000000
+        Size.PlatformDefault = False
+        Text = 'DRAFT'
+        TextSettings.Font.Size = 88.00000000000000000
+        TextSettings.Font.StyleExt = {00070000000000000004000000}
+        TextSettings.FontColor = xFF404040
+        Visible = False
+      end
+    end
+  end
+  object ContextMenu1: TFmrPopupMenu
+    BarManager = BarManager1
+    ItemLinks = <
+      item
+        Item = btnCut
+      end
+      item
+        Item = btnCopy
+      end
+      item
+        Item = btnPaste
+      end
+      item
+        Item = btnPasteText
+      end
+      item
+        Item = btnSelectAll
+        BeginGroup = True
+      end
+      item
+        Item = btnChangeCase
+      end
+      item
+        Item = btnFind
+        BeginGroup = True
+      end>
+    ThemeSource = Ribbon1
+    Left = 1000
+    Top = 520
+  end
+  object MiniToolbar1: TFmrRibbonMiniToolbar
+    BarManager = BarManager1
+    ItemLinks = <
+      item
+        Item = cbFontName
+      end
+      item
+        Item = cbFontSize
+      end
+      item
+        Item = btnGrowFont
+      end
+      item
+        Item = btnShrinkFont
+      end
+      item
+        Item = galStyles
+        BeginGroup = True
+      end
+      item
+        Item = sepMini
+      end
+      item
+        Item = btnBold
+      end
+      item
+        Item = btnItalic
+      end
+      item
+        Item = btnUnderline
+      end
+      item
+        Item = clrFontColor
+      end
+      item
+        Item = btnBullets
+        BeginGroup = True
+      end
+      item
+        Item = btnNumbering
+      end>
+    PopupMenu = ContextMenu1
+    ThemeSource = Ribbon1
+    Left = 1120
+    Top = 520
+  end
+  object BackstageView1: TFmrRibbonBackstageView
+    ActiveTab = bsInfo
+    Align = Contents
+    BarManager = BarManager1
+    ThemeProvider = Ribbon1
+    Visible = False
+    OnShow = BackstageShow
+    OnTabChanged = BackstageTabChanged
+    object bsInfo: TFmrBackstageTab
+      Caption = 'Info'
+      Glyph.GlyphCode = 59718
+      KeyTip = 'I'
+      TabOrder = 0
+      object hdrInfo: TFmrBackstageHeader
+        Text = 'Info'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblInfoTitle: TFmrBackstageLabel
+        Text = 'Note1'
+        TextStyle = Title
+        Align = Top
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 24.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblInfoPath: TFmrBackstageLabel
+        Text = 'This note has not been saved yet'
+        TextStyle = Secondary
+        Align = Top
+        Margins.Bottom = 16.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 95.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 16.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object layInfoProps: TLayout
+        Align = Right
+        Margins.Left = 24.00000000000000000
+        Position.X = 168.00000000000000000
+        Position.Y = 127.00000000000000000
+        Size.Width = 260.00000000000000000
+        Size.Height = 253.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 3
+        object lblInfoProperties: TFmrBackstageLabel
+          Text = 'Properties'
+          TextStyle = Subtitle
+          Align = Top
+          Size.Width = 260.00000000000000000
+          Size.Height = 20.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoWords: TFmrBackstageLabel
+          Text = 'Words: 0'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 8.00000000000000000
+          Position.Y = 28.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 16.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoChars: TFmrBackstageLabel
+          Text = 'Characters: 0'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 4.00000000000000000
+          Position.Y = 48.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 16.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoLines: TFmrBackstageLabel
+          Text = 'Lines: 0'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 4.00000000000000000
+          Position.Y = 68.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 16.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoPages: TFmrBackstageLabel
+          Text = 'Pages: 1'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 4.00000000000000000
+          Position.Y = 88.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 16.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoRelated: TFmrBackstageLabel
+          Text = 'Related People'
+          TextStyle = Subtitle
+          Align = Top
+          Margins.Top = 20.00000000000000000
+          Position.Y = 124.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 20.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoAuthor: TFmrBackstageLabel
+          Text = 'Author: FMR Notes user'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 8.00000000000000000
+          Position.Y = 152.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 16.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblInfoStreamed: TFmrBackstageLabel
+          Text = 'Everything on this page is streamed from NotesMain.fmx.'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 20.00000000000000000
+          Position.Y = 188.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 32.00000000000000000
+          Size.PlatformDefault = False
+        end
+      end
+      object layInfoLeft: TLayout
+        Align = Client
+        Size.Width = 104.00000000000000000
+        Size.Height = 253.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 4
+        object layInfoRow0: TLayout
+          Align = Top
+          Margins.Bottom = 12.00000000000000000
+          Size.Width = 104.00000000000000000
+          Size.Height = 108.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          object tileProtect: TFmrBackstageTile
+            Caption = 'Protect Document'
+            Glyph.GlyphCode = 59182
+            Align = Left
+            Size.Width = 104.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            OnClick = ProtectTileClick
+          end
+          object layInfoText0: TLayout
+            Align = Client
+            Margins.Left = 18.00000000000000000
+            Size.Width = 0.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            object lblInfoTitle0: TFmrBackstageLabel
+              Text = 'Protect Document'
+              TextStyle = Subtitle
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 22000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 20.00000000000000000
+              Size.PlatformDefault = False
+            end
+            object lblInfoProtect: TFmrBackstageLabel
+              TextStyle = Secondary
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 23000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 17.00000000000000000
+              Size.PlatformDefault = False
+            end
+          end
+        end
+        object layInfoRow1: TLayout
+          Align = Top
+          Margins.Bottom = 12.00000000000000000
+          Position.Y = 120.00000000000000000
+          Size.Width = 104.00000000000000000
+          Size.Height = 108.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          object tileInspect: TFmrBackstageTile
+            Caption = 'Check for Issues'
+            Glyph.GlyphCode = 59169
+            Align = Left
+            Size.Width = 104.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            OnClick = InspectTileClick
+          end
+          object layInfoText1: TLayout
+            Align = Client
+            Margins.Left = 18.00000000000000000
+            Size.Width = 0.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            object lblInfoTitle1: TFmrBackstageLabel
+              Text = 'Inspect Document'
+              TextStyle = Subtitle
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 30000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 20.00000000000000000
+              Size.PlatformDefault = False
+            end
+            object lblInfoIssues: TFmrBackstageLabel
+              TextStyle = Secondary
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 31000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 17.00000000000000000
+              Size.PlatformDefault = False
+            end
+          end
+        end
+        object layInfoRow2: TLayout
+          Align = Top
+          Margins.Bottom = 12.00000000000000000
+          Position.Y = 240.00000000000000000
+          Size.Width = 104.00000000000000000
+          Size.Height = 108.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          object tileHistory: TFmrBackstageTile
+            Caption = 'Version History'
+            Glyph.GlyphCode = 59420
+            Align = Left
+            Size.Width = 104.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            OnClick = HistoryTileClick
+          end
+          object layInfoText2: TLayout
+            Align = Client
+            Margins.Left = 18.00000000000000000
+            Size.Width = 0.00000000000000000
+            Size.Height = 108.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            object lblInfoTitle2: TFmrBackstageLabel
+              Text = 'Version History'
+              TextStyle = Subtitle
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 38000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 20.00000000000000000
+              Size.PlatformDefault = False
+            end
+            object lblInfoHistory: TFmrBackstageLabel
+              TextStyle = Secondary
+              Align = Top
+              Margins.Top = 6.00000000000000000
+              Position.Y = 39000.00000000000000000
+              Size.Width = 200.00000000000000000
+              Size.Height = 17.00000000000000000
+              Size.PlatformDefault = False
+            end
+          end
+        end
+      end
+    end
+    object bsNew: TFmrBackstageTab
+      Caption = 'New'
+      Glyph.GlyphCode = 59331
+      KeyTip = 'N'
+      TabOrder = 1
+      object hdrNew: TFmrBackstageHeader
+        Text = 'New'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblNewHint: TFmrBackstageLabel
+        Text = 
+          'Start from a template. The page images come from a TImageList st' +
+          'ored in the form.'
+        TextStyle = Secondary
+        Align = Top
+        Margins.Bottom = 14.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 32.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object flowTemplates: TFlowLayout
+        Align = Client
+        Size.Width = 388.00000000000000000
+        Size.Height = 263.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        Justify = Left
+        JustifyLastLine = Left
+        FlowDirection = LeftToRight
+        HorizontalGap = 16.00000000000000000
+        VerticalGap = 16.00000000000000000
+        object tileTemplate0: TFmrBackstageTile
+          Caption = 'Blank note'
+          Glyph.ImageIndex = 0
+          GlyphSize = 96.00000000000000000
+          Hint = 'Start from an empty page'
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          OnClick = TemplateTileClick
+        end
+        object tileTemplate1: TFmrBackstageTile
+          Tag = 1
+          Caption = 'To-do list'
+          Glyph.ImageIndex = 1
+          GlyphSize = 96.00000000000000000
+          Hint = 'Tasks with check boxes'
+          Position.X = 152.00000000000000000
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          OnClick = TemplateTileClick
+        end
+        object tileTemplate2: TFmrBackstageTile
+          Tag = 2
+          Caption = 'Report'
+          Glyph.ImageIndex = 2
+          GlyphSize = 96.00000000000000000
+          Hint = 'Quarterly report with sections'
+          Position.Y = 184.00000000000000000
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          OnClick = TemplateTileClick
+        end
+        object tileTemplate3: TFmrBackstageTile
+          Tag = 3
+          Caption = 'Journal'
+          Glyph.ImageIndex = 3
+          GlyphSize = 96.00000000000000000
+          Hint = 'A page for the day'
+          Position.X = 152.00000000000000000
+          Position.Y = 184.00000000000000000
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+          OnClick = TemplateTileClick
+        end
+        object tileTemplate4: TFmrBackstageTile
+          Tag = 4
+          Caption = 'Meeting notes'
+          Glyph.ImageIndex = 4
+          GlyphSize = 96.00000000000000000
+          Hint = 'Agenda, notes and action items'
+          Position.Y = 368.00000000000000000
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          OnClick = TemplateTileClick
+        end
+        object tileTemplate5: TFmrBackstageTile
+          Tag = 5
+          Caption = 'Release notes'
+          Glyph.ImageIndex = 5
+          GlyphSize = 96.00000000000000000
+          Hint = 'What is new in this version'
+          Position.X = 152.00000000000000000
+          Position.Y = 368.00000000000000000
+          Size.Width = 136.00000000000000000
+          Size.Height = 168.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          OnClick = TemplateTileClick
+        end
+      end
+    end
+    object bsOpen: TFmrBackstageTab
+      Caption = 'Open'
+      Glyph.GlyphCode = 59448
+      KeyTip = 'O'
+      TabOrder = 2
+      object hdrOpen: TFmrBackstageHeader
+        Text = 'Open'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object layOpenLeft: TLayout
+        Align = Left
+        Margins.Right = 24.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 250.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object tileOpenRecent: TFmrBackstageTile
+          Caption = 'Recent'
+          Glyph.GlyphCode = 59427
+          Layout = Horizontal
+          ShowFrame = False
+          Selected = True
+          Align = Top
+          Size.Width = 250.00000000000000000
+          Size.Height = 52.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+        end
+        object tileOpenBrowse: TFmrBackstageTile
+          Caption = 'Browse'
+          Glyph.GlyphCode = 59448
+          Layout = Horizontal
+          ShowFrame = False
+          Align = Top
+          Position.Y = 52.00000000000000000
+          Size.Width = 250.00000000000000000
+          Size.Height = 52.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          OnClick = BrowseOpenClick
+        end
+      end
+      object lstRecent: TFmrBackstageGalleryList
+        Items = <>
+        Align = Client
+        Size.Width = 114.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        OnItemClick = RecentItemClick
+      end
+    end
+    object bbSave: TFmrBackstageButton
+      Caption = 'Save'
+      Glyph.GlyphCode = 59214
+      BeginGroup = True
+      KeyTip = 'S'
+      OnClick = SaveClick
+    end
+    object bsSaveAs: TFmrBackstageTab
+      Caption = 'Save As'
+      Glyph.GlyphCode = 59282
+      KeyTip = 'A'
+      TabOrder = 3
+      object hdrSaveAs: TFmrBackstageHeader
+        Text = 'Save As'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object laySaveLeft: TLayout
+        Align = Left
+        Margins.Right = 28.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 260.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object tileSavePC: TFmrBackstageTile
+          Caption = 'This PC'
+          Description = 'Documents\FMR Notes'
+          Glyph.GlyphCode = 59380
+          Layout = Horizontal
+          ShowFrame = False
+          Selected = True
+          Align = Top
+          Size.Width = 260.00000000000000000
+          Size.Height = 60.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+        end
+        object tileSaveBrowse: TFmrBackstageTile
+          Caption = 'Browse'
+          Glyph.GlyphCode = 59448
+          Layout = Horizontal
+          ShowFrame = False
+          Align = Top
+          Position.Y = 60.00000000000000000
+          Size.Width = 260.00000000000000000
+          Size.Height = 60.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          OnClick = BrowseSaveClick
+        end
+      end
+      object laySaveRight: TLayout
+        Align = Client
+        Size.Width = 100.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 2
+        object lblSaveTitle: TFmrBackstageLabel
+          Text = 'Documents'
+          TextStyle = Title
+          Align = Top
+          Size.Width = 100.00000000000000000
+          Size.Height = 24.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblSaveFolder: TFmrBackstageLabel
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 2.00000000000000000
+          Position.Y = 26.00000000000000000
+          Size.Width = 100.00000000000000000
+          Size.Height = 17.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object edSaveName: TEdit
+          Touch.InteractiveGestures = [LongTap, DoubleTap]
+          Align = Top
+          TabOrder = 2
+          Position.Y = 61.00000000000000000
+          Margins.Top = 18.00000000000000000
+          Margins.Right = 120.00000000000000000
+          Size.Width = 0.00000000000000000
+          Size.Height = 22.00000000000000000
+          Size.PlatformDefault = False
+          TextPrompt = 'File name'
+        end
+        object cbSaveFormat: TComboBox
+          Align = Top
+          Margins.Top = 10.00000000000000000
+          Margins.Right = 120.00000000000000000
+          Position.Y = 93.00000000000000000
+          Size.Width = 0.00000000000000000
+          Size.Height = 22.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+        end
+        object laySaveButtons: TLayout
+          Align = Top
+          Position.Y = 115.00000000000000000
+          Size.Width = 100.00000000000000000
+          Size.Height = 50.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          object btnSaveAsGo: TButton
+            Align = Left
+            Margins.Top = 14.00000000000000000
+            Margins.Bottom = 4.00000000000000000
+            Position.Y = 14.00000000000000000
+            Size.Width = 110.00000000000000000
+            Size.Height = 32.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            Text = 'Save'
+            OnClick = SaveAsGoClick
+          end
+        end
+      end
+    end
+    object bsPrint: TFmrBackstageTab
+      Caption = 'Print'
+      Glyph.GlyphCode = 59209
+      KeyTip = 'P'
+      TabOrder = 4
+      object hdrPrint: TFmrBackstageHeader
+        Text = 'Print'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object layPrintLeft: TLayout
+        Align = Left
+        Margins.Right = 32.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 300.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        object layPrintTop: TLayout
+          Align = Top
+          Size.Width = 300.00000000000000000
+          Size.Height = 104.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 0
+          object tilePrint: TFmrBackstageTile
+            Caption = 'Print'
+            Glyph.GlyphCode = 59209
+            Align = Left
+            Size.Width = 96.00000000000000000
+            Size.Height = 104.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            OnClick = PrintTileClick
+          end
+          object lblCopies: TFmrBackstageLabel
+            Text = 'Copies'
+            TextStyle = Secondary
+            Position.X = 116.00000000000000000
+            Position.Y = 6.00000000000000000
+            Size.Width = 120.00000000000000000
+            Size.Height = 16.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object spCopies: TSpinBox
+            Touch.InteractiveGestures = [LongTap, DoubleTap]
+            TabOrder = 2
+            Cursor = crIBeam
+            Min = 1.00000000000000000
+            Max = 99.00000000000000000
+            Value = 1.00000000000000000
+            Position.X = 116.00000000000000000
+            Position.Y = 30.00000000000000000
+            Size.Width = 110.00000000000000000
+            Size.Height = 30.00000000000000000
+            Size.PlatformDefault = False
+          end
+        end
+        object lblPrinterTitle: TFmrBackstageLabel
+          Text = 'Printer'
+          TextStyle = Subtitle
+          Align = Top
+          Margins.Top = 18.00000000000000000
+          Position.Y = 122.00000000000000000
+          Size.Width = 300.00000000000000000
+          Size.Height = 20.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object cbPrinter: TComboBox
+          Align = Top
+          Margins.Top = 8.00000000000000000
+          Position.Y = 150.00000000000000000
+          Size.Width = 300.00000000000000000
+          Size.Height = 22.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+        end
+        object lblPrintSettings: TFmrBackstageLabel
+          Text = 'Settings'
+          TextStyle = Subtitle
+          Align = Top
+          Margins.Top = 18.00000000000000000
+          Position.Y = 190.00000000000000000
+          Size.Width = 300.00000000000000000
+          Size.Height = 20.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblPrintInfo: TFmrBackstageLabel
+          Align = Top
+          Margins.Top = 8.00000000000000000
+          Position.Y = 218.00000000000000000
+          Size.Width = 300.00000000000000000
+          Size.Height = 19.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object lblPrintNote: TFmrBackstageLabel
+          Text = 
+            'Printing is simulated in this demo: nothing is sent to a printer' +
+            '.'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 8.00000000000000000
+          Position.Y = 245.00000000000000000
+          Size.Width = 300.00000000000000000
+          Size.Height = 32.00000000000000000
+          Size.PlatformDefault = False
+        end
+      end
+      object imgPreview: TImage
+        MultiResBitmap = <
+          item
+          end>
+        Align = Client
+        HitTest = False
+        Size.Width = 56.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+      end
+    end
+    object bbClose: TFmrBackstageButton
+      Caption = 'Close'
+      Glyph.GlyphCode = 59153
+      BeginGroup = True
+      KeyTip = 'C'
+      OnClick = CloseDocClick
+    end
+    object bsAbout: TFmrBackstageTab
+      Caption = 'About'
+      Glyph.GlyphCode = 59543
+      KeyTip = 'B'
+      NavAlign = Bottom
+      TabOrder = 5
+      object hdrAbout: TFmrBackstageHeader
+        Text = 'About'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblAboutTitle: TFmrBackstageLabel
+        Text = 'FMR Notes'
+        TextStyle = Title
+        Align = Top
+        Position.X = 40.00000000000000000
+        Position.Y = 71.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 24.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblAboutText: TFmrBackstageLabel
+        Text = 
+          'A notes editor, showcase application of FMR Ribbon, an open-sour' +
+          'ce (MIT) ribbon for Delphi FireMonkey: bar manager with items an' +
+          'd links, ribbon with galleries, contextual tabs and the quick ac' +
+          'cess toolbar, window frame with the tab row in the non-client ar' +
+          'ea, backstage view and status bar.'
+        Align = Top
+        Margins.Top = 10.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 105.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 87.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object lblAboutForm: TFmrBackstageLabel
+        Text = 
+          'The whole window is loaded from NotesMain.fmx: it was written by' +
+          ' Demos\Notes\tools\GenForm and can be opened in the form designe' +
+          'r of the IDE.'
+        TextStyle = Secondary
+        Align = Top
+        Margins.Top = 10.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 202.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 48.00000000000000000
+        Size.PlatformDefault = False
+      end
+    end
+    object bsOptions: TFmrBackstageTab
+      Caption = 'Options'
+      Glyph.GlyphCode = 59155
+      KeyTip = 'T'
+      NavAlign = Bottom
+      TabOrder = 6
+      object hdrOptions: TFmrBackstageHeader
+        Text = 'Options'
+        Margins.Bottom = 8.00000000000000000
+        Position.X = 40.00000000000000000
+        Position.Y = 24.00000000000000000
+        Size.Width = 388.00000000000000000
+        Size.Height = 39.00000000000000000
+        Size.PlatformDefault = False
+      end
+      object boxOptions: TVertScrollBox
+        Align = Client
+        Size.Width = 388.00000000000000000
+        Size.Height = 309.00000000000000000
+        Size.PlatformDefault = False
+        TabOrder = 1
+        Viewport.Width = -1.00000000000000000
+        Viewport.Height = -1.00000000000000000
+        object lblOptGeneral: TFmrBackstageLabel
+          Text = 'General'
+          TextStyle = Title
+          Align = Top
+          Position.Y = 94000.00000000000000000
+          Size.Width = 200.00000000000000000
+          Size.Height = 24.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object layOptTheme: TLayout
+          Align = Top
+          Position.X = 96000.00000000000000000
+          Position.Y = 95000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 38.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 1
+          object lblOptTheme: TFmrBackstageLabel
+            Text = 'Theme'
+            VertAlign = Center
+            AutoSize = False
+            Align = Left
+            Size.Width = 220.00000000000000000
+            Size.Height = 38.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbOptTheme: TComboBox
+            Align = Left
+            Margins.Top = 5.00000000000000000
+            Margins.Bottom = 5.00000000000000000
+            Position.X = 220.00000000000000000
+            Position.Y = 5.00000000000000000
+            Size.Width = 300.00000000000000000
+            Size.Height = 28.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            OnChange = OptComboChange
+          end
+        end
+        object layOptAccent: TLayout
+          Align = Top
+          Position.X = 99000.00000000000000000
+          Position.Y = 98000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 38.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 2
+          object lblOptAccent: TFmrBackstageLabel
+            Text = 'Accent color'
+            VertAlign = Center
+            AutoSize = False
+            Align = Left
+            Size.Width = 220.00000000000000000
+            Size.Height = 38.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbOptAccent: TComboBox
+            Align = Left
+            Margins.Top = 5.00000000000000000
+            Margins.Bottom = 5.00000000000000000
+            Position.X = 220.00000000000000000
+            Position.Y = 5.00000000000000000
+            Size.Width = 300.00000000000000000
+            Size.Height = 28.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            OnChange = OptComboChange
+          end
+        end
+        object layOptFrame: TLayout
+          Align = Top
+          Position.X = 102000.00000000000000000
+          Position.Y = 101000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 38.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 3
+          object lblOptFrame: TFmrBackstageLabel
+            Text = 'Window frame'
+            VertAlign = Center
+            AutoSize = False
+            Align = Left
+            Size.Width = 220.00000000000000000
+            Size.Height = 38.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbOptFrame: TComboBox
+            Align = Left
+            Margins.Top = 5.00000000000000000
+            Margins.Bottom = 5.00000000000000000
+            Position.X = 220.00000000000000000
+            Position.Y = 5.00000000000000000
+            Size.Width = 380.00000000000000000
+            Size.Height = 28.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            OnChange = OptComboChange
+          end
+        end
+        object layOptBackdrop: TLayout
+          Align = Top
+          Position.X = 105000.00000000000000000
+          Position.Y = 104000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 38.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 4
+          object lblOptBackdrop: TFmrBackstageLabel
+            Text = 'Backdrop (Dwm frame, Windows 11)'
+            VertAlign = Center
+            AutoSize = False
+            Align = Left
+            Size.Width = 220.00000000000000000
+            Size.Height = 38.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbOptBackdrop: TComboBox
+            Align = Left
+            Margins.Top = 5.00000000000000000
+            Margins.Bottom = 5.00000000000000000
+            Position.X = 220.00000000000000000
+            Position.Y = 5.00000000000000000
+            Size.Width = 300.00000000000000000
+            Size.Height = 28.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            OnChange = OptComboChange
+          end
+        end
+        object layOptLanguage: TLayout
+          Align = Top
+          Position.X = 108000.00000000000000000
+          Position.Y = 107000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 38.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 5
+          object lblOptLanguage: TFmrBackstageLabel
+            Text = 'Language'
+            VertAlign = Center
+            AutoSize = False
+            Align = Left
+            Size.Width = 220.00000000000000000
+            Size.Height = 38.00000000000000000
+            Size.PlatformDefault = False
+          end
+          object cbOptLanguage: TComboBox
+            Align = Left
+            Margins.Top = 5.00000000000000000
+            Margins.Bottom = 5.00000000000000000
+            Position.X = 220.00000000000000000
+            Position.Y = 5.00000000000000000
+            Size.Width = 300.00000000000000000
+            Size.Height = 28.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            OnChange = OptComboChange
+          end
+        end
+        object lblOptRibbon: TFmrBackstageLabel
+          Text = 'Ribbon'
+          TextStyle = Title
+          Align = Top
+          Margins.Top = 18.00000000000000000
+          Position.Y = 110000.00000000000000000
+          Size.Width = 200.00000000000000000
+          Size.Height = 24.00000000000000000
+          Size.PlatformDefault = False
+        end
+        object chkOptSimplified: TCheckBox
+          Align = Top
+          StyledSettings = [Family, Size, Style]
+          Position.Y = 111000.00000000000000000
+          Size.Width = 120.00000000000000000
+          Size.Height = 30.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 7
+          Text = 'Simplified ribbon (a single line of commands)'
+          OnChange = OptCheckChange
+        end
+        object chkOptTouch: TCheckBox
+          Align = Top
+          StyledSettings = [Family, Size, Style]
+          Position.Y = 112000.00000000000000000
+          Size.Width = 120.00000000000000000
+          Size.Height = 30.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 8
+          Text = 'Touch mode (larger commands)'
+          OnChange = OptCheckChange
+        end
+        object chkOptQATBelow: TCheckBox
+          Align = Top
+          StyledSettings = [Family, Size, Style]
+          Position.Y = 113000.00000000000000000
+          Size.Width = 120.00000000000000000
+          Size.Height = 30.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 9
+          Text = 'Show the Quick Access Toolbar below the ribbon'
+          OnChange = OptCheckChange
+        end
+        object chkOptSearch: TCheckBox
+          Align = Top
+          StyledSettings = [Family, Size, Style]
+          Position.Y = 114000.00000000000000000
+          Size.Width = 120.00000000000000000
+          Size.Height = 30.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 10
+          Text = 'Show the search box in the caption row'
+          OnChange = OptCheckChange
+        end
+        object chkOptScreenTips: TCheckBox
+          Align = Top
+          StyledSettings = [Family, Size, Style]
+          Position.Y = 115000.00000000000000000
+          Size.Width = 120.00000000000000000
+          Size.Height = 30.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 11
+          Text = 'Show screen tips'
+          OnChange = OptCheckChange
+        end
+        object layOptButtons: TLayout
+          Align = Top
+          Position.X = 117000.00000000000000000
+          Position.Y = 116000.00000000000000000
+          Size.Width = 50.00000000000000000
+          Size.Height = 48.00000000000000000
+          Size.PlatformDefault = False
+          TabOrder = 12
+          object btnOptCustomize: TButton
+            Align = Left
+            Margins.Top = 10.00000000000000000
+            Margins.Right = 12.00000000000000000
+            Margins.Bottom = 4.00000000000000000
+            Position.Y = 10.00000000000000000
+            Size.Width = 200.00000000000000000
+            Size.Height = 34.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 0
+            Text = 'Customize the Ribbon...'
+            OnClick = CustomizeClick
+          end
+          object btnOptReset: TButton
+            Align = Left
+            Margins.Top = 10.00000000000000000
+            Margins.Bottom = 4.00000000000000000
+            Position.X = 212.00000000000000000
+            Position.Y = 10.00000000000000000
+            Size.Width = 180.00000000000000000
+            Size.Height = 34.00000000000000000
+            Size.PlatformDefault = False
+            TabOrder = 1
+            Text = 'Reset customizations'
+            OnClick = ResetRibbonClick
+          end
+        end
+        object lblOptNote: TFmrBackstageLabel
+          Text = 
+            'Theme, accent, frame, language, zoom and the ribbon layout (layo' +
+            'ut.json) are saved to %APPDATA%\FMRNotes when the window closes.'
+          TextStyle = Secondary
+          Align = Top
+          Margins.Top = 12.00000000000000000
+          Position.Y = 118000.00000000000000000
+          Size.Width = 200.00000000000000000
+          Size.Height = 80.00000000000000000
+          Size.PlatformDefault = False
+        end
+      end
+    end
+  end
+  object Frame1: TFmrFormFrame
+    Mode = Dwm
+    CaptionHeight = 78.00000000000000000
+    Backdrop = Mica
+    CaptionColor = xFFF1F2F5
+    CaptionInactiveColor = xFFF1F2F5
+    Left = 400
+    Top = 520
+  end
+  object ImageList1: TImageList
+    Source = <
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C0864880000014049444154789CEDD1410D03
+              410CC0C0B43A7E4BF582B085318FF520B0E4CFFBBEBF09F3CCCC9C7374C79576
+              77BE3AE2760DC01A8035006B00D600AC015803B006600DC01A8035006B00D600
+              AC015803B006600DC01A8035006B00D600AC015803B006600DC01A8035006B00
+              D600AC015803B006600DC01A8035006B00D600AC015803B006600DC01A803500
+              6B00D600AC015803B006600DC01A8035006B00D600AC015803B006600DC01A80
+              35006B00D600AC015803B006600DC01A8035006B00D600AC015803B006600DC0
+              1A8035006B00D600AC015803B006600DC01A8035006B00D600AC015803B00660
+              0DC01A8035006B00D600AC015803B006600DC01A8035006B00D600AC015803B0
+              06600DC01A8035006B00D600AC015803B006600DC01A8035006B00D600AC0158
+              03B006600DC01A8035006B00F6CCCCECAEEEB8D61F7BF10926912518F1000000
+              0049454E44AE426082}
+          end>
+        Name = 'Template0'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C086488000001A449444154789CEDDAC14943
+              411440D151528EFB9491AD0D58950DB8CC2F237BFBD10E0C037EEE4FE69C7502
+              039797CC8379B95EAF3F83CC698C312E974B7D8E256DDB365EEB43AC4E809800
+              31016202C404880910132026404C80D869F60B6FEF9FFB9CE49F7C7F7DD44798
+              62026202C4048809101320367D0B7AB45BC6D19980980031016202C404880910
+              132026404C80980031016202C404880910132026404C80980031016202C40488
+              0910132026404C809800310162D36F436FB7DB3E277912E7F379EAF326202640
+              4C80D8F47FC0EC6F1C7F330131016202C4048859C4EED8FBD261026202C40488
+              59C462262026404C809800B1E516B1A35D224C404C809800318B58CC04C40488
+              09101320B6DC22B6374F131F8C0031016216B1980988091013202640CC227687
+              A7894F4E809800318B58CC04C4048809101320B6DC2276B44B84098809101320
+              66118B9980980031016202C4965BC4F6E669E28311202640CC22163301310162
+              02C4048859C4EEF034F1C90910132066118B9980980031016202C40488091013
+              2026404C80980031016202C404889DC61863DBB6FA1CCBFA05AD9B2B530693FD
+              B20000000049454E44AE426082}
+          end>
+        Name = 'Template1'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C0864880000019C49444154789CEDDAB14D03
+              411040D1055D4F17D110197D209151872F24267213B4021D70BAE0F46DEF7BB1
+              2DADF435F68EB44F97CBE5779059C618E3EDFBB33EC7943E5E5EC7737D88D909
+              10132026404C80980031016202C404880910132026404C80980031016202C404
+              880910132026404C80980031016202C404880910132026406C19638C9FF7AFFA
+              1C53DAB6CD04D404880910132026404C80980031016202C40488091013202640
+              4C809800B1E5E817AED7EB39277910EBBA1EFABC09880910132076F83FE0E86F
+              1CFF330131016202C4048859C4769C7DE9300131016202C42C62311310132026
+              404C80D8748BD8AD5D224C404C809800318B58CC04C404880910132036DD2276
+              364F13EF8C0031016216B1980988091013202640CC22B6C3D3C40727404C8098
+              452C66026202C4048809109B6E11BBB54B8409880910132066118B9980980031
+              016202C4A65BC4CEE669E29D11202640CC2216330131016202C4048859C47678
+              9AF8E004880910B388C54C404C80980031016202C404880910132026404C8098
+              0031016202C49631C6D8B6AD3EC7B4FE00CEB42AA6FD9BE6AE0000000049454E
+              44AE426082}
+          end>
+        Name = 'Template2'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C0864880000019149444154789CEDDAD169C3
+              401400C17330A424B5909AD248DA38FDA50517907A9C1284C1626D69E6DB4882
+              E5497E709739E77D90B98E31C6E7CFF7D32FFCF5FBF7F46B1ECDBAAEE3A37E88
+              B3132026404C80980031016202C404880910132026404C80980031016202C404
+              880910132026404C80980031016202C404880910132026404C80980031016202
+              C404880910132026404C80980031016202C404880910132026404C80D8B5BAF1
+              ED76AB6EBDAB65591EFABD098809101320967D031E7D571E9509880910132026
+              40CC22B661EF3F0B262026404C8098452C66026202C4048809103BDD22F66A1F
+              7F131013202640CC2216330131016202C404889D6E11DB9BA3896F4680980031
+              8B58CC04C40488091013206611DBE068E2C10910132066118B99809800310162
+              02C44EB788BDDAC7DF04C404880910B388C54C404C809800310162A75BC4F6E6
+              68E29B11202640CC2216330131016202C4048859C436389A787002C4048859C4
+              62262026404C80980031016202C404880910132026404C8098003101629739E7
+              BD7E8833FB07ED52296741DA9F620000000049454E44AE426082}
+          end>
+        Name = 'Template3'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C086488000001A049444154789CEDDAD169C3
+              30144051B564A74097C8428552E840F112854CD56E90A00F7313EB9C6F070497
+              17FB81DEAED7EBDF20731A638CCBE5529F6349DBB68DF7FA10AB132026404C80
+              980031016202C4048809101320769AFDC1F7C7E73E273988AFDF9FA9E74D404C
+              80980031016202C404880910132026406C7A139EDDF4B8CF04C4048809101320
+              26404C80980031016202C404880910132026404C80980031016202C404880910
+              132026404C809800B1E97B41B7DB6D9F931CC4F97C9E7ADE04C4048809109B7E
+              07CCFEC7719F0988091013202640CC22F6C0DE1F1D262026404C8098452C6602
+              6202C4048809105B6E117BB68F08131013202640CC2216330131016202C40488
+              2DB788EDCDD5C41723404C8098452C66026202C404880910B3883DE06AE2C109
+              10132066118B9980980031016202C4965BC49EED23C204C404880910B388C54C
+              404C809800310162CB2D627B7335F1C50810132066118B9980980031016202C4
+              2C620FB89A787002C4048859C462262026404C80980031016202C40488091013
+              2026404C809800310162A731C6D8B6AD3EC7B2FE018F462B3B37240F09000000
+              0049454E44AE426082}
+          end>
+        Name = 'Template4'
+      end
+      item
+        MultiResBitmap = <
+          item
+            Width = 96
+            Height = 128
+            PNG = {
+              89504E470D0A1A0A0000000D4948445200000060000000800806000000F4DC6C
+              BA0000000473424954080808087C0864880000028549444154789CEDDA3F6B53
+              611480F1A30DB9FE290662108748331441C456A7ACAE2292C5C1CDEF50ECE0EC
+              E0207E0B3797DCA29B5F2083142D7671AA145428D80EB550145D03868637E4F5
+              49739FDFDCDEFB928793DC03F74CBFDFFF13C2D422227ABD1E7D8E4A2ACB32CE
+              D287A83A03C00C003300CC003003C00C003300CC003003C06A93FCD3EEC171AC
+              6FECC4BBCFFBB177F86BAA076A37EA7177F9523CBFBF14ED467DAAD79E45C901
+              760F8EE3CECB0F53FFE087AFFFEAFD5EBCD9FE119B6BABD1691659EE332B92BF
+              82D63776B27DF8C3F68F7EC7D3B75FB2DF87961CE0E3D7C33C271961EBDBCFFF
+              762F4A7280EDEF47794E32C22703283703C00C003300CC003003C00C003300CC
+              003003C00C003300CC003003C00C003300CC003003C00C004B0E70F3EA853C27
+              81EF45490E70E3CAF93C2719E19601FEF5E2C1522C160B794E3364B1588867F7
+              AE65BF0F2D3940A759C4D693D578B872395A17277AB3F144ED463D1EDD6EC5E6
+              DA4A2CB7CE4DFDFAB366A24FB0D32CE2F5E3EBD33F4D05F914043300CC003003
+              C00C004B7E0A1A0C06794E3227BADD6ED2DF3B013003C00C004BFE0D48FD8ED3
+              C99C0098016006801900E6223646EE870E270066009801602E62302700660098
+              01600680556E119BB58708270066009801602E6230270066009801600680556E
+              11CBCD57134F1903C00C0073118339013003C00C003300CC456C0C5F4D9C7306
+              801900E6220673026006801900660058E516B1597B8870026006801900E62206
+              73026006801900660058E516B1DC7C35F1943100CC003017319813003300CC00
+              3003C05CC4C6F0D5C43967009801602E62302700660098016006801900660098
+              016006801900660098016006801900568B8828CB923E4765FD058388612705AA
+              33EC0000000049454E44AE426082}
+          end>
+        Name = 'Template5'
+      end>
+    Destination = <
+      item
+        Layers = <
+          item
+            Name = 'Template0'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Template1'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Template2'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Template3'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Template4'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end
+      item
+        Layers = <
+          item
+            Name = 'Template5'
+            SourceRect.Right = 96.00000000000000000
+            SourceRect.Bottom = 128.00000000000000000
+          end>
+      end>
+    Left = 280
+    Top = 520
+  end
+  object SelectionTimer: TTimer
+    Interval = 150
+    OnTimer = SelectionTimerTimer
+    Left = 640
+    Top = 520
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'Text documents (*.txt;*.md)|*.txt;*.md|All files (*.*)|*.*'
+    Left = 760
+    Top = 520
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = 'txt'
+    Filter = 'Plain text (*.txt)|*.txt|Markdown (*.md)|*.md'
+    Left = 880
+    Top = 520
+  end
+end

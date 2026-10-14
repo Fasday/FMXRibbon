@@ -8,9 +8,9 @@ Popup features of the ribbon built on its extension points (`FmrRegisterItemView
 |---|---|
 | `FMR.Ribbon.Gallery` | `TFmrGalleryView` (in-ribbon gallery), `TFmrGalleryPopupContent` (drop-down gallery, menus with inline galleries), `TFmrGalleryGrid`, `TFmrRibbonGalleryItem` (owner drawing, resize mode), `FmrGalleryItemSize`, `FmrDrawGalleryEntry` |
 | `FMR.Ribbon.ColorGallery` | `TFmrColorGalleryItem`, `TFmrColorGalleryControl` (drop-down of every `TFmrColorItem`), `FmrShowColorDialog` ("More Colors"), recent colors, `FmrThemeColor` |
-| `FMR.Ribbon.AppMenu` | `TFmrRibbonApplicationMenu` (Office 2007 application menu, `IFmrApplicationMenu`), `TFmrRecentDocuments` |
+| `FMR.Ribbon.AppMenu` | `TFmrRibbonApplicationMenu` (application menu in the style of Office 2007, `IFmrApplicationMenu`), `TFmrRecentDocuments` |
 | `FMR.Ribbon.MiniToolbar` | `TFmrRibbonMiniToolbar` (floating formatting toolbar, fades with the mouse distance, optional context menu) |
-| `FMR.Ribbon.RadialMenu` | `TFmrRibbonRadialMenu` (OneNote style radial menu with nested rings) |
+| `FMR.Ribbon.RadialMenu` | `TFmrRibbonRadialMenu` (radial menu for touch with nested rings) |
 
 The initialization sections register the views and drop-down factories; they replace the gallery placeholder menu
 and the old color palette of `FMR.Ribbon.Popup`. `FMR.Ribbon` uses `FMR.Ribbon.Gallery` and `FMR.Ribbon.ColorGallery`
@@ -50,7 +50,7 @@ Registered with `FmrRegisterItemView(TFmrGalleryItem, TFmrGalleryView)`.
 - Rows: as many as fit the content height, vertically centered; the entries of all groups flow without headers.
 - Strip at the right (`DrawGalleryScroll`): scroll up / scroll down one row (disabled at the ends), the drop-down
   button. The drop-down button opens on mouse down (`OpensOnPress`); the popup opens over the gallery at its top-left
-  corner and is at least as wide as the gallery (more columns), like Office.
+  corner and is at least as wide as the gallery (more columns).
 - Hot tracking of entries (pressed look while the button is down), selection (`SelectedEntry` is kept visible:
   the gallery scrolls to it when the selection changes), click = `ClickEntry` (selects with `SelectionMode =
   Single`, fires `OnItemClick`).
@@ -100,7 +100,7 @@ shown. Demo: Insert > Shapes (shapes gallery + "New Drawing Canvas").
 the arrow opens the gallery; the glyph shows the color bar) gets:
 
 - "Automatic" (`ShowAutomatic`; `Color := TAlphaColors.Null`, painted with `AutomaticColor`);
-- Theme Colors: the 10 Office theme colors and 5 rows of tints/shades (lighter 80/60/40 %, darker 25/50 %; light
+- Theme Colors: the 10 theme colors and 5 rows of tints/shades (lighter 80/60/40 %, darker 25/50 %; light
   colors get only shades, very dark colors only tints) - `FmrThemeColor(Col, Row)`;
 - Standard Colors (10), Recent Colors (colors picked with "More Colors...", shared by all items, newest first);
 - "No Color" (`ShowNoColor`; `Color := FmrNoColor` = `$00FFFFFF`, transparent but not Null), "More Colors..."
@@ -109,7 +109,7 @@ the arrow opens the gallery; the glyph shows the color bar) gets:
 Every cell has a screen tip with its name ("Blue, Accent 1, Lighter 40%"), the current color is selected, keyboard:
 arrows (geometric), Home/End, Enter, Esc.
 
-`TFmrColorGalleryItem = class(TFmrColorItem)`: `Palette` (`Office` or `Highlight`: the 15 highlight colors of Word in
+`TFmrColorGalleryItem = class(TFmrColorItem)`: `Palette` (`Theme` or `Highlight`: the 15 text highlight colors in
 5 columns with "Stop Highlighting"), `ShowRecentColors`, `OnPreview(Sender, Color, Active)` (live preview: Active =
 False restores), `OnMoreColors(Sender, var Color, var Handled)` (replace the dialog).
 
@@ -130,7 +130,7 @@ AppMenu.OnRecentClick := RecentClick;
 Ribbon1.ApplicationMenu := AppMenu;           // IFmrApplicationMenu
 ```
 
-- With the Office 2007 themes (orb) the menu body starts at the middle of the orb and the content paints the orb
+- With the Glass themes (orb) the menu body starts at the middle of the orb and the content paints the orb
   pressed at the exact screen position of the ribbon's orb, so the orb seems to lie on the menu (the upper half of
   the popup is transparent; a click on the orb closes the menu). Other themes open the same menu below the "File"
   tab (the backstage view of `Source\Extras` remains the usual choice there).
@@ -183,7 +183,7 @@ Ribbon1.ApplicationMenu := AppMenu;           // IFmrApplicationMenu
 Rows of every `TFmrMenuControl` (ribbon menus, `TFmrPopupMenu`, the commands of drop-down galleries) show the screen
 tip of their item (`ScreenTip` header/description/footer or `Hint`) to the right of the menu, aligned with the row,
 after the usual delay; quick switch between rows. Implemented by `FmrMenuHotRowHook` (`FMR.Ribbon.Popup`), installed
-by `FMR.Ribbon.ScreenTips`. Large rows with descriptions (Office 2007 style) exist in `TFmrMenuControl`
+by `FMR.Ribbon.ScreenTips`. Large rows with descriptions exist in `TFmrMenuControl`
 (`TFmrMenuItemStyle.Large`/`Auto`) and in the application menu.
 
 ## Painter additions (`FMR.Ribbon.Painter`)
@@ -225,7 +225,7 @@ by `FMR.Ribbon.ScreenTips`. Large rows with descriptions (Office 2007 style) exi
   dark title bar in dark themes, owned by the ribbon's form. The hue/saturation square (`TColorPanel`) is FMX's.
 - Fixed: gallery entry icons are drawn with `FmrDrawImage`, so they stay unmirrored in a right-to-left ribbon (not
   checked on a screenshot: no right-to-left demo has a gallery with glyphs).
-- The application menu has the Office 2007 look only; with Office 2010+ themes the backstage view is the better choice
+- The application menu has the Glass look only (in the style of Office 2007); with the other themes the backstage view is the better choice
   (the menu still works, below the "File" tab).
 - No right-to-left mirroring in the new popups; no touch-mode sizes.
 - Automated checks: other programs on the shared desktop took the foreground every few seconds (FMX closes popups
@@ -244,16 +244,16 @@ Screenshots (`shots\gal\`, Windows 11 at 150 %):
 | Shot | Checked |
 |---|---|
 | `g01_home`, `s02_w1000`, `s03_w760`, `w02_grouppopup` | in-ribbon styles gallery at 6 / 2 columns, reduced to a large button, in a collapsed group popup |
-| `s01_scroll07` | row scrolling (scroll down), hot gallery frame and entry in Office 2007 |
-| `g13_dd_hover`, `g13_dd_menuhover`, `t01_styles_dark` | drop-down over the in-ribbon gallery, hover + live preview on the memo + entry tip, command hover, FluentDark |
+| `s01_scroll07` | row scrolling (scroll down), hot gallery frame and entry in GlassBlue |
+| `g13_dd_hover`, `g13_dd_menuhover`, `t01_styles_dark` | drop-down over the in-ribbon gallery, hover + live preview on the memo + entry tip, command hover, SoftDark |
 | `g16_resize_smaller`, `g16_resize` | resize grip: fewer columns/rows with scroll bar, larger |
-| `g14_cover`, `g15_filter_listhot`, `g15_filter`, `g19_dbg`, `t02_cover_dark` | gallery from a large button: filter band, filter list, filtered to "Built-in", group header, owner-drawn pages, 365 / 2007 / FluentDark |
+| `g14_cover`, `g15_filter_listhot`, `g15_filter`, `g19_dbg`, `t02_cover_dark` | gallery from a large button: filter band, filter list, filtered to "Built-in", group header, owner-drawn pages, 365 / 2007 / SoftDark |
 | `h01_shapes_dark`, `t03_shapes_07`, `t04_shapes_365`, `h04_shapes_resized` | menu with an inline gallery (group headers) and a command; the top gallery is resizable |
 | `k01_keys_nav`, `k01_final_crop` | Alt, H, L opens the gallery by keyboard (selected entry focused), Right, Right, Down moves the focus with preview, Enter applies it (gallery scrolls to the selection) |
 | `c01_color`, `t05_color_07`, `t06_color_dark`, `c02_more`, `c04_recent`, `h02_highlight07` | color gallery with tints/shades, color tip, live preview, "More Colors" dialog, recent colors, highlight palette |
-| `a06_dbg`, `a07_pin_crop`, `a08_365`, `a09_fluentdark`, `x02_appkeys` | Office 2007 application menu: orb over the menu, Save As submenu in the pane, pinned recent documents, other themes, key tips |
-| `m01_mini365`, `m02_bold_hot`, `m02_bold`, `m05_*_crop`, `m06_mini07` | mini toolbar + context menu, button tip, Bold keeps the toolbar and closes the menu, fading with distance, Office 2007 |
-| `r01_radial`, `r02_hot_crop`, `r02_nested_crop`, `leak3_b` | radial menu, hot sector (2007), nested Align ring with back button, FluentDark |
+| `a06_dbg`, `a07_pin_crop`, `a08_365`, `a09_softdark`, `x02_appkeys` | application menu: orb over the menu, Save As submenu in the pane, pinned recent documents, other themes, key tips |
+| `m01_mini365`, `m02_bold_hot`, `m02_bold`, `m05_*_crop`, `m06_mini07` | mini toolbar + context menu, button tip, Bold keeps the toolbar and closes the menu, fading with distance, GlassBlue |
+| `r01_radial`, `r02_hot_crop`, `r02_nested_crop`, `leak3_b` | radial menu, hot sector (2007), nested Align ring with back button, SoftDark |
 | `x03_menutip` | screen tip of a context menu row |
 
 ## For the coordinator (design package)
@@ -272,9 +272,9 @@ collections `TFmrRecentDocuments`/`TFmrRecentDocument` are registered with `Regi
 - Home > Font: Font Color (`TFmrColorGalleryItem`, live preview on the memo, the split part applies the last color)
   and Text Highlight Color (highlight palette).
 - Insert > Pages > Cover Page: drop-down gallery from a large button (`ShowInRibbon = False`), group filter
-  (Built-in / Office.com), owner-drawn pages with captions, 3 x 2 rows, resize grip, commands.
+  (Built-in / Online), owner-drawn pages with captions, 3 x 2 rows, resize grip, commands.
 - Insert > Illustrations > Shapes: menu with an inline shapes gallery (5 groups with headers) and a command.
-- File: the Office 2007 application menu with the Office 2007 themes (or `/appmenu`); `/backstage` keeps the backstage
+- File: the application menu with the Glass themes (or `/appmenu`); `/backstage` keeps the backstage
   view; other themes keep the `TFmrPopupMenu`.
 - Right click on the document: context menu + mini toolbar; selecting text with the mouse: the fading mini toolbar.
 - View > Touch > Radial Menu: the radial menu at the mouse (Undo, Bold, Italic, Underline, Font Color, Bullets

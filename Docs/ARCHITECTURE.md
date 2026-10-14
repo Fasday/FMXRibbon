@@ -11,15 +11,15 @@ change it here first.
 | Delphi | 13 (RAD Studio 37.0) and newer; Win64 first, Win32 must compile; Linux64 (FMXWayland) must compile and run |
 | Platforms | Core (bars, ribbon, layout, themes, popups) on every FMX platform; frame/NC integration Windows only (`*.Win.pas`, `{$IFDEF MSWINDOWS}`); Linux: `FMR.Frame.Wayland` attaches when the platform offers `IFMXWaylandWindowFrame` (`Docs\LINUX.md`), otherwise (and on other platforms) the frame host is an ordinary control and the ribbon leaves the title to the system title bar. Platform units compile to nothing elsewhere, so one unit list serves every platform |
 | License | MIT |
-| Model | DevExpress-style **Items + Links**: items live in a bar manager, groups/QAT/menus hold links to them |
+| Model | **Items + Links**: items live in a bar manager, groups/QAT/menus hold links to them |
 | Items | Lightweight: items and links are not controls; the ribbon lays them out and paints them. Editor/control items (`TEdit`, `TComboBox`, any `TControl`) are real FMX controls placed by the ribbon |
-| Themes | Vector painting in code + **color/brush/font tokens** read from a StyleBook (`TColorObject`, `TBrushObject`, `TFontObject`). Built-in themes are embedded `.style` resources: Office 365/2019 (Colorful, White, Dark Gray, Black), Office 2016 (colored captions), Office 2013, Office 2010 (Blue, Silver, Black), Office 2007 (Blue, Silver, Black), Windows 11 Fluent (Light, Dark). The app's StyleBook can override any token |
-| Icons | `TFmrImageSource`: FMX `TImageList` index, SVG (Skia), glyph from an icon font (Segoe Fluent Icons…), `TPathData`. Segoe codes are drawn from "FMR Fluent Icons" (`Assets\Fonts`, Fluent UI System Icons subset, MIT) where the Segoe font is missing (`FMR.Ribbon.IconFont.inc`, `tools\IconFont`) |
+| Themes | Vector painting in code + **color/brush/font tokens** read from a StyleBook (`TColorObject`, `TBrushObject`, `TFontObject`). Built-in themes are built in code (`FMR.Ribbon.Themes.Builtin`), families `Modern` (Colorful, White, Dark Gray, Black; in the style of Microsoft 365, 2019–2023), `Modern2024` (Light, Dark Gray, Dark; Microsoft 365, 2024), `Banner` (Office 2016 style, colored captions), `Flat` (Office 2013 style), `Classic` (Office 2010 style: Blue, Silver, Black), `Glass` (Office 2007 style: Blue, Silver, Black), `Soft` (Windows 11 style: Light, Dark); the names of the first release are aliases (`TFmrTheme.RegisterThemeAlias`). The app's StyleBook can override any token |
+| Icons | `TFmrImageSource`: FMX `TImageList` index, SVG (Skia), glyph from an icon font (Segoe Fluent Icons…), `TPathData`. Segoe codes are drawn from "FMR Icons" (`Assets\Fonts\FmrIcons.ttf`, a subset of Microsoft's Fluent UI System Icons, MIT) where the Segoe font is missing (`FMR.Ribbon.IconFont.inc`, `tools\IconFont`) |
 | Fonts | `FMR.Ribbon.Fonts`: installed families (platform listers `FMR.Ribbon.Fonts.Win`/`.Linux`), `FmrResolveFontFamily` (first installed of a list), `FmrUIFontFamily` (theme font: Segoe UI on Windows, Noto Sans/Cantarell/… elsewhere), private fonts for the Skia canvas |
 | Frame | `TFmrFormFrame` component (drop on any form) and the optional ancestor `TFmrForm`; modes `Dwm`, `FullNC` (**default**), `NCStrip`. In `FullNC` the caption row **and the tab row** are in the real non-client area |
 | Strings | All UI strings in `FMR.Ribbon.Strings` (English) with a Russian table; `FmrSetLanguage('ru')` |
 | Tests | DUnitX (`Tests\`), logic only (layout, items/links, merge, persistence, key tips) |
-| Demos | `Demos\NCProof` (the three frame modes, geometry panel), `Demos\WordLike` (showcase application), `Demos\Showcase` (one page per feature, theme and canvas switch) |
+| Demos | `Demos\NCProof` (the three frame modes, geometry panel), `Demos\Notes` (FMR Notes, a notes editor streamed from an `.fmx`), `Demos\Showcase` (one page per feature, theme and canvas switch) |
 
 ## Source layout
 
@@ -39,13 +39,13 @@ Source\Extras\     FMR.Ribbon.Backstage(.Controls), FMR.Ribbon.StatusBar, FMR.Ri
 Source\Templates\  FMR.Ribbon.Templates (run-time templates), FMR.Ribbon.DesignSupport (design-hook interfaces)
 Source\Design\     design-time only (dclFMRRibbon): registration, editors, editor windows (Docs\DESIGNTIME.md)
 Packages\          FMRRibbon.dpk (runtime; Win32, Win64, Linux64), dclFMRRibbon.dpk (design), FMRRibbon.groupproj
-Assets\Fonts\      FmrFluentIcons.ttf (Fluent UI System Icons subset, THIRD_PARTY_NOTICES.md)
+Assets\Fonts\      FmrIcons.ttf ("FMR Icons": Fluent UI System Icons subset, THIRD_PARTY_NOTICES.md)
 Tests\             FmrRibbonTests.dpr (DUnitX console runner) + test units
-Demos\             NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize (Demos\README.md)
+Demos\             NCProof, RibbonBasic, Notes, Showcase, Extras, Customize (Demos\README.md)
 tools\             build-packages.ps1, shot.ps1 / drive.ps1 / capture.ps1 / keys.ps1 (run, drive and capture
                    programs), closecheck.ps1, ThemeSheet, DesignPreview, Stress (stress and destroy paths of the
                    real ribbon), fix-encoding.ps1, linux-run.ps1/.sh (Linux programs on a headless Weston),
-                   IconFont (make-icon-font.ps1, segoe-fluent-map.txt)
+                   IconFont (make-icon-font.ps1, segoe-icon-map.txt)
 ```
 
 ## Building and checking
@@ -138,14 +138,14 @@ inside a panel) the ribbon keeps both rows inside itself.
 
 Pure code with no controls: input is a list of groups with, per link, the size at each view level (measured by the
 painter); output is the chosen level of every link, positions inside the groups and which groups collapse into a
-drop-down button. Reduction order follows Office: right to left, large → small-with-text → small, then collapse;
+drop-down button. Reduction order: right to left, large → small-with-text → small, then collapse;
 groups can give a priority. Tested with DUnitX.
 
 ## Themes and painting
 
 - A theme is a set of named tokens: `fmr.tab.text`, `fmr.tab.active.fill`, `fmr.group.caption.text`,
   `fmr.button.hot.fill`, … (full list in `Docs\STYLES.md`). Tokens are `TColorObject`, `TBrushObject` (gradients for
-  2007/2010) or `TFontObject` resources of a StyleBook. Lookup order: the form's StyleBook, then the built-in theme
+  the Glass and Classic themes) or `TFontObject` resources of a StyleBook. Lookup order: the form's StyleBook, then the built-in theme
   selected with `TFmrRibbon.Theme`, then defaults in code.
 - `TFmrRibbonPainter` paints every part (caption, tabs, group frames, buttons in every state, galleries,
   separators, scroll buttons, key tips, screen tips, backstage) with canvas primitives and these tokens; metrics

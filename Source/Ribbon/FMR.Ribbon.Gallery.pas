@@ -892,7 +892,7 @@ begin
     begin
       FInRibbon := True;
       FColumns := Cols;
-      // Office 2024: one row of cells at the top of the content (like the top-aligned rows, MaxRowGap below the
+      // Modern 2024: one row of cells at the top of the content (like the top-aligned rows, MaxRowGap below the
       // top) instead of a gallery as tall as the group.
       if (Metrics.MaxRowGap > 0) and (FItemSize.Height + 2 * GalleryFramePad + Metrics.MaxRowGap < ABounds.Height) then
         Bounds := RectF(ABounds.Left, ABounds.Top + Metrics.MaxRowGap, ABounds.Right,
@@ -1255,7 +1255,7 @@ begin
     Exit(inherited KeyTipAnchor);
   R := PartRect(TFmrGalleryPart.DropDown);
   // On the drop-down button rather than on the bottom edge: the dialog launcher of the group, right below it in
-  // the caption, has its own tip (they covered each other in the boxed Office 2007/2010 groups).
+  // the caption, has its own tip (they covered each other in the boxed Glass and Classic groups).
   Result := PointF(R.CenterPoint.X, Min(Bounds.Bottom - 2, R.CenterPoint.Y));
 end;
 
@@ -2028,7 +2028,7 @@ begin
   FHot := ARef;
   if not ARef.IsNone then
   begin
-    // The mouse takes over from the keyboard (like Office); arrows continue from the hot entry.
+    // The mouse takes over from the keyboard; arrows continue from the hot entry.
     if FMenuFocus <> nil then
     begin
       TMenuAccess(FMenuFocus).DoMouseLeave;

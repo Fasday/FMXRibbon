@@ -17,6 +17,7 @@ unit ExtrasDemoMain;
 ///               /standalone /noanim /keytips (open the view as with the keyboard)
 ///               /frame[=fullnc|dwm|ncstrip] (TFmrFormFrame: caption row + tab row in the window frame; the tab row
 ///               is hidden while the backstage view is open, as the ribbon will do)
+///               /pos=X,Y (window position in dp) /topmost (stay on top while tools\drive.ps1 captures it)
 
 interface
 
@@ -188,7 +189,7 @@ const
   GlyphCheck = $E73E;
   GlyphView = $E890;
   GlyphComment = $E8BD;
-  GlyphWord = $E8A5;
+  GlyphDocument = $E8A5;
 
 { TDemoThemeProvider }
 
@@ -781,7 +782,7 @@ end;
 
 procedure TExtrasDemoForm.BuildNewTab;
 const
-  Names: array [0..7] of string = ('Blank document', 'Welcome to Word', 'Single spaced (blank)', 'Resume',
+  Names: array [0..7] of string = ('Blank document', 'Welcome tour', 'Single spaced (blank)', 'Resume',
     'Cover letter', 'Report', 'Newsletter', 'Brochure');
 var
   I, J: Integer;
@@ -858,7 +859,7 @@ begin
   T.Selected := True;
   T.ShowFrame := False;
   T.OnClick := LocationTileClick;
-  T := AddTile(Left, 'OneDrive - Personal', '', GlyphCloud, TFmrBackstageTileLayout.Horizontal, TAlignLayout.Top,
+  T := AddTile(Left, 'Cloud - Personal', '', GlyphCloud, TFmrBackstageTileLayout.Horizontal, TAlignLayout.Top,
     250, 52);
   T.ShowFrame := False;
   T.OnClick := LocationTileClick;
@@ -876,12 +877,12 @@ begin
   FRecent.Items.AddItem('Quarterly report.docx', 'Documents » Reports');
   FRecent.Items.AddItem('Ribbon design notes.docx', 'Documents » Projects » FMR Ribbon');
   FRecent.Items.AddHeader('Yesterday');
-  FRecent.Items.AddItem('Meeting minutes.docx', 'OneDrive » Team » Minutes');
+  FRecent.Items.AddItem('Meeting minutes.docx', 'Cloud » Team » Minutes');
   FRecent.Items.AddItem('Letter to customers.docx', 'Documents » Letters');
   FRecent.Items.AddHeader('Older');
-  FRecent.Items.AddItem('Product brochure.docx', 'Desktop', GlyphWord);
+  FRecent.Items.AddItem('Product brochure.docx', 'Desktop', GlyphDocument);
   FRecent.Items.AddItem('Thesis draft.docx', 'Documents » University');
-  FRecent.Items.AddItem('Recipes.docx', 'OneDrive » Personal');
+  FRecent.Items.AddItem('Recipes.docx', 'Cloud » Personal');
   FRecent.Items.AddItem('Travel plan.docx', 'Documents » Travel');
   FRecent.OnItemClick := RecentItemClick;
 end;
@@ -900,7 +901,7 @@ begin
   Left.Align := TAlignLayout.Left;
   Left.Width := 260;
   Left.Margins.Right := 28;
-  T := AddTile(Left, 'OneDrive - Personal', 'jane@example.com', GlyphCloud, TFmrBackstageTileLayout.Horizontal,
+  T := AddTile(Left, 'Cloud - Personal', 'jane@example.com', GlyphCloud, TFmrBackstageTileLayout.Horizontal,
     TAlignLayout.Top, 260, 60);
   T.OnClick := LocationTileClick;
   T.ShowFrame := False;
@@ -931,7 +932,7 @@ begin
   Combo.Margins.Rect := RectF(0, 10, 120, 0);
   Combo.Position.Y := NextY;
   Combo.Parent := Right;
-  Combo.Items.Add('Word Document (*.docx)');
+  Combo.Items.Add('Document (*.docx)');
   Combo.Items.Add('PDF (*.pdf)');
   Combo.Items.Add('Plain Text (*.txt)');
   Combo.ItemIndex := 0;
@@ -1010,8 +1011,8 @@ begin
   Combo.Margins.Top := 8;
   Combo.Position.Y := NextY;
   Combo.Parent := Left;
-  Combo.Items.Add('Microsoft Print to PDF');
-  Combo.Items.Add('Office printer (HP LaserJet)');
+  Combo.Items.Add('Print to PDF');
+  Combo.Items.Add('Laser printer (2nd floor)');
   Combo.ItemIndex := 0;
   AddLabel(Left, 'Settings', TFmrBackstageTextStyle.Subtitle, TAlignLayout.Top, 18);
   AddLabel(Left, 'Print All Pages', TFmrBackstageTextStyle.Normal, TAlignLayout.Top, 8);
@@ -1039,7 +1040,7 @@ begin
   AddLabel(FTabAccount, 'User Information', TFmrBackstageTextStyle.Title);
   AddLabel(FTabAccount, 'Jane Doe', TFmrBackstageTextStyle.Normal, TAlignLayout.Top, 8);
   AddLabel(FTabAccount, 'jane@example.com', TFmrBackstageTextStyle.Secondary, TAlignLayout.Top, 2);
-  AddLabel(FTabAccount, 'Office Theme', TFmrBackstageTextStyle.Subtitle, TAlignLayout.Top, 24);
+  AddLabel(FTabAccount, 'Theme', TFmrBackstageTextStyle.Subtitle, TAlignLayout.Top, 24);
   FAccountThemeCombo := TComboBox.Create(Self);
   FAccountThemeCombo.Align := TAlignLayout.Top;
   FAccountThemeCombo.Margins.Rect := RectF(0, 8, 0, 0);
@@ -1065,7 +1066,7 @@ end;
 
 procedure TExtrasDemoForm.BackstageShow(Sender: TObject);
 begin
-  // What the ribbon does when its backstage opens (Office 2013+): the title bar stays, the tab row goes away
+  // What the ribbon does when its backstage opens: the title bar stays, the tab row goes away
   if (FFrame <> nil) and not FindCmdLineSwitch('keeprow') then
   begin
     FTopBar.Visible := False;
@@ -1285,7 +1286,16 @@ begin
     else if SameText(S, '/frame=dwm') then
       BuildFrame(TFmrFrameMode.Dwm)
     else if SameText(S, '/frame=ncstrip') then
-      BuildFrame(TFmrFrameMode.NCStrip);
+      BuildFrame(TFmrFrameMode.NCStrip)
+    else if S.StartsWith('/pos=', True) and S.Contains(',') then
+    begin
+      // window position in dp (screenshots of a window placed mostly outside the visible desktop)
+      Position := TFormPosition.Designed;
+      Left := StrToIntDef(S.Substring(5).Split([','])[0], Left);
+      Top := StrToIntDef(S.Substring(5).Split([','])[1], Top);
+    end
+    else if SameText(S, '/topmost') then
+      FormStyle := TFormStyle.StayOnTop;
   end;
   if FStandalone then
   begin

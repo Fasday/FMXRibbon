@@ -84,14 +84,14 @@ action's `OnUpdate` (the ribbon should call it for visible items on idle, like F
 
 | Item | Notes |
 |---|---|
-| `TFmrButtonItem` | `ButtonStyle` Default/Check/DropDown/Split, `Down`, `GroupIndex` (radio within the manager), `AllowAllUp`, `DropDownLinks`, `OnDropDown` (fill the menu lazily), `Primary` (accent filled: Office "Share") |
+| `TFmrButtonItem` | `ButtonStyle` Default/Check/DropDown/Split, `Down`, `GroupIndex` (radio within the manager), `AllowAllUp`, `DropDownLinks`, `OnDropDown` (fill the menu lazily), `Primary` (accent filled: a "Share" button) |
 | `TFmrAvatarItem` | button with `Initials` in a `Color` circle (the account picture of the caption row) |
 | `TFmrSubItem` | `ItemLinks` = sub menu, `OnPopup` |
 | `TFmrSeparatorItem` | layout kind `Separator`; in menus a caption makes it a header |
 | `TFmrStaticItem` | label, `Alignment`, `Width` |
 | `TFmrControlItem` | hosts an existing `TControl` (one parent → one link shows it at a time) |
 | `TFmrEditItem`, `TFmrComboItem`, `TFmrSpinItem`, `TFmrTrackBarItem`, `TFmrFontNameItem` | data only; the ribbon creates an FMX control per link and syncs on `TFmrItemChange.Value`; editor changes made by the user must be written back to the item (which notifies the other links) |
-| `TFmrCheckItem` | painted check box, radio with `GroupIndex`; `CheckStyle = ToggleSwitch`: caption and a Windows 11 switch (Office "AutoSave") |
+| `TFmrCheckItem` | painted check box, radio with `GroupIndex`; `CheckStyle = ToggleSwitch`: caption and a toggle switch (an "AutoSave" switch) |
 | `TFmrColorItem` | split button with `Color`, automatic/no color/more colors options |
 | `TFmrGalleryItem` | `Groups` → `Items` (entries with caption, glyph, hint, description), `MinColumns`/`MaxColumns` (in-ribbon), `DropDownColumns/Rows`, `ItemWidth/Height`, `ShowInRibbon`, `AllowFilter`, `SelectedIndex`/`SelectedEntry` (follows its entry), `ClickEntry` → `OnItemClick`, `HotTrack(entry or nil)` → `OnHotTrack` (live preview; nil = revert) |
 
@@ -99,7 +99,7 @@ action's `OnUpdate` (the ribbon should call it for visible items on idle, like F
 with text and small with a `Glyph`, small with text only without glyphs; editors: small with text (with a caption)
 and small. `LayoutKind` tells the ribbon how to feed the layout calculator.
 
-`TFmrBarManager.SearchItems(text)` implements the data side of command search ("Tell me"): every word must occur in
+`TFmrBarManager.SearchItems(text)` implements the data side of command search: every word must occur in
 caption, description, hint, `Keywords` or category; captions starting with the text come first.
 
 ### Images (`TFmrImageSource`)
@@ -113,7 +113,7 @@ centers the image keeping the aspect ratio and works with any canvas:
 - glyph: `FillText` with `GlyphFontFamily` (default `Segoe Fluent Icons` on Windows 11 and elsewhere,
   `Segoe MDL2 Assets` on Windows 10), code points above $FFFF supported. When the family is not installed
   (`FMR.Ribbon.Fonts.FmrFontFamilyAvailable`) and it is a Segoe icon font, a known code is drawn from
-  `GlyphFallbackFontFamily` ("FMR Fluent Icons", `Assets\Fonts\FmrFluentIcons.ttf`, registered by `FmrEnsureIconFont`;
+  `GlyphFallbackFontFamily` ("FMR Icons", `Assets\Fonts\FmrIcons.ttf`, registered by `FmrEnsureIconFont`;
   table `FMR.Ribbon.IconFont.inc` made by `tools\IconFont\make-icon-font.ps1`, `RegisterGlyphFallback` adds codes);
   anything else gives a small placeholder dot instead of the "missing glyph" box (`Docs\LINUX.md`, "Icons");
 - path: `FillPath` of `PathData` fitted to the rect (or drawn in a 0..`PathViewBox` square like an SVG viewBox).
@@ -158,7 +158,7 @@ height/count (3), paddings, spacings, separator width, launcher width.
 
 **Arrangement of one group.** Links flow left to right in columns. A Large link or a gallery takes a full-height
 column. Small links (SmallWithText/Small) stack in a column of up to `RowCount` rows; a column with fewer rows spreads
-them evenly (`DistributeRows`), with `MaxRowGap` > 0 at most that far apart and top-aligned (Office 2024: two rows
+them evenly (`DistributeRows`), with `MaxRowGap` > 0 at most that far apart and top-aligned (Modern 2024: two rows
 at the top of a three-row group). A link with `ButtonGroup = Member` continues the row of the previous link (button
 groups, editors side by side); on such a link `BeginGroup` starts a new segment of the row (gap
 `SegmentSpacing`) instead of a new column. `BeginGroup` on any other link and separator links end the column and

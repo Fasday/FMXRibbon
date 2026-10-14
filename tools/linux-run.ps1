@@ -14,7 +14,7 @@
   Output folder (default shots\linux\<program>): screen-<n>.png, dump-<n>\<window>-<id>.png, program.log, weston.log.
 
 .EXAMPLE
-  .\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Office2024Dark'
+  .\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/theme=Modern2024Dark'
   .\tools\linux-run.ps1 -Exe bin\Linux64\Debug\RibbonBasic -Arguments '/open=cover' -Shots 3,5 -Out shots\linux\cover
 #>
 param(

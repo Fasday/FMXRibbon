@@ -5,7 +5,7 @@ menus, screen tips, key tips, quick access toolbar, contextual tabs, minimized a
 integration with the window frame of `Source\Frame`. The data side (bar items and links, ribbon structure, layout
 calculator, themes and painter, key tip assignment, strings) is core code described in `Docs\CORE.md`.
 
-Demo: `Demos\RibbonBasic` (a Word-like ribbon built in code, see "Demo and test scripts" at the end).
+Demo: `Demos\RibbonBasic` (a document-editor style ribbon built in code, see "Demo and test scripts" at the end).
 
 ## Units
 
@@ -17,7 +17,7 @@ Demo: `Demos\RibbonBasic` (a Word-like ribbon built in code, see "Demo and test 
 | `FMR.Ribbon.Popup` | `TFmrPopupForm`, `TFmrPopupManager` (`FmrPopups`), key sink and `IFmrKeyHandler`, `IFmrPopupContext`/`TFmrPopupContext`, `IFmrPopupContent`, menus (`TFmrMenuControl`, `TFmrMenuRow`), `TFmrColorPaletteControl`, `TFmrPopupMenu` component, `TFmrCommandItem`, `TFmrTempMenu`, drop-down registry (`FmrRegisterDropDown`, `FmrCreateDropDownContent`), `IFmrThemeSource` |
 | `FMR.Ribbon.ScreenTips` | `TFmrScreenTipContent`, `TFmrScreenTipController` (delay, placement, one tip at a time) |
 | `FMR.Ribbon.Fonts.Win`, `FMR.Ribbon.Fonts.Linux` | Font family list for font name editors and `FMR.Ribbon.Fonts` (Windows: EnumFontFamiliesEx; Linux: fontconfig); each is empty on the other platforms |
-| `FMR.Ribbon.Gallery`, `FMR.Ribbon.ColorGallery`, `FMR.Ribbon.AppMenu`, `FMR.Ribbon.MiniToolbar`, `FMR.Ribbon.RadialMenu` | In-ribbon and drop-down galleries, color gallery, Office 2007 application menu, mini toolbar, radial menu - see `Docs\GALLERIES.md` |
+| `FMR.Ribbon.Gallery`, `FMR.Ribbon.ColorGallery`, `FMR.Ribbon.AppMenu`, `FMR.Ribbon.MiniToolbar`, `FMR.Ribbon.RadialMenu` | In-ribbon and drop-down galleries, color gallery, application menu in the style of Office 2007, mini toolbar, radial menu - see `Docs\GALLERIES.md` |
 | `FMR.Ribbon.Customize`, `FMR.Ribbon.CustomizeModel`, `FMR.Ribbon.CustomizeControls` | Run-time customization dialog ("Customize the Ribbon", "Quick Access Toolbar"), its editing session and themed controls - see `Docs\CUSTOMIZATION.md` |
 | `FMR.Ribbon.BiDi`, `FMR.Ribbon.EditorStyles` | Right-to-left helpers (canvas mirroring); editor controls styled from the theme - see `Docs\CUSTOMIZATION.md` |
 | `FMR.Ribbon.UIA.Win` | UI Automation provider (`FmrInstallRibbonAutomation`) - see `Docs\ACCESSIBILITY.md` |
@@ -35,7 +35,7 @@ in the constructor, never streamed):
 
 - **Caption bar**: quick access toolbar (above the ribbon), title, contextual tab group headers, search box,
   help button, window buttons (minimize, maximize/restore, close) when the bars live in the frame.
-- **Tab bar**: application button ("File" tab or the Office 2007 orb), tabs (contextual tabs with their color),
+- **Tab bar**: application button ("File" tab or the orb of the Glass themes), tabs (contextual tabs with their color),
   tab scroll buttons, collapse/pin button, display options.
 - **Body**: the groups of the active tab (classic or simplified), group scroll buttons.
 - **QAT bar**: the quick access toolbar when it is below the ribbon (or above it with no caption row).
@@ -160,8 +160,8 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   (FullNC, Dwm); placed from the right by hand. `IFmrFrameStateAware` gives the active/maximized state (inactive
   colors, maximized top offset added to the caption row height).
 - Colors: `ApplyFrameColors` sets `Frame.CaptionColor`, `CaptionInactiveColor` and `DarkMode` from the theme. In
-  colored-caption themes (Office 2016 Colorful...) and whenever the glyph color does not read on the caption color
-  (contrast below 3: the dark captions of Office 2007/2010 Black and Office 2016 Dark Gray, or a StyleBook override)
+  colored-caption themes (BannerColorful...) and whenever the glyph color does not read on the caption color
+  (contrast below 3: the dark captions of GlassBlack, ClassicBlack and BannerDarkGray, or a StyleBook override)
   the caption and tab rows use a cloned "bar theme" whose button, glyph and disabled tokens are mapped to caption
   tokens.
 - `NCStrip`: Windows keeps its own caption; the caption bar is shown only when the QAT is above the ribbon and has
@@ -197,7 +197,7 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
 - Badges: tab tips hang below the tab row (top of the body), QAT tips below the caption row (top of the tab row),
   other tips at `KeyTipAnchor` of the element, clamped inside the part. When the body is hidden (minimized ribbon,
   Show Tabs) the tab tips are painted by an overlay control on the form right below the tab row (`TFmrTabTipOverlay`),
-  so they do not cover the tab captions, like Office.
+  so they do not cover the tab captions.
 - Shortcuts: `DialogKey` runs the bar item whose `ShortCut` matches (Ctrl/Alt combinations and F-keys). While an
   editor of the ribbon has the focus, editing keys (Ctrl+A/C/V/X/Z/Y, Ctrl+arrows...) stay with the editor.
   Ctrl+F1 toggles `Minimized`.
@@ -228,7 +228,7 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
 - **Right to left** (`RightToLeft` or the form's `BiDiMode`): everything is mirrored - parts and popups flip
   their canvas and mouse coordinates (logical geometry stays left to right); text and icons are drawn unmirrored;
   editors, the search box and caption buttons get mirrored bounds (`Docs\CUSTOMIZATION.md`).
-- **Display options and auto-hide** (`ShowDisplayOptionsButton`, `ShowMode = AutoHide`): Office 2016 caption
+- **Display options and auto-hide** (`ShowDisplayOptionsButton`, `ShowMode = AutoHide`): a caption
   button with Auto-hide Ribbon / Show Tabs / Show Tabs and Commands; auto-hide keeps only the caption row and shows
   tabs and commands in an overlay popup (`ShowAutoHiddenRibbon`).
 - **Customization form** (`ShowCustomizationForm`, QAT "More Commands...", ribbon menu "Customize the Ribbon..."),
@@ -243,7 +243,7 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   description: `Docs\DESIGNTIME.md`, "Phase B". `ActiveTab` is published and settable, `TabAtScreenPoint` is kept.
 - **Diagnostics**: `DebugDump` (parts, elements and bounds as text; the demo writes it with `/dump=`).
 
-## Office 2024: caption row and tab row extras, focus effect
+## Modern 2024: caption row and tab row extras, focus effect
 
 - **Caption row and tab row toolbars** (like the tab area toolbars of other ribbons): `CaptionToolbar` (links at the
   right end of the caption row, left of the window buttons: the account picture) and `TabAreaToolbar` (links at the
@@ -254,11 +254,11 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
 - **`ApplicationIcon`** (`TFmrImageSource`, an SVG keeps its colors): 16 dp icon at the left end of the caption row,
   the window menu on a click (`SysMenu` hit test).
 - **Items for them** (`FMR.Bars.Items`, painted by `TFmrButtonView`): `TFmrCheckItem.CheckStyle = ToggleSwitch`
-  (caption then a Windows 11 switch: the Office "AutoSave"), `TFmrButtonItem.Primary` (filled with the accent in
+  (caption then a toggle switch: an "AutoSave" switch), `TFmrButtonItem.Primary` (filled with the accent in
   every state: "Share"; a split primary button is one shape), `TFmrAvatarItem` (initials in a colored circle,
   `Initials`, `Color`; a drop-down button for the account menu). New painter methods: `DrawToggleSwitch`,
   `DrawPrimaryButton`, `DrawAvatar`, `TabCaptionWidth`.
-- **Layout of the Office 2024 themes** (style switches and metrics in `Docs\STYLES.md`): the title follows the quick
+- **Layout of the Modern 2024 themes** (style switches and metrics in `Docs\STYLES.md`): the title follows the quick
   access toolbar (`LeadingTitle`), the search box is centered with its own size, the window buttons are 48 dp wide,
   tabs are as wide as their bold caption, the collapse button is a chevron in the bottom right corner of the card
   (a pin in the body of a collapsed ribbon), two-row groups keep their rows at the top (`MaxRowGap`), an in-ribbon
@@ -272,7 +272,7 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   into the tab row theme (caption and tab row fills, `TabTextInactive`) and the caption row theme (title, quick access
   toolbar, caption toolbar, search box and window buttons fade to `CaptionTextInactive`, `SearchBoxFillInactive`).
   The caption row has its own painter for that. `ShowInactiveState = False` keeps the active look. Checked on
-  WordLike in White and Dark Gray against Word (`shots\cmp\cmp_LightInactive_*.png`, `cmp_DarkGrayInactive_*.png`).
+  screenshots of the showcase application (now Demos\Notes), Light and Dark Gray, active and inactive windows.
 
 ## Galleries, application menu, mini toolbar, radial menu
 
@@ -286,7 +286,7 @@ Built on the extension points above, in their own units (full description: `Docs
   `OnDrawItem` and `DropDownResize`.
 - `FMR.Ribbon.ColorGallery`: drop-down of every `TFmrColorItem` (theme colors with tints/shades, standard and recent
   colors, Automatic, No Color, "More Colors..." dialog), `TFmrColorGalleryItem` (highlight palette, live preview).
-- `FMR.Ribbon.AppMenu`: `TFmrRibbonApplicationMenu` - the Office 2007 application menu (`IFmrApplicationMenu`).
+- `FMR.Ribbon.AppMenu`: `TFmrRibbonApplicationMenu` - the application menu in the style of Office 2007 (`IFmrApplicationMenu`).
 - `FMR.Ribbon.MiniToolbar`: `TFmrRibbonMiniToolbar` - fading floating toolbar, optionally with a context menu.
 - `FMR.Ribbon.RadialMenu`: `TFmrRibbonRadialMenu` - round menu with nested rings.
 - Menu rows show screen tips (`FmrMenuHotRowHook` in `FMR.Ribbon.Popup`, handler in `FMR.Ribbon.ScreenTips`).
@@ -298,7 +298,7 @@ Built on the extension points above, in their own units (full description: `Docs
 
 ### Done (checked on screenshots, see `shots\rb_*.png`)
 
-Themes Office 365 White/Black, 2016 Colorful, 2013 White, 2010 Blue/Silver, 2007 Blue (orb), Fluent Dark; frames
+Themes Modern White/Black, Banner Colorful, Flat White, Classic Blue/Silver, Glass Blue (orb), Soft Dark; frames
 FullNC, Dwm, NCStrip, none; widths 1180/800/700/560/450 (levels, collapsed groups, scrolling); hover and pressed
 states; screen tips; Paste split menu with large rows; font color palette; collapsed group popup with a borrowed
 `TEdit` accepting typing; minimized ribbon (Ctrl+F1) and its tab popup; key tips Top -> Home -> Paste menu
@@ -311,7 +311,7 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
 
 ### Not done / known limitations
 
-- Galleries, the color gallery ("More Colors...", live preview), the Office 2007 application menu, the mini toolbar,
+- Galleries, the color gallery ("More Colors...", live preview), the application menu, the mini toolbar,
   the radial menu and menu screen tips are done (`Docs\GALLERIES.md`, its own list of known issues).
 - Auto-hide, themed editors, full right to left, the customization form and UI Automation are done
   (`Docs\CUSTOMIZATION.md`, `Docs\ACCESSIBILITY.md`, their own lists of known issues).
@@ -331,7 +331,7 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
   (Alt, H) and the Paste menu (P, A); minimized ribbon key tips below the tab row (FullNC and no frame) and the Home
   popup with its tips; wheel over the in-ribbon styles gallery scrolls one row (tab unchanged), elsewhere it switches
   tabs; drop-down gallery entry tip right of the drop-down; dark themed font list scroll bar; themed "More Colors"
-  dialog (FluentDark, dark title bar); typing into the mini toolbar's font size (28 + Enter applied, toolbar kept);
+  dialog (SoftDark, dark title bar); typing into the mini toolbar's font size (28 + Enter applied, toolbar kept);
   typing into the editor of a collapsed group popup; the backstage "Back" hint gone after Esc.
 - Closing the form with a group popup open (with a focused editor), the mini toolbar with a focused editor, the
   minimized ribbon with key tips, the color gallery, the backstage: no error, no leak report (`tools\closecheck.ps1`).
@@ -372,13 +372,13 @@ The desktop may be shared with other windows, so the scripts do not rely on the 
   shadow area of popups comes out black). PNG origin is the window at (16, 16).
 - `keys.ps1`: `keybd_event` key strokes to the form made foreground (`alt`, `ctrl+F1`, `esc`, letters...).
 
-Example: `.\tools\drive.ps1 -Arguments "/theme=Office365White /frame=fullnc" -Out shots\x.png
+Example: `.\tools\drive.ps1 -Arguments "/theme=ModernWhite /frame=fullnc" -Out shots\x.png
 -Actions "key:alt;wait:500;key:H;wait:500;shot:home"`.
 
 Screenshots without disturbing somebody who works at the desktop: `drive.ps1 -NoCursor` (posted mouse messages, the
-real cursor stays) and the demo switches `/pos=X,Y` (RibbonBasic, WordLike: the window mostly outside the visible
+real cursor stays) and the demo switches `/pos=X,Y` (RibbonBasic, Notes, Extras: the window mostly outside the visible
 desktop, PrintWindow still renders it), `/topmost` (an occluded window is not painted by the Direct2D canvas: the
 visible strip of it must stay on top) and `/activelook` (`ShowInactiveState = False`: a window started in the
 background keeps the active caption). `drive.ps1 ... -Actions "post:0x86,1,0"` posts `WM_NCACTIVATE` (Dwm mode: the
 active look; in FullNC Windows corrects it to inactive). `tools\sidebyside.ps1` puts the same region of two
-screenshots one above the other (the Word 2024 comparisons in `shots\cmp\cmp_*.png`).
+screenshots one above the other (before/after comparisons of a change).
