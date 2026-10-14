@@ -285,12 +285,30 @@ begin
 end;
 
 procedure TFmrWaylandFrame.FrameChanged;
+var
+  W, H: Integer;
 begin
   if not FAttached then
     Exit;
   // FullNC and Dwm: the ribbon draws the title bar; NCStrip: the platform's title bar stays above the caption content.
   FIntegrated := Frame.Mode <> TFmrFrameMode.NCStrip;
-  FService.SetDecorated(FHandle, not FIntegrated);
+  if TFmxFormState.WasNotShown in Frame.Form.FormState then
+  begin
+    // Before the first show FMX keeps the bounds the program set (Width/Height in the constructor) and applies them
+    // when it shows the window; the platform must not replace them with its own initial size (FMXWayland's
+    // windowframe branch reported 640x480 minus its title bar back to FMX here).
+    // (Form.Bounds asks the platform; Width and Height are FMX's own values.)
+    W := Frame.Form.Width;
+    H := Frame.Form.Height;
+    FService.SetDecorated(FHandle, not FIntegrated);
+    if (Frame.Form.Width <> W) or (Frame.Form.Height <> H) then
+    begin
+      Frame.Form.Width := W;
+      Frame.Form.Height := H;
+    end;
+  end
+  else
+    FService.SetDecorated(FHandle, not FIntegrated);
   Frame.PlaceHostInClient(Frame.CaptionHeight);
   if FIntegrated then
     CreateGrips
@@ -346,8 +364,8 @@ begin
         AHandled := True;
       end
       else
-        // The compositor moves the window until the button is released (a click without motion ends at once, so
-        // the second press of a double click comes back here).
+        // True at once; the platform starts the move only when the pointer is dragged past a few pixels (FMXWayland:
+        // 4 px, as GTK), so a click stays a click and the second press of a double click comes back with ssDouble.
         AHandled := FService.BeginMove(FHandle);
     TMouseButton.mbRight:
       begin

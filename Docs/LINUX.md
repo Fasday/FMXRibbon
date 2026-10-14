@@ -173,7 +173,19 @@ manager kept an interface of a popup's content while its closed-handler ran.
 ## What does not work yet
 
 - **The integrated title bar** (caption row and tab row in the title bar, as FullNC on Windows) needs the platform
-  service below; until FMXWayland has it, the ribbon sits under FMXWayland's title bar.
+  service below. FMXWayland implements it in its `windowframe` branch (not in its `main` yet): built against that
+  branch, RibbonBasic without `/waylandframe=preview` and without `FMXWAYLAND_CSD=0` attaches by itself, FMXWayland's
+  title bar goes away and the ribbon's caption row takes its place (checked on headless Weston, 2026-10-14; real
+  input — move, resize, double click, window menu — is tested on sway, KWin and GNOME by FMXWayland's own tests).
+  With FMXWayland's `main` the ribbon sits under FMXWayland's title bar. Notes on that implementation:
+  - `BeginMove` returns True at the press; the move starts when the pointer is dragged past 4 px (as GTK), so clicks
+    stay clicks and the second press of a double click arrives with `ssDouble` (the frame toggles maximize).
+  - Before the first configure `GetStates` is 0 and `GetCapabilities` is `$FFFFFFFF` (`FmxwCapsUnknown`); the listener
+    reports the real values.
+  - `SetDecorated(False)` on a window that was not shown yet reported 640x480 minus FMXWayland's title bar back to FMX,
+    replacing the Width/Height the program set in its constructor (RibbonBasic came up 632x446 instead of 1180x640).
+    `TFmrWaylandFrame` keeps FMX's own Width/Height across the call before the first show, so the window gets its
+    size with either behavior.
 - Key tips by keyboard, mouse interaction, drag in galleries, the customization dialog: implemented in the
   platform-neutral code, not exercised (no input on the headless compositor).
 - UI Automation (`FMR.Ribbon.UIA.Win`) is Windows only; no AT-SPI provider.
