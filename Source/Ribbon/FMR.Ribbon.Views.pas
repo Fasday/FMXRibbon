@@ -100,6 +100,9 @@ type
     /// <summary>The mouse moved over the element (host coordinates); called by TFmrElementTracker after the hot
     /// part was set. Elements with inner parts (gallery cells, scroll buttons) track them here.</summary>
     procedure MouseMoveAt(const P: TPointF); virtual;
+    /// <summary>The mouse wheel turned while the element is hot (in-ribbon galleries scroll their rows); False
+    /// leaves the wheel to the host (the ribbon switches tabs).</summary>
+    function MouseWheel(const AWheelDelta: Integer): Boolean; virtual;
     procedure Invalidate;
     function IsEnabled: Boolean; virtual;
     function IsChecked: Boolean; virtual;
@@ -473,6 +476,11 @@ end;
 
 procedure TFmrElement.MouseMoveAt(const P: TPointF);
 begin
+end;
+
+function TFmrElement.MouseWheel(const AWheelDelta: Integer): Boolean;
+begin
+  Result := False;
 end;
 
 procedure TFmrElement.SetFocused(const Value: Boolean);

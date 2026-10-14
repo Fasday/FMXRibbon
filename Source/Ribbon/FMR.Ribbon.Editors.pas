@@ -72,7 +72,7 @@ implementation
 
 uses
   FMX.Edit, FMX.EditBox, FMX.ComboEdit, FMX.ListBox, FMX.SpinBox, FMX.StdCtrls, FMX.Forms, FMR.Ribbon.EditorStyles,
-  FMR.Ribbon.BiDi;
+  FMR.Ribbon.BiDi, FMR.Ribbon.Popup;
 
 { TFmrEditorView.TNotifier }
 
@@ -209,6 +209,10 @@ begin
   begin
     if Item is TFmrControlItem then
     begin
+      // Design time: the control belongs to the form (designed and streamed there): the ribbon must not reparent,
+      // move or hide it. The view paints a placeholder.
+      if csDesigning in Item.ComponentState then
+        Exit;
       FControl := TFmrControlItem(Item).Control;
       FOwnsControl := False;
     end
@@ -398,7 +402,8 @@ begin
   Result := False;
   if (FControl <> nil) and FControl.Visible and FControl.CanFocus then
   begin
-    FControl.SetFocus;
+    // In a popup (collapsed group, minimized ribbon, mini toolbar) without FMX closing it.
+    FmrFocusControl(FControl);
     Result := FControl.IsFocused;
   end;
 end;
@@ -416,7 +421,18 @@ var
   State: TFmrPartState;
   Color: TAlphaColor;
 begin
-  if not Visible or (Level = TFmrViewLevel.Small) or (ViewPlace = TFmrViewPlace.Toolbar) then
+  if not Visible then
+    Exit;
+  if (FControl = nil) and (Item is TFmrControlItem) and (csDesigning in Item.ComponentState) then
+  begin
+    // Design time: where the control of the item goes at run time.
+    GlyphR := EditorRect;
+    Painter.Frame(ACanvas, GlyphR, TFmrToken.EditBorder, 2);
+    if TFmrControlItem(Item).Control <> nil then
+      Painter.TextEx(ACanvas, GlyphR, TFmrControlItem(Item).Control.Name, Painter.ButtonTextColor(TFmrPartState.Disabled),
+        TTextAlign.Center, TTextAlign.Center, 0, False, False);
+  end;
+  if (Level = TFmrViewLevel.Small) or (ViewPlace = TFmrViewPlace.Toolbar) then
     Exit;
   M := Metrics;
   if IsEnabled then

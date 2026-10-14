@@ -1,7 +1,8 @@
 # FMR Ribbon — design time (packages, IDE editors, templates)
 
 This file describes the packages, how to install them in RAD Studio 13 (37.0), every design-time editor, the run-time
-template builder and the contract the ribbon must implement for in-form design (phase B).
+template builder and the in-form design of the ribbon (phase B: done, checked against a real ribbon in a simulated
+designer; see "Phase B" for what only the IDE can confirm).
 
 ## Packages
 
@@ -58,8 +59,8 @@ The palette page is **FMR Ribbon**. Checked without the IDE: both packages load 
 
 | | Classes |
 |---|---|
-| Palette | `TFmrRibbon`, `TFmrBarManager`, `TFmrFormFrame`, `TFmrPopupMenu`, `TFmrRibbonBackstageView`, `TFmrBackstageTab`, `TFmrBackstageButton`, `TFmrBackstageHeader`, `TFmrBackstageLabel`, `TFmrBackstageTile`, `TFmrBackstageGalleryList`, `TFmrStatusBar`, `TFmrStatusBarPanel`, `TFmrCaptionButton`, `TFmrCaptionTitle` |
-| No icon (created by the editors and the Structure View, streamed) | `TFmrRibbonTab`, `TFmrRibbonGroup`, `TFmrRibbonContextGroup`, every bar item class (button, sub item, separator, static, control, edit, combo, spin, track bar, font name, check, color, gallery) |
+| Palette | `TFmrRibbon`, `TFmrBarManager`, `TFmrFormFrame`, `TFmrPopupMenu`, `TFmrRibbonBackstageView`, `TFmrBackstageTab`, `TFmrBackstageButton`, `TFmrBackstageHeader`, `TFmrBackstageLabel`, `TFmrBackstageTile`, `TFmrBackstageGalleryList`, `TFmrStatusBar`, `TFmrStatusBarPanel`, `TFmrCaptionButton`, `TFmrCaptionTitle`, `TFmrRibbonApplicationMenu`, `TFmrRibbonMiniToolbar`, `TFmrRibbonRadialMenu` |
+| No icon (created by the editors and the Structure View, streamed) | `TFmrRibbonTab`, `TFmrRibbonGroup`, `TFmrRibbonContextGroup`, every bar item class (button, sub item, separator, static, control, edit, combo, spin, track bar, font name, check, color, gallery, `TFmrRibbonGalleryItem`, `TFmrColorGalleryItem`); the items editor's "New Item" menu offers the two gallery descendants too |
 | Class group | `GroupDescendentsWith(TFmrFormFrame, FMX.Controls.TControl)`: the frame (a plain `TComponent`) appears for FireMonkey forms only. Every other class is a `TFmxObject` and belongs to the FMX group already |
 | Custom module | `RegisterCustomModule(TFmrForm, TCustomModule)`: forms that inherit `TFmrForm` show `Frame` in the Object Inspector |
 
@@ -184,19 +185,29 @@ contextual group. With `IFmrRibbonDesignSupport` it calls `DesignSelectTab` and 
 `IFmrRibbonStructureOwner.SetActiveTab`. So selecting a tab or group in the Structure View, the Object Inspector, the
 structure editor or the items editor already shows it in the form designer.
 
-## Phase B: in-form design — contract for `TFmrRibbon`
+## Phase B: in-form design (done)
 
-### How FMX passes clicks to a control at design time
+Clicking, selecting and dragging tabs, groups and links directly on the ribbon in the form designer. The IDE side
+(`FMR.Ribbon.Design.Interactive`) and the ribbon side (`TFmrRibbon`) are written; everything was checked against a
+real `TFmrRibbon` in a simulated designer (`DesignPreview.exe /realtest`, below). What only the IDE can confirm is
+listed at the end of this section.
 
-The FMX form designer gives mouse events to a control when it is **design-interactive**: `TControl` has the protected
-field `FDesignInteractive` (read by `IControl.DesignInteractive`); `TTabItem` sets it in its constructor and its
-`MouseDown` switches the tab and calls `TCommonCustomForm(Owner).Designer.SelectComponent(Self)` (`FMX.TabControl`,
-`TTabItem.MouseDown`). `FMX.Forms.IDesignerHook` (the form's `Designer`) has `SelectComponent`, `IsSelected`,
-`DesignerModified`, `UniqueName` and `Decorate` (painting over the finished form), and it can be queried for
-`IDesigner`. At design time `TControl.CheckHitTest` returns True for every visible, not `Locked` control, so the
-deepest control under the mouse is found; a `Locked` control is skipped. `TFmrRibbonBackstageView` already uses the
-mechanism. Which control receives the events when a design-interactive control has children could not be checked
-without the IDE, hence the "belt and braces" in step 3.
+### How FMX passes clicks to a control at design time (checked in the FMX sources)
+
+- The form designer filters every message of the designed form first: `FMX.Platform.Win.WndProc` calls
+  `LForm.Designer.IsDesignMsg(LForm, Message)` and processes the message itself only when the designer does not take
+  it. The designer lets a **design-interactive** control have the mouse: `TControl.FDesignInteractive` (protected,
+  read by `IControl.DesignInteractive`). `TTabItem` sets it in its constructor; its content is `Locked`; its
+  `MouseDown` switches the tab and calls `Designer.SelectComponent(Self)` when it is selected already (so the designer
+  selects the clicked control itself, then the control gets the mouse).
+- FMX then routes the message as at run time: `TCommonCustomForm.MouseDown` → `ObjectAtPoint` → the deepest control
+  under the mouse. At design time `TControl.CheckHitTest` is True for every visible control that is not `Locked`
+  (`HitTest` does not matter); `ObjectAtPoint` still descends into the children of a `Locked` control, and controls
+  that are not owned by the form (style objects, editor controls) are not in the design state, so their normal
+  `HitTest` applies.
+- `TControl.MouseDown` captures the mouse (`AutoCapture`), moves and the release go to the captured control.
+- `IDesignerHook` (the form's `Designer`) has `SelectComponent`, `IsSelected`, `DesignerModified`, `UniqueName` and
+  `Decorate`; the package reaches the full `IDesigner` through it.
 
 ### The interfaces (`Source\Templates\FMR.Ribbon.DesignSupport.pas`, runtime package, no IDE units)
 
@@ -241,56 +252,69 @@ end;
 TFmrRibbonDesignHooks.HookFor(Component): IFmrRibbonDesignHook   // nil unless csDesigning and a hook installed
 ```
 
-All points and rectangles are local coordinates of the `TFmrRibbon` control (at design time the caption row and the
-tab row stay inside the ribbon: the frame is not hooked). Every method brings the layout up to date first
-(`EnsureAll`).
+All points and rectangles are local coordinates of the `TFmrRibbon` control. With a `TFmrFormFrame` on the form the
+caption row and the tab row are shown in the frame host also at design time (`Docs\FRAME.md`, "Design time": an
+ordinary `Locked` control at the top of the form): their points have **negative** local Y. Every method brings the
+layout up to date first (`EnsureAll`); conversions between the ribbon and its parts go through screen coordinates.
 
-### What `TFmrRibbon` must do
+### What `TFmrRibbon` does (`Source\Ribbon\FMR.Ribbon.pas`)
 
-1. `uses FMR.Ribbon.DesignSupport`; add `IFmrRibbonDesignSupport` to the class declaration.
-2. Constructor (`csDesigning` is already set after `inherited Create` when the owner is designed or loaded by the
-   designer): `FDesignInteractive := True`; at design time `AutoCapture := True` (move/up events during a drag) and
-   every part (`FCaptionBar`, `FTabBar`, `FBody`, `FQATBar`, caption buttons, the search edit) `Locked := True`, so the
-   designer's hit test stops at the ribbon (the TTabItem pattern: its content is `Locked`). The ribbon has
-   `HitTest = False` at run time; at design time `CheckHitTest` ignores that.
-3. Override `MouseDown`, `MouseMove`, `MouseUp`, `DblClick` (DblClick: `MouseDown` with `ssDouble` in FMX — call
-   `DesignDblClick` there): when `TFmrRibbonDesignHooks.HookFor(Self)` is assigned, pass the event with the local point
-   and stop when it returns True. Without a hook keep the current behavior (`TabAtScreenPoint` → `SetActiveTab`).
-   Belt and braces: `TFmrRibbonPart.MouseDown/Move/Up` at design time convert the point
-   (`FRibbon.AbsoluteToLocal(LocalToAbsolute(P))`) and call the same ribbon methods, in case the designer gives the
-   events to the deepest control after all.
-4. `BeforeDestruction`: `if Hook <> nil then Hook.DesignRibbonDestroying(Self)`.
-5. `DesignHitTest`: caption bar (context group headers → `ContextGroup`, QAT views → `QATLink`, rest of the QAT
-   area → `QAT`), tab bar (`TFmrTabElement` → `Tab`, `TFmrAppButtonElement` → `ApplicationButton`), body
-   (`TFmrCollapsedGroupElement` → `CollapsedGroup`, `TFmrLauncherElement` → `GroupLauncher`, `TFmrItemView` →
-   `Link` with `Group` = the link's owner and `Tab` = the active tab, inside `FGroupBoxes[i].Rect` but on no element →
-   `Group`), QAT bar below the ribbon, otherwise `Ribbon`. `Bounds` in ribbon coordinates. The parts' protected
-   `FindElement` already does the element lookup.
-6. `DesignObjectBounds`: tab element, context header, group box, item view of a link (its `ViewObject`) or the first
-   shown view of an item; empty when not shown.
-7. `DesignDropTarget`:
-   - `Link`: group box under the point (or the QAT): the link views of that group in link order; the index of the first
-     view whose center is right of the point (in a column of small buttons: below the point); `Mark` = 2 dp bar at the
-     left edge of that view (right edge of the last view when appending), the height of the view (content height for
-     large buttons). Over a collapsed group: append to it.
-   - `Group`: in the tab row the tab under the point (append, `Index = -1`, mark under the tab); in the body the active
-     tab, index of the first group box whose center is right of the point, mark in the gap between the group boxes.
-   - `Tab`: index of the first tab whose center is right of the point; mark at its left edge (row height).
-   - `None` everywhere else.
-8. `DesignShowDropTarget` / `DesignSetSelection`: store and repaint; paint in `AfterPaint` (after the children): the
-   insertion bar in the theme accent color (2 dp + small triangles at both ends), a dashed frame around every shown
-   selected object (`DesignObjectBounds`).
-9. `DesignSelectTab`: activate the tab without `OnTabChanging`/`OnTabChanged`, without popups; at design time show a
-   tab of a hidden contextual group while it is selected (otherwise its groups cannot be designed).
-10. Keep `TabAtScreenPoint` (used by the fallback).
-11. Needed already now: `DoTabChanged` (and every other event) must not run at design time
-    (`if csDesigning in ComponentState then Exit`). `SetActiveTab` calls `DoTabChanged` also at design time, and the
-    selection sync (and "Show This Tab", "Next Tab"...) activates tabs in the designer, where event properties hold the
-    designer's method references, not code.
+1. **Design-interactive** (constructor, `csDesigning` is set by then because the owner is designed):
+   `FDesignInteractive := True`, `AutoCapture := True`, `SetAcceptsControls(False)` (controls dropped from the palette
+   do not become children of the ribbon). The parts (`FCaptionBar`, `FTabBar`, `FBody`, `FQATBar`) are owned by the
+   ribbon, `Stored = False`, `Locked = True`; caption buttons, the search edit, the key tip overlays are not created at
+   design time; editor controls are owned by nobody, `Stored = False`, `Locked = True`.
+2. **Who gets the mouse**: `TFmrRibbonPart.ObjectAtPoint` at design time answers nil for a part inside the ribbon
+   (the ribbon itself is hit; its editor controls are never hit, otherwise a click on the font combo would open its
+   list) and itself for a part in the frame host (outside the ribbon; parts are design-interactive too and pass the
+   mouse on). `TFmrRibbonPart.FindTarget` answers nil at design time (no palette drop into a part or an editor).
+3. **Mouse** (`TFmrRibbon.MouseDown/MouseMove/MouseUp`; a part in the host converts its point to ribbon
+   coordinates and calls the same code): at design time with `TFmrRibbonDesignHooks.HookFor(Self)` assigned, the
+   event goes to the hook (`MouseDown` with `ssDouble` → `DesignDblClick`); without a hook (or when the hook ignores
+   it) a click on a tab shows the tab. `BeforeDestruction` calls `Hook.DesignRibbonDestroying` (through `Hook`
+   directly: `csDestroying` may be set already).
+4. **`DesignHitTest`**: the part under the point (caption row, tab row, body, QAT bar), then: context group headers
+   → `ContextGroup`; QAT views → `QATLink`, the rest of the QAT area → `QAT`; the orb or "File" button →
+   `ApplicationButton`; tab elements → `Tab` (with its `ContextGroup`); body: `TFmrCollapsedGroupElement` →
+   `CollapsedGroup`, `TFmrLauncherElement` → `GroupLauncher`, `TFmrItemView` → `Link` (`Group` = the link's owner,
+   `Tab` = the active tab), inside a group box but on no element → `Group`; the QAT bar below → `QATLink`/`QAT`;
+   other places of a part (scroll and collapse buttons, empty caption) → `Ribbon`. Simplified mode: the "group box" is
+   the span of the group's views. Right to left: the canvas and the mouse of a part are flipped, the element geometry
+   stays logical (`Logical`/`PhysicalRect`).
+5. **`DesignObjectBounds`**: the first shown place of a tab, context header, group box, link view or item (body views
+   first, then the QAT); empty when not shown. The lookup compares pointers only, so a selected object that was freed
+   meanwhile is never dereferenced.
+6. **`DesignDropTarget`**:
+   - `Link`: over the body, the group box under the point (or the nearest one within the group spacing); its visible
+     link views in link order; the link goes before the first view right of the point - same row: by the center X;
+     same column (another row of small buttons): below the point; otherwise by the center X. Mark: a 2 dp vertical bar
+     in the gap before that view (its height), a horizontal bar between two rows of a column, after the last view when
+     appending, at the start of an empty group; a collapsed group takes the link at its end. Over the QAT (caption row
+     or QAT bar): before the first button right of the point. Index = the link's index in its collection
+     (`Links.Count` = append).
+   - `Group`: in the tab row the tab under the point (`Index = -1`, mark under the tab); in the body the active tab,
+     before the first group box whose center is right of the point (index = `GroupIndex`, `GroupCount` = append), mark
+     in the gap between the boxes.
+   - `Tab`: in the tab row, before the first tab whose center is right of the point (`TabIndex`, `TabCount` = append),
+     mark in the gap.
+7. **Feedback**: `DesignShowDropTarget`/`DesignSetSelection` store and repaint. `TFmrRibbonPart.AfterPaint` (after
+   the children, so above editor controls; each part paints what falls into it, also a part in the frame host): a
+   dashed accent frame on a light line around every shown place of the selected objects (tabs, groups, context groups,
+   links, every view of a selected item; not the ribbon itself), the insertion bar in the accent color with small
+   triangles at both ends.
+8. **`DesignSelectTab`**: activates the tab without `OnTabChanging`/`OnTabChanged`, closes popups; a hidden tab (of a
+   hidden contextual group) is shown while it is selected (`FDesignTab`, also its group header), and disappears when
+   another tab is selected.
+9. **No events at design time**: `DoTabChanged`, `OnMinimizedChanged`, `OnDisplayModeChanged` do not run (event
+   properties hold the designer's method references); `SetActiveTab` never fires `OnTabChanging` at design time.
+10. `TabAtScreenPoint` is kept.
+11. **`TFmrControlItem` at design time**: its control belongs to the form (designed and streamed there); the ribbon
+    neither reparents, moves nor hides it (that would take it out of the form file) and paints a placeholder with the
+    control's name.
 
-### IDE side (already written, `FMR.Ribbon.Design.Interactive`)
+### IDE side (`FMR.Ribbon.Design.Interactive`)
 
-`TFmrRibbonDesignController`, installed by `Register`: left click selects the object under the mouse — tab (and
+`TFmrRibbonDesignController`, installed by `Register`: left click selects the object under the mouse - tab (and
 activates it), contextual group, group (also launcher / collapsed group), the **item** of a link (Alt+click: the link
 itself), the ribbon elsewhere; the selection is posted (`TThread.ForceQueue`) so it happens after the designer's own
 processing of the click; the right button also selects at once, so the designer's context menu shows the verbs of the
@@ -299,13 +323,49 @@ releasing moves it (`TFmrRibbonStructure.MoveLink/MoveGroup/MoveTab`, index corr
 copies a link) and marks the form modified. Double click: item → `OnClick` handler, launcher →
 `OnDialogLauncherClick`, tab/group/ribbon → structure editor. Items dragged from the items editor over the form are
 tracked through `TDragObject.GetDragCursor` (screen point → FMX form under it via `FormToHWND`/`WindowFromPoint` →
-ribbon → `DesignDropTarget`), the mark is shown, and the drop inserts links (`ExternalDrop`).
+ribbon whose `DesignHitTest` answers, so the rows in the frame host count too → `DesignDropTarget`), the mark is
+shown, and the drop inserts links (`ExternalDrop`). The items editor asks for the external drop when the window under
+the mouse itself is not a VCL control (`FindControl(WindowFromPoint)`): in the IDE the FMX form is a child window of
+a VCL control, where `FindVCLWindow` (it walks up the parents) found that control.
+`FmrDesignSyncSelection` (every selection change of the designer) shows the tab of the selection and frames it.
 
-Checked in `tools\DesignPreview` (`/selftest`) with a fake ribbon implementing `IFmrRibbonDesignSupport`: link into
-another group, inside its group, Ctrl copy, group and tab moves, mark hidden after the drop, a click without moving
-does nothing, double click opens `OnClick`, the selection sync. What remains for phase B is the ribbon side above and
-a check in the IDE (in particular which control receives the events, the order of the designer's own selection and
-ours, and the external drop position in a zoomed/scrolled designer view).
+### Checked without the IDE
+
+- `DesignPreview.exe /selftest`: the controller against a fake ribbon (moves, copies, double click, selection sync,
+  the structure editor) - 25 checks, 0 failures.
+- `DesignPreview.exe /realtest=LOG [/shots=DIR]` (`tools\DesignPreview\RealRibbonTest.pas`): an FMX form inside the
+  VCL program put into the design state the way the IDE does it (`TComponent.SetDesigning(True)` on the form before
+  its components are created, so every constructor sees `csDesigning`), a bar manager and a ribbon built by the Word
+  template, the controller with a fake designer whose root is that form. Mouse input is sent to the form window as
+  Windows messages (FMX routes them through `ObjectAtPoint`). Two passes: rows inside the ribbon, and rows in a
+  `TFmrFormFrame` host. 45 checks, 0 failures on Win64 and Win32:
+  design state, design-interactive ribbon, parts locked and not stored, no internal control owned by the form; hit
+  tests (tab, link, group caption); `ObjectAtPoint` over a tab and over the font combo = the ribbon; click on a tab
+  activates and selects it, no `OnTabChanged`; click on a link selects its item; right click selects at once; link
+  dragged into another group (drop target index 0, form modified), Ctrl+drag copies, move to the end of the group, a
+  click does not move; group and tab dragged to the front; items editor drag-over and drop insert a link (screen
+  coordinates through `RibbonAtScreen`); double click opens `OnClick`, double click on a tab opens the structure
+  editor; designer selection of a group shows its tab; a tab of a hidden contextual group is shown while selected and
+  disappears afterwards. Frame host: the tab row is in the unhooked host, tab bounds have negative Y, hit test there,
+  `ObjectAtPoint` = the design-interactive tab row, click and tab drag in the host.
+- Screenshots (`shots\design\real_*.png`, looked at): `real_03_drag_link_mark` (dashed frame on the selected Cut
+  button, insertion bar with triangles before Find), `real_04_drag_group_mark` (Styles framed, bar at the left of
+  Clipboard), `real_05_drag_tab_mark` (View framed, bar between File and Home), `real_06_external_drag_mark`,
+  `real_07_hidden_context_tab` (Table Tools header and Table Design tab shown, framed), `real_08_selection_frames`
+  (a group and an item framed), `real_09_host_drag_tab`, `real_10_host_selection` (rows in the frame host).
+
+### What only the IDE can confirm
+
+- How `IsDesignMsg` treats a design-interactive control with locked parts: the simulation has no designer, so FMX
+  routes every message. Expected (like `TTabItem`): the designer selects the ribbon, then the ribbon gets the mouse;
+  the controller's posted selection comes after that.
+- A part in the frame host: it is design-interactive, `Locked` and not owned by the form; whether the designer tries
+  to select it (the posted selection replaces it) could not be seen.
+- Mouse moves during a drag: the ribbon captures the mouse; whether the designer lets the moves through when the
+  mouse leaves the ribbon is unknown.
+- The designer's own double click (default component editor verb: Structure Editor...) may run besides the
+  controller's.
+- The external drop position in a zoomed or scrolled designer view (the conversion uses the form's scale).
 
 ## Preview program (`tools\DesignPreview`)
 
@@ -321,6 +381,7 @@ bin\Win64\Debug\DesignPreview.exe /image /glyph=E8C8 /shot=shots\design\image.pn
 bin\Win64\Debug\DesignPreview.exe /templates /shot=shots\design\templates.png
 bin\Win64\Debug\DesignPreview.exe /template=excel /structure      # template: word (default), excel, simple, none
 bin\Win64\Debug\DesignPreview.exe /selftest=shots\design\selftest.txt   # exit code = failures
+bin\Win64\Debug\DesignPreview.exe /realtest=shots\design\realtest.txt /shots=shots\design   # real TFmrRibbon
 ```
 
 `TemplateDemo.dpr` (FMX) shows a real `TFmrRibbon` built by a template
@@ -331,7 +392,11 @@ accelerator mark).
 `/selftest` also drives the structure editor (Ins adds a button to the selected group with the tab's category, Del
 deletes a link / a tab with its groups, an item freed behind the editor's back refreshes the tree, the designer's
 selection selects the node). `glyphsheet.ps1` renders glyph code points with names (`-File glyphs.txt`) or whole
-ranges (`-Range E700-E7FF`). `PackageLoadTest.dpr` loads both packages with `LoadPackage`.
+ranges (`-Range E700-E7FF`). `PackageLoadTest.dpr` loads both packages with `LoadPackage` (checked again on Win32
+and Win64 after phase B: classes registered, `Register` exported, clean unload).
+
+`/realtest` (`RealRibbonTest.pas`) is the in-form design test against a real ribbon described in "Phase B"; it leaves
+`shots\design\real_*.png` (the FMX form is made top-most for the run; it moves the mouse cursor for the drags).
 
 ## Decisions
 
@@ -352,12 +417,9 @@ ranges (`-Range E700-E7FF`). `PackageLoadTest.dpr` loads both packages with `Loa
 ## Open issues
 
 - Nothing was run inside the IDE (not possible here): registration, editors and the notifier are compiled for Win32 and
-  Win64 and the packages load with `LoadPackage`, the windows are checked in the preview program.
-- Phase B needs the ribbon side (steps 1–10 above); step 11 (no `OnTabChanged` at design time) is needed for the
-  editors as they are.
+  Win64 and the packages load with `LoadPackage`, the windows are checked in the preview program, the in-form design
+  against a real ribbon in a simulated designer (`/realtest`). See "What only the IDE can confirm" in "Phase B".
 - `IDesigner.CreateChild` with a non-control parent (the bar manager, a tab) is what FMX's own menu editor does for
   `TMainMenu`; to be confirmed in the IDE for tabs/groups.
 - The 64-bit IDE registry key `Known Packages x64` is used by `-Install`; install through the IDE menu when in doubt.
-- Selecting a contextual group's tab whose group is hidden (`Visible = False`) activates it only once the ribbon shows
-  hidden contextual tabs at design time (step 9).
 - The template icons are approximations (one icon font); Office has its own icons.

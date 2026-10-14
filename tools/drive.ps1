@@ -111,6 +111,15 @@ foreach ($a in $Actions.Split(';')) {
     'click'  { Post-Mouse $arg 0x201 0x202 1 }
     'dclick' { Post-Mouse $arg 0x201 0x202 1 -Double }
     'rclick' { Post-Mouse $arg 0x204 0x205 2 }
+    'wheel'  {
+      # wheel:X,Y,DELTA (DELTA in notches, negative = down): move there, then WM_MOUSEWHEEL with screen coordinates
+      $p = $arg.Split(','); Post-Mouse "$($p[0]),$($p[1])" 0 0 0
+      $w = New-Object RibbonDrive+RECT; [void][RibbonDrive]::GetWindowRect($form, [ref]$w)
+      $sx = $w.Left + [int]$p[0]; $sy = $w.Top + [int]$p[1]
+      $wp = [IntPtr]((([int]$p[2] * 120) -band 0xFFFF) -shl 16)
+      $lp = [IntPtr](((($sy -band 0xFFFF) -shl 16) -bor ($sx -band 0xFFFF)))
+      [void][RibbonDrive]::PostMessage($form, 0x20A, $wp, $lp); Start-Sleep -Milliseconds 150
+    }
     'wait'   { Start-Sleep -Milliseconds ([int]$arg) }
     'key'    { & (Join-Path $here 'keys.ps1') -ProcessId $proc.Id -Keys $arg }
     'text'   { foreach ($c in $arg.ToCharArray()) { [void][RibbonDrive]::PostMessage($form, 0x102, [IntPtr][int]$c, [IntPtr]1); Start-Sleep -Milliseconds 30 } }

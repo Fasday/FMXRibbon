@@ -7,7 +7,8 @@ program DesignPreview;
 
 uses
   Vcl.Forms,
-  DesignPreviewMain in 'DesignPreviewMain.pas';
+  DesignPreviewMain in 'DesignPreviewMain.pas',
+  RealRibbonTest in 'RealRibbonTest.pas';
 
 begin
   ReportMemoryLeaksOnShutdown := True;

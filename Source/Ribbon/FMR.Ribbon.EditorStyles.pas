@@ -344,12 +344,74 @@ begin
   Result := Root;
 end;
 
+function BuildScrollThumb(AColors: TFmrEditorColors): TFmxObject;
+var
+  Root: TLayout;
+  R: TRectangle;
+begin
+  Root := TLayout.Create(nil);
+  Root.Width := 10;
+  Root.Height := 30;
+  R := NewRect(Root, 'background', FmrWithAlpha(AColors.ItemText, 0.32), TAlphaColors.Null, 3, TAlignLayout.Contents);
+  R.Margins.Rect := RectF(3, 2, 3, 2);
+  NewColorAnimation(R, 'Fill.Color', FmrWithAlpha(AColors.ItemText, 0.32), FmrWithAlpha(AColors.ItemText, 0.55),
+    'IsMouseOver=true', 'IsMouseOver=false');
+  Result := Root;
+end;
+
+function BuildScrollTrack(AColors: TFmrEditorColors): TFmxObject;
+var
+  Root: TLayout;
+  Thumb: TThumb;
+begin
+  Root := TLayout.Create(nil);
+  Root.Width := 12;
+  Root.Height := 100;
+  Thumb := TThumb.Create(nil);
+  Thumb.StyleName := 'thumb';
+  Thumb.StyleLookup := Pooled('scrollthumb', AColors, BuildScrollThumb);
+  Thumb.Locked := True;
+  Thumb.Parent := Root;
+  Result := Root;
+end;
+
+function BuildScrollBar(AColors: TFmrEditorColors): TFmxObject;
+var
+  Root: TLayout;
+  T: TTrack;
+  Lookup: string;
+begin
+  // Track and thumb only (no arrow buttons), in the colors of the drop-down: the platform scroll bar is light.
+  Root := TLayout.Create(nil);
+  Root.Width := 12;
+  Root.Height := 100;
+  NewRect(Root, 'background', AColors.PopupFill, TAlphaColors.Null, 0, TAlignLayout.Contents);
+  Lookup := Pooled('scrolltrack', AColors, BuildScrollTrack);
+  T := TTrack.Create(nil);
+  T.StyleName := 'vtrack';
+  T.Orientation := TOrientation.Vertical;
+  T.StyleLookup := Lookup;
+  T.Align := TAlignLayout.Client;
+  T.Locked := True;
+  T.Parent := Root;
+  T := TTrack.Create(nil);
+  T.StyleName := 'htrack';
+  T.Orientation := TOrientation.Horizontal;
+  T.StyleLookup := Lookup;
+  T.Align := TAlignLayout.Client;
+  T.Locked := True;
+  T.Parent := Root;
+  Result := Root;
+end;
+
 function BuildListBox(AColors: TFmrEditorColors): TFmxObject;
 var
   Root, Content: TLayout;
   BG, Sel: TRectangle;
   SB: TScrollBar;
+  ScrollLookup: string;
 begin
+  ScrollLookup := Pooled('scrollbar', AColors, BuildScrollBar);
   // Same resources as the platform 'listboxstyle': background > content (selection templates), scroll bars.
   Root := TLayout.Create(nil);
   Root.Width := 100;
@@ -363,6 +425,7 @@ begin
   Sel.Visible := False;
   SB := TScrollBar.Create(nil);
   SB.StyleName := 'vscrollbar';
+  SB.StyleLookup := ScrollLookup;
   SB.Align := TAlignLayout.Right;
   SB.Orientation := TOrientation.Vertical;
   SB.Width := 12;
@@ -371,6 +434,7 @@ begin
   SB.Parent := BG;
   SB := TScrollBar.Create(nil);
   SB.StyleName := 'hscrollbar';
+  SB.StyleLookup := ScrollLookup;
   SB.Align := TAlignLayout.Bottom;
   SB.Height := 12;
   SB.Visible := False;

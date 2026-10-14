@@ -136,7 +136,7 @@ function FmrDesignIsLinkOf(const ALink: TFmrItemLink; const ARibbon: TFmxObject)
 implementation
 
 uses
-  Winapi.Windows, System.TypInfo;
+  Winapi.Windows, System.TypInfo, FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery;
 
 { TFmrDesignHub }
 
@@ -273,7 +273,9 @@ begin
     Info(TFmrStaticItem, 'Static Text', 'Static', $E8D2),
     Info(TFmrCheckItem, 'Check Box', 'Check', $E739),
     Info(TFmrColorItem, 'Color Picker', 'Color', $E790),
+    Info(TFmrColorGalleryItem, 'Color Gallery (palettes, preview)', 'ColorGallery', $E790),
     Info(TFmrGalleryItem, 'Gallery', 'Gallery', $E8A9),
+    Info(TFmrRibbonGalleryItem, 'Gallery (owner drawn)', 'Gallery', $E8A9),
     Info(TFmrEditItem, 'Edit Box', 'Edit', $E70F),
     Info(TFmrComboItem, 'Combo Box', 'Combo', $E70D),
     Info(TFmrSpinItem, 'Spin Edit', 'Spin', $ECE7),

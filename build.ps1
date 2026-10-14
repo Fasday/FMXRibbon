@@ -83,6 +83,10 @@ if ($LASTEXITCODE -ne 0) { throw "$DccName failed ($LASTEXITCODE)" }
 
 # 4. Runtime dependencies: Skia (SVG icons) for programs that use it
 $Sk4d = Join-Path $Bds "Redist\$($Platform.ToLower())\sk4d.dll"
-if (Test-Path $Sk4d) { Copy-Item $Sk4d $OutDir -Force }
+if (Test-Path $Sk4d) {
+  # Another program of the output folder may be running and hold the DLL: an existing copy is fine.
+  try { Copy-Item $Sk4d $OutDir -Force -ErrorAction Stop }
+  catch { if (-not (Test-Path (Join-Path $OutDir 'sk4d.dll'))) { throw } }
+}
 
 Write-Host "OK -> $(Join-Path $OutDir "$Name.exe")"

@@ -282,6 +282,7 @@ Screenshots of the checks are in `shots\cust\`:
   - The FMX editors' inner layout stays left to right (text alignment, the combo arrow side).
   - The customization dialog itself is not mirrored.
   - Icons are never mirrored. Direction-dependent icons (undo/redo arrows) keep their left-to-right look.
-- Themed drop-down lists use the default FMX scroll bar, which is light in dark themes.
+- Fixed: the scroll bars of themed drop-down lists have a themed style too (track in the list color, a rounded thumb
+  in the item text color at 32 %/55 % hot, no arrow buttons; pooled per color scheme like the other styles).
 - Black or odd dialog borders and shadows in `shots\` come from `PrintWindow` captures, not from the windows.
 - `/showautohide` may lose the overlay when the window is activated right after start. Clicking "..." always works.

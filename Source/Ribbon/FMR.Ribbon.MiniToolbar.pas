@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Mini toolbar                                         }
@@ -83,7 +83,7 @@ type
   end;
 
   /// <summary>Office mini toolbar (floating formatting toolbar near the mouse).</summary>
-  TFmrRibbonMiniToolbar = class(TFmxObject, IFmrItemLinksOwner)
+  TFmrRibbonMiniToolbar = class(TFmxObject, IFmrItemLinksOwner, IFmrKeyHandler)
   private
     FItemLinks: TFmrItemLinks;
     FBarManager: TFmrBarManager;
@@ -99,6 +99,7 @@ type
     FWithMenu: Boolean;
     FMenuSeen: Boolean;
     FOpacity: Single;
+    FKeyboard: Boolean;
     FOnPopup: TNotifyEvent;
     FOnCloseUp: TNotifyEvent;
     procedure SetItemLinks(const Value: TFmrItemLinks);
@@ -112,10 +113,19 @@ type
     function ResolveImages: TCustomImageList;
     procedure TimerProc(Sender: TObject);
     procedure SetWindowOpacity(const AValue: Single);
+    /// <summary>The toolbar window never gets the keyboard focus: while one of its editors is focused (clicked),
+    /// the keys of the owner form are routed to it (key handler of the popup manager).</summary>
+    procedure UpdateKeyboard;
+    procedure LeaveEditor;
+    /// <summary>Enter, Tab and Escape in a focused editor of the toolbar (commit, back to the document).</summary>
+    function EditorKey(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
     { IFmrItemLinksOwner }
     procedure LinksChanged(const ALinks: TFmrItemLinks);
     procedure LinkItemChanged(const ALink: TFmrItemLink; const AChange: TFmrItemChange);
     procedure LinkRemoving(const ALink: TFmrItemLink);
+    { IFmrKeyHandler }
+    function HandleKey(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
+    procedure KeyboardLost;
   protected
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
@@ -376,7 +386,7 @@ end;
 
 function TFmrMiniToolbarContent.PopupKeyDown(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
 begin
-  Result := False;
+  Result := (FToolbar <> nil) and FToolbar.EditorKey(Key, KeyChar, Shift);
 end;
 
 procedure TFmrMiniToolbarContent.PopupShown(const AByKeyboard: Boolean);
@@ -732,6 +742,13 @@ begin
     FTimer.Enabled := False;
     Exit;
   end;
+  // Opaque (and kept) while one of its editors has the focus.
+  UpdateKeyboard;
+  if FKeyboard then
+  begin
+    SetWindowOpacity(1);
+    Exit;
+  end;
   // Opaque while the context menu shown with it or one of its drop-downs is open.
   if FWithMenu and (FPopupMenu <> nil) and FPopupMenu.IsOpen then
   begin
@@ -763,10 +780,94 @@ begin
     SetWindowOpacity(1 - 0.9 * (D - 6) / Max(1, FFadeDistance - 6));
 end;
 
+procedure TFmrRibbonMiniToolbar.UpdateKeyboard;
+var
+  Want: Boolean;
+  Form: TCommonCustomForm;
+begin
+  Form := nil;
+  if (FWindow <> nil) and (FWindow.Context <> nil) then
+    Form := FWindow.Context.OwnerForm;
+  Want := (FWindow <> nil) and (FContent <> nil) and (FWindow.Focused <> nil) and (FContent.DropPopup = nil) and
+    (Form <> nil) and FmrPopupsAssigned and not (csDestroying in ComponentState);
+  if Want = FKeyboard then
+    Exit;
+  FKeyboard := Want;
+  if Want then
+  begin
+    // Working in the toolbar closes the context menu shown with it (it would keep the keys).
+    if (FPopupMenu <> nil) and FPopupMenu.IsOpen then
+      FPopupMenu.ClosePopup;
+    FmrPopups.AddKeyHandler(Form, Self);
+  end
+  else if FmrPopupsAssigned then
+    FmrPopups.RemoveKeyHandler(Self);
+end;
+
+procedure TFmrRibbonMiniToolbar.LeaveEditor;
+var
+  Form: TCommonCustomForm;
+begin
+  Form := nil;
+  if (FWindow <> nil) and (FWindow.Context <> nil) then
+    Form := FWindow.Context.OwnerForm;
+  if (FWindow <> nil) and (FWindow.Focused <> nil) then
+    FWindow.Focused := nil;
+  UpdateKeyboard;
+  // The toolbar window took the keyboard for the editor (FmrFocusControl): back to the form of the document.
+  if (Form <> nil) and not (csDestroying in Form.ComponentState) and Form.Visible then
+    Form.Activate;
+end;
+
+function TFmrRibbonMiniToolbar.EditorKey(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
+begin
+  Result := False;
+  if (FWindow = nil) or (FWindow.Focused = nil) then
+    Exit;
+  case Key of
+    vkEscape:
+      begin
+        // Back to the document; the toolbar stays.
+        LeaveEditor;
+        Result := True;
+      end;
+    vkReturn, vkTab:
+      begin
+        // Enter commits the value (the editor's OnChange) and gives the keyboard back, like Office.
+        FWindow.KeyDown(Key, KeyChar, Shift);
+        LeaveEditor;
+        Result := True;
+      end;
+  end;
+end;
+
+function TFmrRibbonMiniToolbar.HandleKey(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
+begin
+  // Keys of the owner form while the toolbar window does not have the keyboard itself (TFmrPopupForm.KeyDown gives
+  // them to the content first: EditorKey).
+  Result := (FWindow <> nil) and (FWindow.Focused <> nil);
+  if Result then
+    FWindow.KeyDown(Key, KeyChar, Shift);
+end;
+
+procedure TFmrRibbonMiniToolbar.KeyboardLost;
+begin
+  // The user clicked into the form: the editor of the toolbar loses the focus.
+  FKeyboard := False;
+  if (FWindow <> nil) and (FWindow.Focused <> nil) then
+    FWindow.Focused := nil;
+end;
+
 procedure TFmrRibbonMiniToolbar.ClosePopup;
 var
   W: TFmrPopupForm;
 begin
+  if FKeyboard then
+  begin
+    FKeyboard := False;
+    if FmrPopupsAssigned then
+      FmrPopups.RemoveKeyHandler(Self);
+  end;
   if FTimer <> nil then
     FTimer.Enabled := False;
   W := FWindow;

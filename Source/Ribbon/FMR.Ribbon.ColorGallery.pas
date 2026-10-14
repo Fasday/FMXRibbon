@@ -19,7 +19,7 @@ unit FMR.Ribbon.ColorGallery;
 /// last color afterwards; the glyph of the button shows the color bar (TFmrButtonView). Automatic is
 /// TAlphaColors.Null, No Color is FmrNoColor (alpha 0, not Null).
 /// FmrShowColorDialog is a small FMX dialog (TColorPanel with a hue/saturation square, hex edit, new/current
-/// preview) used by "More Colors...".
+/// preview) used by "More Colors..."; it takes the theme of the ribbon (themed edit and buttons, dark title bar).
 
 interface
 
@@ -120,9 +120,11 @@ type
   end;
 
 /// <summary>Shows a modal color dialog (hue/saturation square, hex edit, new/current preview); AOnDone gets True
-/// and the color when the user pressed OK.</summary>
+/// and the color when the user pressed OK. The dialog is painted with APainter (the theme of the ribbon; the default
+/// theme when nil) and stays above AOwner.</summary>
 procedure FmrShowColorDialog(const AInitial: TAlphaColor; const ATitle: string;
-  const AOnDone: TProc<Boolean, TAlphaColor>);
+  const AOnDone: TProc<Boolean, TAlphaColor>; const APainter: TFmrRibbonPainter = nil;
+  const AOwner: TCommonCustomForm = nil);
 /// <summary>The recently picked custom colors (newest first, at most 10).</summary>
 function FmrRecentColors: TArray<TAlphaColor>;
 procedure FmrAddRecentColor(const AColor: TAlphaColor);
@@ -132,7 +134,8 @@ function FmrThemeColor(const ACol, ARow: Integer): TAlphaColor;
 implementation
 
 uses
-  System.UIConsts, FMX.Colors, FMX.StdCtrls, FMX.Edit, FMX.Objects;
+  {$IFDEF MSWINDOWS}Winapi.Windows, Winapi.Dwmapi, FMX.Platform.Win, {$ENDIF}System.UIConsts, FMX.Colors,
+  FMX.StdCtrls, FMX.Edit, FMX.Objects, FMR.Ribbon.EditorStyles, FMR.Ribbon.CustomizeControls;
 
 resourcestring
   SColorNew = 'New';
@@ -640,7 +643,7 @@ begin
                 Ctx.ItemExecuting(Item);
                 Item.Color := AColor;
                 Item.Click;
-              end);
+              end, Ctx.Painter, Ctx.OwnerForm);
             Exit;
           end;
         TFmrColorCellKind.Automatic:
@@ -793,9 +796,13 @@ end;
 { color dialog }
 
 type
-  /// The modal "More Colors" dialog.
+  /// The modal "More Colors" dialog, painted with the theme of the ribbon (form, labels, edit and buttons).
   TFmrColorDialogForm = class(TForm)
   private
+    FTheme: TFmrTheme;
+    FOwnPainter: TFmrRibbonPainter;
+    FCust: TFmrCustTheme;
+    FOwnerForm: TCommonCustomForm;
     FPanel: TColorPanel;
     FHex: TEdit;
     FNew: TRectangle;
@@ -804,67 +811,152 @@ type
     procedure PanelChange(Sender: TObject);
     procedure HexChange(Sender: TObject);
     procedure CurrentClick(Sender: TObject);
+    procedure OkClick(Sender: TObject);
+    procedure CancelClick(Sender: TObject);
     function GetColor: TAlphaColor;
     procedure SetColor(const AValue: TAlphaColor);
+  protected
+    procedure DoShow; override;
   public
-    constructor CreateDialog(const AInitial: TAlphaColor; const ATitle: string);
+    constructor CreateDialog(const AInitial: TAlphaColor; const ATitle: string; const APainter: TFmrRibbonPainter;
+      const AOwner: TCommonCustomForm);
+    destructor Destroy; override;
+    procedure KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
     property Color: TAlphaColor read GetColor write SetColor;
   end;
 
-constructor TFmrColorDialogForm.CreateDialog(const AInitial: TAlphaColor; const ATitle: string);
+constructor TFmrColorDialogForm.CreateDialog(const AInitial: TAlphaColor; const ATitle: string;
+  const APainter: TFmrRibbonPainter; const AOwner: TCommonCustomForm);
+var
+  P: TFmrRibbonPainter;
 
-  function NewLabel(const AText: string; const X, Y: Single): TLabel;
+  function NewLabel(const AText: string; const X, Y: Single; const ACenter: Boolean = False): TControl;
   begin
-    Result := TLabel.Create(Self);
-    Result.Parent := Self;
-    Result.SetBounds(X, Y, 80, 20);
-    Result.Text := AText;
+    Result := FmrCustLabel(Self, Self, FCust, AText);
+    Result.SetBounds(X, Y, 92, 20);
+    if ACenter then
+      TText(Result).TextSettings.HorzAlign := TTextAlign.Center;
   end;
 
-  function NewButton(const AText: string; const X, Y: Single; const AResult: TModalResult): TButton;
+  function NewButton(const AText: string; const X, Y: Single; const AClick: TNotifyEvent): TFmrCustButton;
   begin
-    Result := TButton.Create(Self);
-    Result.Parent := Self;
-    Result.SetBounds(X, Y, 84, 26);
-    Result.Text := AText;
-    Result.ModalResult := AResult;
+    Result := TFmrCustButton.CreateThemed(Self, Self, FCust);
+    Result.SetBounds(X, Y, 84, Max(26, Result.Height));
+    Result.Caption := AText;
+    Result.OnClick := AClick;
   end;
 
 begin
   inherited CreateNew(nil);
+  P := APainter;
+  if P = nil then
+  begin
+    FTheme := TFmrTheme.CreateTheme(FmrDefaultThemeName);
+    FOwnPainter := TFmrRibbonPainter.Create(FTheme);
+    P := FOwnPainter;
+  end;
+  FCust := TFmrCustTheme.Create(P, nil);
+  FOwnerForm := AOwner;
   Caption := ATitle;
   BorderStyle := TFmxFormBorderStyle.Single;
   BorderIcons := [TBorderIcon.biSystemMenu];
   Position := TFormPosition.MainFormCenter;
   ClientWidth := 392;
   ClientHeight := 286;
+  Fill.Kind := TBrushKind.Solid;
+  Fill.Color := FCust.Background;
   FPanel := TColorPanel.Create(Self);
   FPanel.Parent := Self;
   FPanel.SetBounds(16, 16, 250, 220);
   FPanel.UseAlpha := False;
   FPanel.OnChange := PanelChange;
-  NewLabel(SColorNew, 284, 16).TextSettings.HorzAlign := TTextAlign.Center;
+  NewLabel(SColorNew, 284, 16, True);
   FNew := TRectangle.Create(Self);
   FNew.Parent := Self;
   FNew.SetBounds(284, 38, 92, 36);
-  FNew.Stroke.Color := $FF808080;
+  FNew.Stroke.Color := P.Theme.Colors[TFmrToken.EditBorder];
   FCurrent := TRectangle.Create(Self);
   FCurrent.Parent := Self;
   FCurrent.SetBounds(284, 74, 92, 36);
-  FCurrent.Stroke.Color := $FF808080;
+  FCurrent.Stroke.Color := P.Theme.Colors[TFmrToken.EditBorder];
   FCurrent.Fill.Color := AInitial or $FF000000;
   FCurrent.HitTest := True;
   FCurrent.OnClick := CurrentClick;
-  NewLabel(SColorCurrent, 284, 112).TextSettings.HorzAlign := TTextAlign.Center;
+  NewLabel(SColorCurrent, 284, 112, True);
   NewLabel(SColorHex, 284, 150);
-  FHex := TEdit.Create(Self);
+  FHex := TFmrRibbonEdit.Create(Self);
   FHex.Parent := Self;
   FHex.SetBounds(284, 172, 92, 24);
   FHex.MaxLength := 7;
   FHex.OnChangeTracking := HexChange;
-  NewButton(FmrStr(TFmrStringId.CommonOK), 196, 248, mrOk).Default := True;
-  NewButton(FmrStr(TFmrStringId.CommonCancel), 292, 248, mrCancel).Cancel := True;
+  FmrThemeEditor(FHex, P.Theme);
+  NewButton(FmrStr(TFmrStringId.CommonOK), 196, 248, OkClick).IsDefault := True;
+  NewButton(FmrStr(TFmrStringId.CommonCancel), 292, 248, CancelClick);
   SetColor(AInitial or $FF000000);
+end;
+
+destructor TFmrColorDialogForm.Destroy;
+begin
+  inherited;
+  FreeAndNil(FCust);
+  FreeAndNil(FOwnPainter);
+  FreeAndNil(FTheme);
+end;
+
+procedure TFmrColorDialogForm.DoShow;
+{$IFDEF MSWINDOWS}
+var
+  Wnd, OwnerWnd: HWND;
+  Dark: BOOL;
+{$ENDIF}
+begin
+  inherited;
+  {$IFDEF MSWINDOWS}
+  try
+    Wnd := FormToHWND(Self);
+    if Wnd = 0 then
+      Exit;
+    // Owned by the form of the ribbon (stays above it); dark title bar in dark themes.
+    if (FOwnerForm <> nil) and FOwnerForm.IsHandleAllocated then
+    begin
+      OwnerWnd := FormToHWND(FOwnerForm);
+      if OwnerWnd <> 0 then
+        SetWindowLongPtr(Wnd, GWLP_HWNDPARENT, LONG_PTR(OwnerWnd));
+    end;
+    Dark := FCust.Painter.Theme.Style.Dark;
+    DwmSetWindowAttribute(Wnd, 20, @Dark, SizeOf(Dark));
+  except
+    // Cosmetic only.
+  end;
+  {$ENDIF}
+end;
+
+procedure TFmrColorDialogForm.KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState);
+begin
+  // Enter = OK, Esc = Cancel (a focused button handles Enter itself).
+  if Key = vkEscape then
+  begin
+    Key := 0;
+    ModalResult := mrCancel;
+    Exit;
+  end;
+  if (Key = vkReturn) and (Shift = []) and not ((Focused <> nil) and (Focused.GetObject is TFmrCustButton)) then
+  begin
+    Key := 0;
+    ModalResult := mrOk;
+    Exit;
+  end;
+  inherited;
+end;
+
+procedure TFmrColorDialogForm.OkClick(Sender: TObject);
+begin
+  ModalResult := mrOk;
+end;
+
+procedure TFmrColorDialogForm.CancelClick(Sender: TObject);
+begin
+  ModalResult := mrCancel;
 end;
 
 function TFmrColorDialogForm.GetColor: TAlphaColor;
@@ -923,11 +1015,11 @@ begin
 end;
 
 procedure FmrShowColorDialog(const AInitial: TAlphaColor; const ATitle: string;
-  const AOnDone: TProc<Boolean, TAlphaColor>);
+  const AOnDone: TProc<Boolean, TAlphaColor>; const APainter: TFmrRibbonPainter; const AOwner: TCommonCustomForm);
 var
   F: TFmrColorDialogForm;
 begin
-  F := TFmrColorDialogForm.CreateDialog(AInitial, ATitle);
+  F := TFmrColorDialogForm.CreateDialog(AInitial, ATitle, APainter, AOwner);
   F.ShowModal(
     procedure(AResult: TModalResult)
     var

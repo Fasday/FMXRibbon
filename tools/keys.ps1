@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Sends key strokes to the main form of a process with keybd_event (FMX ignores some SendKeys combinations).
   Used with tools\shot.ps1 -Keep / -ProcessId to drive the RibbonBasic demo.
@@ -15,11 +15,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not ('RibbonKeys' -as [type])) {
+if (-not ('RibbonKeys2' -as [type])) {
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
-public static class RibbonKeys {
+public static class RibbonKeys2 {
   [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
@@ -29,6 +29,24 @@ public static class RibbonKeys {
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, IntPtr extra);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool attach);
+  [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+  // SetForegroundWindow is refused while another process owns the foreground: attach to its input first.
+  public static bool ForceForeground(IntPtr h) {
+    uint dummy;
+    IntPtr fg = GetForegroundWindow();
+    uint fgThread = GetWindowThreadProcessId(fg, out dummy);
+    uint me = GetCurrentThreadId();
+    uint target = GetWindowThreadProcessId(h, out dummy);
+    AttachThreadInput(me, fgThread, true);
+    AttachThreadInput(target, fgThread, true);
+    BringWindowToTop(h);
+    SetForegroundWindow(h);
+    AttachThreadInput(target, fgThread, false);
+    AttachThreadInput(me, fgThread, false);
+    return GetForegroundWindow() == h;
+  }
   public static IntPtr FindForm(uint pid) {
     IntPtr best = IntPtr.Zero; long bestArea = 0;
     EnumWindows((h, l) => {
@@ -46,11 +64,12 @@ public static class RibbonKeys {
 '@
 }
 
-$form = [RibbonKeys]::FindForm([uint32]$ProcessId)
-if (($form -ne [IntPtr]::Zero) -and ([RibbonKeys]::GetForegroundWindow() -ne $form)) {
-  [void][RibbonKeys]::SetForegroundWindow($form)
+$form = [RibbonKeys2]::FindForm([uint32]$ProcessId)
+if (($form -ne [IntPtr]::Zero) -and ([RibbonKeys2]::GetForegroundWindow() -ne $form)) {
+  [void][RibbonKeys2]::SetForegroundWindow($form)
   Start-Sleep -Milliseconds 150
-  if ([RibbonKeys]::GetForegroundWindow() -ne $form) { Write-Warning "keys.ps1: the form is not the foreground window ($Keys)" }
+  if ([RibbonKeys2]::GetForegroundWindow() -ne $form) { [void][RibbonKeys2]::ForceForeground($form); Start-Sleep -Milliseconds 150 }
+  if ([RibbonKeys2]::GetForegroundWindow() -ne $form) { Write-Warning "keys.ps1: the form is not the foreground window ($Keys)" }
 }
 
 $named = @{ 'esc' = 0x1B; 'enter' = 0x0D; 'tab' = 0x09; 'left' = 0x25; 'up' = 0x26; 'right' = 0x27; 'down' = 0x28;
@@ -64,8 +83,8 @@ function Get-Vk([string] $name) {
 }
 
 function Tap([byte] $vk) {
-  [RibbonKeys]::keybd_event($vk, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30
-  [RibbonKeys]::keybd_event($vk, 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 60
+  [RibbonKeys2]::keybd_event($vk, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30
+  [RibbonKeys2]::keybd_event($vk, 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 60
 }
 
 foreach ($item in $Keys.Split(';')) {
@@ -74,8 +93,8 @@ foreach ($item in $Keys.Split(';')) {
   $parts = $item.Split('+')
   $mods = @(); for ($i = 0; $i -lt $parts.Length - 1; $i++) { $mods += Get-Vk $parts[$i] }
   $key = Get-Vk $parts[-1]
-  foreach ($m in $mods) { [RibbonKeys]::keybd_event($m, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+  foreach ($m in $mods) { [RibbonKeys2]::keybd_event($m, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
   Tap $key
-  for ($i = $mods.Length - 1; $i -ge 0; $i--) { [RibbonKeys]::keybd_event($mods[$i], 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
+  for ($i = $mods.Length - 1; $i -ge 0; $i--) { [RibbonKeys2]::keybd_event($mods[$i], 0, 2, [IntPtr]::Zero); Start-Sleep -Milliseconds 30 }
   Start-Sleep -Milliseconds 120
 }

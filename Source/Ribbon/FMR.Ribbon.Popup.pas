@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Popup windows, menus and keyboard routing            }
@@ -25,6 +25,9 @@ unit FMR.Ribbon.Popup;
 /// open (or key tips are shown) an invisible focusable control (key sink) holds the focus of the owner form; it gives
 /// every key to the top popup (menu navigation, accelerators, key tips) or to the editor focused inside the popup
 /// (editors in collapsed groups accept typing), and restores the previously focused control afterwards.
+/// Focusing an editor in a popup makes Windows activate the popup window (FMX's text input calls SetFocus on it);
+/// FMX would close every popup when the owner form is deactivated, so TFmrPopupForm.MouseDown and FmrFocusControl
+/// suppress that deactivation; the popup window then gets the keys itself (TFmrPopupForm.KeyDown).
 
 interface
 
@@ -148,9 +151,18 @@ type
     FClosed: Boolean;
     FCloseTime: TDateTime;
     FAnchorElement: TObject;
+    FRoutingKey: Boolean;
   protected
     procedure DoClose(var CloseAction: TCloseAction); override;
+    procedure DestroyHandle; override;
   public
+    /// <summary>A click that focuses an editor of the content does not close the popups (FmrFocusControl).
+    /// </summary>
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; AFormX, AFormY: Single); override;
+    /// <summary>Keys of the popup window itself: it has the keyboard focus while an editor inside it is focused
+    /// (Windows activates it). The content gets them first (IFmrPopupContent.PopupKeyDown), Escape closes the popup.
+    /// </summary>
+    procedure KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState); override;
     /// <summary>Creates a hidden popup around AContent (the popup becomes its parent).</summary>
     constructor CreatePopup(const AContext: IFmrPopupContext; const AContent: TControl);
     destructor Destroy; override;
@@ -250,6 +262,7 @@ type
     procedure DoExit; override;
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
   end;
 
   /// <summary>Button item whose click runs an anonymous method (commands of the ribbon's own menus).</summary>
@@ -502,11 +515,17 @@ function FmrCreateDropDownContent(const AItem: TFmrBarItem; const AContext: IFmr
 function FmrItemHasDropDown(const AItem: TFmrBarItem): Boolean;
 /// <summary>The form that contains AObject (nil when none).</summary>
 function FmrFormOf(const AObject: TFmxObject): TCommonCustomForm;
+/// <summary>Focuses AControl. In a popup form (an editor in a collapsed group, the mini toolbar) FMX would close the
+/// popups (Windows activates the popup window for the text input): the popups stay, the popup window gets the keys.
+/// </summary>
+procedure FmrFocusControl(const AControl: TControl);
 
 implementation
 
 uses
-  System.Character{$IFDEF MSWINDOWS}, Winapi.Windows{$ENDIF}, FMR.Ribbon.BiDi;
+  System.Character{$IFDEF MSWINDOWS}, Winapi.Windows, System.TypInfo, System.Rtti, FMX.Platform.Win{$ENDIF},
+  FMR.Ribbon.BiDi;
+
 
 function MenuMirrored(const AContext: IFmrPopupContext): Boolean;
 begin
@@ -550,6 +569,8 @@ end;
 var
   GPopups: TFmrPopupManager;
   GDropDowns: TList<TPair<TFmrBarItemClass, TFmrDropDownFactory>>;
+  /// Key sinks not destroyed yet: a sink is freed later (queued) but its form may free it first.
+  GLiveSinks: TList<TObject>;
 
 const
   PopupShadowSize = 8;
@@ -779,12 +800,185 @@ begin
   Result := RectF(Left + FShadow, Top + FShadow, Left + Width - FShadow, Top + Height - FShadow - 2);
 end;
 
+procedure TFmrPopupForm.DestroyHandle;
+begin
+  // A focused editor (borrowed from a collapsed group) leaves the text input while the window exists: hidden later
+  // without a window, FMX would raise for the missing form handle (the owner form is destroyed first at exit).
+  if (Focused <> nil) and IsHandleAllocated then
+    try
+      Focused := nil;
+    except
+      // Shutting down: nothing to restore.
+    end;
+  inherited;
+end;
+
 procedure TFmrPopupForm.DoClose(var CloseAction: TCloseAction);
 begin
   inherited;
   CloseAction := TCloseAction.caHide;
   if not FClosed then
     FmrPopups.PopupClosing(Self);
+end;
+
+{ focusing editors in popups }
+
+type
+  TFmrDeactivationState = TArray<TPair<TCommonCustomForm, Boolean>>;
+
+{$IFDEF MSWINDOWS}
+var
+  GDisableDeactivate: TRttiField;
+  GDisableDeactivateSearched: Boolean;
+
+function DisableDeactivateField: TRttiField;
+var
+  Ctx: TRttiContext;
+begin
+  if not GDisableDeactivateSearched then
+  begin
+    GDisableDeactivateSearched := True;
+    try
+      GDisableDeactivate := Ctx.GetType(TWinWindowHandle).GetField('FDisableDeactivate');
+      if (GDisableDeactivate <> nil) and (GDisableDeactivate.FieldType.Handle <> TypeInfo(Boolean)) then
+        GDisableDeactivate := nil;
+    except
+      GDisableDeactivate := nil;
+    end;
+  end;
+  Result := GDisableDeactivate;
+end;
+{$ENDIF}
+
+/// Focusing a text control calls Windows SetFocus on its form (TTextServiceWin.EnterControl), which activates a
+/// popup window and deactivates the owner form; FMX then closes every popup form (WM_ACTIVATE of the owner,
+/// WM_WINDOWPOSCHANGING of the popup). Meanwhile FMX must ignore the deactivation, as it does itself while it shows a
+/// popup: TWinWindowHandle.FDisableDeactivate is private and set through RTTI. Afterwards the popup window has the
+/// keyboard focus (TFmrPopupForm.KeyDown).
+function SuspendDeactivation(const AForms: array of TCommonCustomForm): TFmrDeactivationState;
+{$IFDEF MSWINDOWS}
+var
+  F: TCommonCustomForm;
+  H: TWinWindowHandle;
+  Field: TRttiField;
+{$ENDIF}
+begin
+  Result := nil;
+  {$IFDEF MSWINDOWS}
+  Field := DisableDeactivateField;
+  if Field = nil then
+    Exit;
+  for F in AForms do
+    if (F <> nil) and not (csDestroying in F.ComponentState) and F.IsHandleAllocated then
+    begin
+      H := WindowHandleToPlatform(F.Handle);
+      if H = nil then
+        Continue;
+      Result := Result + [TPair<TCommonCustomForm, Boolean>.Create(F, Field.GetValue(H).AsBoolean)];
+      Field.SetValue(H, True);
+    end;
+  {$ENDIF}
+end;
+
+procedure ResumeDeactivation(const AState: TFmrDeactivationState);
+{$IFDEF MSWINDOWS}
+var
+  P: TPair<TCommonCustomForm, Boolean>;
+  H: TWinWindowHandle;
+{$ENDIF}
+begin
+  {$IFDEF MSWINDOWS}
+  for P in AState do
+    if not (csDestroying in P.Key.ComponentState) and P.Key.IsHandleAllocated then
+    begin
+      H := WindowHandleToPlatform(P.Key.Handle);
+      if H <> nil then
+        DisableDeactivateField.SetValue(H, P.Value);
+    end;
+  {$ENDIF}
+end;
+
+function PopupFocusForms(const APopup: TFmrPopupForm): TArray<TCommonCustomForm>;
+var
+  P: TFmrPopupForm;
+begin
+  Result := [APopup];
+  if (APopup.Context <> nil) and (APopup.Context.OwnerForm <> nil) then
+    Result := Result + [APopup.Context.OwnerForm];
+  if APopup.ParentForm is TCommonCustomForm then
+    Result := Result + [TCommonCustomForm(APopup.ParentForm)];
+  P := APopup.ParentPopup;
+  while P <> nil do
+  begin
+    Result := Result + [P];
+    P := P.ParentPopup;
+  end;
+end;
+
+procedure FmrFocusControl(const AControl: TControl);
+var
+  Form: TCommonCustomForm;
+  State: TFmrDeactivationState;
+begin
+  if AControl = nil then
+    Exit;
+  Form := FmrFormOf(AControl);
+  if Form is TFmrPopupForm then
+  begin
+    State := SuspendDeactivation(PopupFocusForms(TFmrPopupForm(Form)));
+    try
+      AControl.SetFocus;
+    finally
+      ResumeDeactivation(State);
+    end;
+  end
+  else
+    AControl.SetFocus;
+end;
+
+procedure TFmrPopupForm.MouseDown(Button: TMouseButton; Shift: TShiftState; AFormX, AFormY: Single);
+var
+  State: TFmrDeactivationState;
+begin
+  // A click may focus an editor of the content (see SuspendDeactivation).
+  State := SuspendDeactivation(PopupFocusForms(Self));
+  try
+    inherited;
+  finally
+    ResumeDeactivation(State);
+  end;
+end;
+
+procedure TFmrPopupForm.KeyDown(var Key: Word; var KeyChar: WideChar; Shift: TShiftState);
+var
+  C: IFmrPopupContent;
+  Handled: Boolean;
+begin
+  if not FRoutingKey then
+  begin
+    C := ContentIntf;
+    Handled := False;
+    FRoutingKey := True;
+    try
+      if C <> nil then
+        Handled := C.PopupKeyDown(Key, KeyChar, Shift);
+    finally
+      FRoutingKey := False;
+    end;
+    if Handled then
+    begin
+      Key := 0;
+      KeyChar := #0;
+      Exit;
+    end;
+    if (Key = vkEscape) and FmrPopupsAssigned and FmrPopups.FChain.Contains(Self) then
+    begin
+      Key := 0;
+      FmrPopups.Close(Self);
+      Exit;
+    end;
+  end;
+  inherited;
 end;
 
 { TFmrPopupManager.TNotifier }
@@ -1110,17 +1304,23 @@ begin
     Exit(True);
   end;
   C := P.ContentIntf;
-  // An editor focused inside the popup gets the keys first (except Escape).
+  // An editor focused inside the popup gets the keys first (except Escape). FRoutingKey: the content has had the
+  // key already (TFmrPopupForm.KeyDown goes straight to the focused control).
   Focused := P.Focused;
-  if (Focused <> nil) and (Key <> vkEscape) then
-  begin
+  P.FRoutingKey := True;
+  try
+    if (Focused <> nil) and (Key <> vkEscape) then
+    begin
+      if (C <> nil) and C.PopupKeyDown(Key, KeyChar, Shift) then
+        Exit(True);
+      P.KeyDown(Key, KeyChar, Shift);
+      Exit(True);
+    end;
     if (C <> nil) and C.PopupKeyDown(Key, KeyChar, Shift) then
       Exit(True);
-    P.KeyDown(Key, KeyChar, Shift);
-    Exit(True);
+  finally
+    P.FRoutingKey := False;
   end;
-  if (C <> nil) and C.PopupKeyDown(Key, KeyChar, Shift) then
-    Exit(True);
   if Key = vkEscape then
   begin
     Close(P);
@@ -1222,6 +1422,12 @@ begin
     Exit;
   Sink := FSink;
   FSink := nil;
+  // Freed already (by its form): nothing to release.
+  if (GLiveSinks = nil) or not GLiveSinks.Contains(Sink) then
+  begin
+    FSavedFocus := nil;
+    Exit;
+  end;
   Saved := FSavedFocus;
   FSavedFocus := nil;
   Sink.FReleasing := True;
@@ -1237,11 +1443,16 @@ begin
       Sink.Root.SetFocused(nil);
   except
   end;
+  // Freed later (this may run inside an event of the sink). The form frees its children itself while it is
+  // destroyed (closed with a popup open), so the queued Free checks that the sink still exists.
+  if (Sink.Parent <> nil) and (csDestroying in Sink.Parent.ComponentState) then
+    Exit;
   Sink.Parent := nil;
   TThread.ForceQueue(nil,
     procedure
     begin
-      Sink.Free;
+      if (GLiveSinks <> nil) and GLiveSinks.Contains(Sink) then
+        Sink.Free;
     end);
 end;
 
@@ -1292,12 +1503,24 @@ end;
 constructor TFmrKeySink.Create(AOwner: TComponent);
 begin
   inherited;
+  if GLiveSinks = nil then
+    GLiveSinks := TList<TObject>.Create;
+  GLiveSinks.Add(Self);
   CanFocus := True;
   TabStop := False;
   HitTest := False;
   Stored := False;
   Opacity := 0;
   SetBounds(-10, -10, 1, 1);
+end;
+
+destructor TFmrKeySink.Destroy;
+begin
+  if GLiveSinks <> nil then
+    GLiveSinks.Remove(Self);
+  if (GPopups <> nil) and (GPopups.FSink = Self) then
+    GPopups.FSink := nil;
+  inherited;
 end;
 
 procedure TFmrKeySink.DialogKey(var Key: Word; Shift: TShiftState);
@@ -2929,5 +3152,6 @@ initialization
 finalization
   FreeAndNil(GPopups);
   FreeAndNil(GDropDowns);
+  FreeAndNil(GLiveSinks);
 
 end.

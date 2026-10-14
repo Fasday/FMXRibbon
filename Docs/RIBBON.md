@@ -117,6 +117,12 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   popup (`PopupKeyDown`), to an editor focused inside it, then to the `IFmrKeyHandler` stack
   (`AddKeyHandler`/`RemoveKeyHandler`). The previous focus is restored afterwards; if the user clicks another control,
   popups close and handlers get `KeyboardLost`.
+- Editors inside popups (a collapsed group, the minimized body, the mini toolbar): FMX's text input calls Windows
+  `SetFocus` on the popup window when an editor gets the focus, which deactivates the owner form, and FMX closes every
+  popup form then. `TFmrPopupForm.MouseDown` and `FmrFocusControl` (key tips) suppress that deactivation
+  (`TWinWindowHandle.FDisableDeactivate`, set through RTTI); the popup window then has the keyboard itself and
+  `TFmrPopupForm.KeyDown` gives the keys to the content first (Enter commits a group editor and closes the popup, Esc
+  closes the popup). A focused editor leaves the text input before the popup window is destroyed (`DestroyHandle`).
 - `IFmrPopupContext` (`TFmrPopupContext`; the ribbon's own context) gives the painter, images, owner form, key tip
   state and two callbacks: `ItemExecuting` (hide key tips, clear the search box) and `ItemContextPopup` (right click:
   "Add to Quick Access Toolbar").
@@ -137,8 +143,9 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
 
 - The ribbon finds the frame (`Frame` property or the `TFmrFormFrame` of the owner form), moves the caption bar and
   the tab bar into `Frame.Host` and keeps `Frame.CaptionHeight` = caption row + tab row (tab row only when the
-  caption row is hidden). `TFmrFrameStateMessage` (hooked, mode, maximized, active) is handled on idle: caption
-  buttons, heights and colors are refreshed after the frame finished attaching.
+  caption row is hidden). `TFmrFrameStateMessage` (hooked, mode, maximized, active) is handled when it arrives: the
+  frame sends it after it finished attaching or detaching, and a change of `State.Hooked` or `State.Mode` rebuilds the
+  caption buttons and the heights at once (no idle polling).
 - Hit testing: the parts implement `IFmrFrameHitTest`; empty caption/tab row space is `Caption` (drag, double click
   maximizes, system menu), elements and the search box are `Client`, `TFmrRibbonCaptionButton`s report
   Min/Max/Close (Windows 11 snap layouts work on the maximize button).
@@ -152,10 +159,11 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   items (no title, no window buttons in it); otherwise only the tab row is in the strip.
 - No frame: the caption row inside the ribbon holds the QAT and the search box; it shows a title only when the form
   has no native title bar (`BorderStyle = None`) or `CaptionText` is set. `ShowCaption = False` removes the row.
-- **Workaround (frame bug)**: the host paints its children with `TCanvas.Offset`; `TCanvasSaveState.Assign`
-  re-applies the offset to the saved matrix, so every `SaveState`/`RestoreState` pair shifts what is painted next by
-  the offset again. The parts and `TFmrTipOverlay` fold the offset into the matrix while painting and restore
-  `Canvas.Offset` afterwards. Remove when `TFmrFrameHost.PaintBuffer` no longer uses `Offset`.
+- **Canvas offset**: the host paints the non-client strip with relative matrices (`Docs\FRAME.md`), so the parts
+  normally paint with `Canvas.Offset` = 0. Only while an FMX drop-down of a control in the host is open (a themed
+  combo in the QAT) the host falls back to `TCanvas.Offset`, which `TCanvasSaveState` would apply a second time after
+  every `RestoreState`: for that case the parts and `TFmrTipOverlay` fold a non-zero offset into the matrix while they
+  paint (`TFmrCanvasOffsetGuard`; a no-op otherwise). The old unconditional workaround is gone.
 
 ## Key tips and keyboard
 
@@ -171,7 +179,9 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   The same fallback applies to menu accelerators.
 - Arrow keys, Tab and Enter move a keyboard focus over the tips of the current level (focused element is painted hot).
 - Badges: tab tips hang below the tab row (top of the body), QAT tips below the caption row (top of the tab row),
-  other tips at `KeyTipAnchor` of the element, clamped inside the part.
+  other tips at `KeyTipAnchor` of the element, clamped inside the part. When the body is hidden (minimized ribbon,
+  Show Tabs) the tab tips are painted by an overlay control on the form right below the tab row (`TFmrTabTipOverlay`),
+  so they do not cover the tab captions, like Office.
 - Shortcuts: `DialogKey` runs the bar item whose `ShortCut` matches (Ctrl/Alt combinations and F-keys). While an
   editor of the ribbon has the focus, editing keys (Ctrl+A/C/V/X/Z/Y, Ctrl+arrows...) stay with the editor.
   Ctrl+F1 toggles `Minimized`.
@@ -210,8 +220,11 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   `FMR.Ribbon.UIA.Win`, `Docs\ACCESSIBILITY.md`).
 - **Persistence and merging**: `SaveLayoutTo*`/`LoadLayoutFrom*`, `Merge`/`Unmerge`/`UnmergeAll` wrap the core
   structure services and re-lay out the ribbon.
-- **Design-time hooks**: `ActiveTab` is published and settable, `TabAtScreenPoint` lets a design package switch tabs
-  on click, parts are not streamed.
+- **Design time**: the ribbon is design-interactive and implements `IFmrRibbonDesignSupport` (hit tests, bounds, drop
+  targets, insertion mark and dashed selection frames painted in `AfterPaint` of the parts, `DesignSelectTab` that
+  also shows a tab of a hidden contextual group); it passes the mouse to the design package's hook; parts are locked
+  and not streamed; no events run at design time; `TFmrControlItem` controls stay where the form has them. Full
+  description: `Docs\DESIGNTIME.md`, "Phase B". `ActiveTab` is published and settable, `TabAtScreenPoint` is kept.
 - **Diagnostics**: `DebugDump` (parts, elements and bounds as text; the demo writes it with `/dump=`).
 
 ## Galleries, application menu, mini toolbar, radial menu
@@ -219,7 +232,8 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
 Built on the extension points above, in their own units (full description: `Docs\GALLERIES.md`):
 
 - `FMR.Ribbon.Gallery`: `TFmrGalleryView` (`FmrRegisterItemView` for `TFmrGalleryItem`: in-ribbon gallery with the
-  layout's column reduction, row scrolling, drop-down button, hot tracking, live preview, selection, one key tip) and
+  layout's column reduction, row scrolling (also with the mouse wheel: `TFmrElement.MouseWheel`, the parts ask the hot
+  element before switching tabs), drop-down button, hot tracking, live preview, selection, one key tip) and
   `TFmrGalleryPopupContent` (`FmrRegisterDropDown`: drop-down gallery with filter band, group headers, wheel/scroll
   bar, keyboard, commands below, resize grip; also menus whose links contain galleries). `TFmrRibbonGalleryItem` adds
   `OnDrawItem` and `DropDownResize`.
@@ -256,9 +270,25 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
   (`Docs\CUSTOMIZATION.md`, `Docs\ACCESSIBILITY.md`, their own lists of known issues).
 - Font preview in the font combo.
 - Alt+letter pressed together (without releasing Alt) does not jump to a tab; press and release Alt, then the letter.
-- In minimized mode the tab key tips are drawn inside the tab row (over the captions), not below it.
 - No animations (popups, minimized body, backstage slide is the backstage's own).
-- Design-time package (designer, component editors) is not part of this work.
+- While an editor of a popup has the keyboard, the owner form shows the inactive caption (Windows activated the popup
+  window; FMX does not close the popups).
+
+### Design time and follow-up fixes (phase B)
+
+- In-form design (`Docs\DESIGNTIME.md`, "Phase B"): checked with `DesignPreview.exe /realtest` against a real ribbon
+  in a simulated designer (45 checks, Win64 and Win32) and on screenshots (`shots\design\real_*.png`).
+- Canvas offset workaround reduced to the drop-down fallback case; frame state handled from the message.
+- Checked again on screenshots (`shots\b3\`): RibbonBasic in FullNC, Dwm, NCStrip and without frame with key tips
+  (Alt, H) and the Paste menu (P, A); minimized ribbon key tips below the tab row (FullNC and no frame) and the Home
+  popup with its tips; wheel over the in-ribbon styles gallery scrolls one row (tab unchanged), elsewhere it switches
+  tabs; drop-down gallery entry tip right of the drop-down; dark themed font list scroll bar; themed "More Colors"
+  dialog (FluentDark, dark title bar); typing into the mini toolbar's font size (28 + Enter applied, toolbar kept);
+  typing into the editor of a collapsed group popup; the backstage "Back" hint gone after Esc.
+- Closing the form with a group popup open (with a focused editor), the mini toolbar with a focused editor, the
+  minimized ribbon with key tips, the color gallery, the backstage: no error, no leak report (`tools\closecheck.ps1`).
+  Two exit bugs found and fixed: the key sink could be freed twice (the form freed it, then the queued release), and a
+  focused editor in a popup raised "AFormHandle cannot be nil" when the popup was destroyed after its window.
 
 ### Notes for the next agents
 
@@ -268,7 +298,10 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
   application button rectangle (`ApplicationButtonScreenRect`) and `AByKeyboard`.
 - Popups from other code: `TFmrPopupForm.CreatePopup(Context, Content)` + `FmrPopups.Show`; menus in code with
   `TFmrTempMenu`.
-- Frame: see the `TCanvas.Offset` workaround above; `Frame.CaptionHeight` is owned by the ribbon while it is attached.
+- Frame: `Frame.CaptionHeight` is owned by the ribbon while it is attached; the canvas offset guard above only acts
+  while an FMX drop-down of a host control is open.
+- Design time: new parts or child controls of the ribbon must be `Locked`/`Stored = False` and must not take the
+  mouse at design time (`TFmrRibbonPart.ObjectAtPoint`); new events must not run with `csDesigning`.
 
 ## Demo and test scripts (`Demos\RibbonBasic`)
 
@@ -280,8 +313,13 @@ the demo closes without memory leaks after popups, key tips, group popups and mi
 The desktop may be shared with other windows, so the scripts do not rely on the screen:
 
 - `drive.ps1`: starts the demo, posts mouse messages to the form or to the popup under the point
-  (`move:`, `click:`, `rclick:`, `dclick:` with window-relative physical coordinates), sends keys (`key:` via
-  `keys.ps1`), types (`text:` with WM_CHAR), captures (`shot:NAME`), then a final capture.
+  (`move:`, `click:`, `rclick:`, `dclick:` with window-relative physical coordinates, `wheel:X,Y,NOTCHES`), sends
+  keys (`key:` via `keys.ps1`), types (`text:` with WM_CHAR), captures (`shot:NAME`), then a final capture. Start with
+  `key:shift` so the form is the foreground window: FMX closes popups when the form is deactivated.
+- `keys.ps1`: when `SetForegroundWindow` is refused (another process owns the foreground) it attaches to the
+  foreground thread's input first.
+- `closecheck.ps1`: runs `drive.ps1`, closes the form with WM_CLOSE and reports a process that does not end (an error
+  or the leak report of a Debug build; screenshot `*_hang.png`).
 - `capture.ps1`: composes `PrintWindow` images of all windows of the process (popups included; the transparent
   shadow area of popups comes out black). PNG origin is the window at (16, 16).
 - `keys.ps1`: `keybd_event` key strokes to the form made foreground (`alt`, `ctrl+F1`, `esc`, letters...).

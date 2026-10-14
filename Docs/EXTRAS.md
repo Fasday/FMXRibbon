@@ -274,6 +274,8 @@ Screenshots checked (Windows 11, 150 %; `shots\` is not committed):
   test windows of another program took the focus during the run); `Show(True)` / `/keytips` is verified. Alt from a
   control inside a tab goes to that control.
 - The slide animation moves the active tab with `SetBounds` (fine for normal content; heavy tabs may stutter).
+- Fixed: the hint of the hot entry ("Back") stayed on the screen when the view was closed with Esc (`Hide` now hides
+  the application hint; checked on a screenshot).
 - No RTL mirroring, no touch-mode sizes yet.
 - Office 2007 has no backstage (application menu); the view still works and uses the 2007 tokens.
 - Screenshots were sometimes covered by another program's test windows running on the same desktop

@@ -14,16 +14,17 @@ unit FMR.Ribbon.DesignSupport;
 ///
 /// - TFmrRibbon implements IFmrRibbonDesignSupport: hit testing of its lightweight elements, bounds of structure
 ///   objects, drop targets and design feedback (insertion mark, selection frames). All coordinates are local
-///   coordinates of the ribbon control: at design time the caption row and the tab row always stay inside the
-///   ribbon (the frame is not hooked).
+///   coordinates of the ribbon control. With a TFmrFormFrame on the form the caption row and the tab row are shown
+///   in the frame host also at design time (an ordinary control at the top of the form, above the ribbon): their
+///   points have negative local Y.
 /// - The design package installs one IFmrRibbonDesignHook (TFmrRibbonDesignHooks.Hook) while it is loaded. At design
 ///   time the ribbon forwards its mouse events to the hook instead of running commands; the hook selects objects in
 ///   the IDE, switches tabs and drags links, groups and tabs.
 ///
 /// The FMX form designer sends mouse events to a control at design time only when the control is
 /// design-interactive (TControl.FDesignInteractive = True, as TTabItem and TFmrRibbonBackstageView do) and is the
-/// control under the mouse; the ribbon's parts must therefore not catch the mouse at design time (Locked = True or
-/// HitTest = False on the parts), see Docs\DESIGNTIME.md.
+/// control under the mouse: the ribbon is design-interactive, its parts are Locked and leave the mouse to it
+/// (ObjectAtPoint); a part shown in the frame host takes the mouse itself and passes it on. See Docs\DESIGNTIME.md.
 
 interface
 

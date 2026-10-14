@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Galleries: in-ribbon, drop-down and menu galleries   }
@@ -32,7 +32,7 @@ uses
   System.SysUtils, System.Classes, System.Types, System.UITypes, System.Math, System.Generics.Collections,
   FMX.Types, FMX.Graphics, FMX.Controls, FMX.Forms, FMX.ImgList, FMR.Ribbon.Types, FMR.Bars.Images, FMR.Bars,
   FMR.Bars.Items, FMR.Ribbon.Layout, FMR.Ribbon.Theme, FMR.Ribbon.Painter, FMR.Ribbon.Views, FMR.Ribbon.Popup,
-  FMR.Ribbon.ScreenTips, FMR.Ribbon.Strings;
+  FMR.Ribbon.ScreenTips, FMR.Ribbon.Strings, FMR.Ribbon.BiDi;
 
 type
   /// <summary>How the user may resize a drop-down gallery with the grip at its bottom.</summary>
@@ -160,6 +160,8 @@ type
     function OpensOnPress(const APart: TFmrElementPart): Boolean; override;
     procedure Execute(const APart: TFmrElementPart); override;
     procedure MouseMoveAt(const P: TPointF); override;
+    /// <summary>In the ribbon: one row per notch (the wheel does not switch tabs over a gallery).</summary>
+    function MouseWheel(const AWheelDelta: Integer): Boolean; override;
     procedure Paint(const ACanvas: TCanvas); override;
     function GetScreenTip(out AInfo: TFmrScreenTipInfo): Boolean; override;
     function KeyTipAnchor: TPointF; override;
@@ -440,7 +442,7 @@ begin
         begin
           GR := RectF(0, 0, GS, GS);
           GR.Offset(Round(R.CenterPoint.X - GS / 2), Round(R.Top + 4));
-          G.Draw(ACanvas, GR, Op, Tint, AImages);
+          FmrDrawImage(ACanvas, G, GR, Op, Tint, AImages);
         end;
         TR := RectF(R.Left + 3, R.Bottom - TextH - 4, R.Right - 3, R.Bottom - 2);
         APainter.TextEx(ACanvas, TR, AEntry.Caption, TextColor, TTextAlign.Center, TTextAlign.Center, 0, False, False);
@@ -456,7 +458,7 @@ begin
         begin
           GR := RectF(0, 0, GS, GS);
           GR.Offset(Round(R.Left + 6), Round(R.CenterPoint.Y - GS / 2));
-          G.Draw(ACanvas, GR, Op, Tint, AImages);
+          FmrDrawImage(ACanvas, G, GR, Op, Tint, AImages);
           TR.Left := GR.Right + 8;
         end;
         Bold := AEntry.Description <> '';
@@ -479,7 +481,7 @@ begin
         GS := Min(GS, M.SmallGlyphSize + 4);
       GR := RectF(0, 0, GS, GS);
       GR.Offset(Round(R.CenterPoint.X - GS / 2), Round(R.CenterPoint.Y - GS / 2));
-      G.Draw(ACanvas, GR, Op, Tint, AImages);
+      FmrDrawImage(ACanvas, G, GR, Op, Tint, AImages);
     end
     else
       APainter.TextEx(ACanvas, RectF(R.Left + 2, R.Top, R.Right - 2, R.Bottom), AEntry.Caption, TextColor,
@@ -945,6 +947,8 @@ begin
     FTopRow := T;
     FHotCell := -1;
     EndPreview;
+    // The entry under the mouse changed: its tip goes (the next mouse move shows the new one).
+    GalleryTipHover(Gallery, nil, TRectF.Empty, nil, nil);
     Invalidate;
   end;
 end;
@@ -1039,15 +1043,26 @@ begin
       HostCtl := Host.GetHostControl;
     if (E <> nil) and (HostCtl <> nil) then
     begin
+      // Below the whole gallery, so the tip does not cover the other rows.
       R := CellRect(Cell);
-      TL := HostCtl.LocalToScreen(PointF(R.Left, Bounds.Top));
-      BR := HostCtl.LocalToScreen(PointF(R.Right, Bounds.Bottom + 4));
+      R := RectF(R.Left, Bounds.Top, R.Right, Bounds.Bottom + 4);
+      if FmrIsMirrored(Host) then
+        R := FmrMirrorRect(R, HostCtl.Width);
+      TL := HostCtl.LocalToScreen(R.TopLeft);
+      BR := HostCtl.LocalToScreen(R.BottomRight);
       GalleryTipHover(Gallery, E, RectF(TL.X, TL.Y, BR.X, BR.Y), Painter, FmrFormOf(HostCtl));
     end
     else
       GalleryTipHover(Gallery, nil, TRectF.Empty, nil, nil);
   end;
   Invalidate;
+end;
+
+function TFmrGalleryView.MouseWheel(const AWheelDelta: Integer): Boolean;
+begin
+  Result := FInRibbon and Visible;
+  if Result and (AWheelDelta <> 0) then
+    ScrollRows(-Sign(AWheelDelta));
 end;
 
 procedure TFmrGalleryView.SetHotPart(const Value: TFmrElementPart);
@@ -1918,6 +1933,7 @@ procedure TFmrGalleryPopupContent.UpdateTip;
 var
   S: TFmrGallerySection;
   R: TRectF;
+  TL: TPointF;
 begin
   if FHot.IsNone then
   begin
@@ -1925,8 +1941,11 @@ begin
     Exit;
   end;
   S := FSections[FHot.Section];
+  // Right of the drop-down, aligned with the row of the entry (like menu screen tips): below the cell the tip would
+  // cover the next row.
   R := CellScreenRect(FHot);
-  R.Bottom := R.Bottom + 4;
+  TL := LocalToScreen(PointF(Width + 6, 0));
+  R := RectF(TL.X, R.Top - 2, TL.X, R.Top - 2);
   GalleryTipHover(S.FGallery, S.FGrid[FHot.Cell].Entry, R, Painter, FContext.OwnerForm);
 end;
 

@@ -465,8 +465,9 @@ var
   Wnd, Under: HWND;
   C: TComponent;
   Scale: Single;
-  P: TPointF;
+  P, Local: TPointF;
   Sp: TPoint;
+  DS: IFmrRibbonDesignSupport;
 begin
   Result := False;
   ARibbon := nil;
@@ -488,12 +489,17 @@ begin
     for J := 0 to Form.ComponentCount - 1 do
     begin
       C := Form.Components[J];
-      if (C is TControl) and Supports(C, IFmrRibbonDesignSupport) and TControl(C).Visible and
-        TControl(C).AbsoluteRect.Contains(P) then
+      // The hit test also covers the caption row and the tab row when they are shown in the frame host (outside
+      // the bounds of the ribbon control).
+      if (C is TControl) and Supports(C, IFmrRibbonDesignSupport, DS) and TControl(C).Visible then
       begin
-        ARibbon := TControl(C);
-        ALocal := ARibbon.AbsoluteToLocal(P);
-        Exit(True);
+        Local := TControl(C).AbsoluteToLocal(P);
+        if DS.DesignHitTest(Local).Kind <> TFmrDesignHitKind.None then
+        begin
+          ARibbon := TControl(C);
+          ALocal := Local;
+          Exit(True);
+        end;
       end;
     end;
   end;

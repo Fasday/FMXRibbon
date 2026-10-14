@@ -89,6 +89,7 @@ variables, the block that moves `Canvas.Offset` into `Canvas.SetMatrix` before `
 `Canvas.Offset := SavedOffset` after `RestoreState`; around lines 1223–1241) and the same folding in
 `TFmrTipOverlay.Paint` (around lines 1303–1323). With the new painting `Canvas.Offset` is zero, so the code is a no-op;
 it is harmless to keep and it still helps in the one case above (an FMX drop-down of a control in the host open).
+Done: the ribbon keeps one small guard (`TFmrCanvasOffsetGuard`) used only when the offset is not zero.
 
 ### Mouse, keyboard, cursor
 
@@ -156,7 +157,8 @@ and re-hooks it before the form is shown.
 `FFrameDirty`, and `TFmrRibbon.IdleHandler` compares `FFrame.Hooked`/`FFrame.Mode` with `FLastHooked`/`FLastMode`
 (around lines 4392–4402 and 4468–4475). The handler can now use `State.Hooked`/`State.Mode` of the message directly
 (the message is sent after the frame finished attaching or detaching); the idle comparison is only needed if the
-ribbon wants to batch the work.
+ribbon wants to batch the work. Done: `FrameStateHandler` compares `State.Hooked`/`State.Mode` with the last values
+and rebuilds at once; the idle check is gone.
 
 ## The modes
 

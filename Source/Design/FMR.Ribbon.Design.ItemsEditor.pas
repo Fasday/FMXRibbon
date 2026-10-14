@@ -134,7 +134,9 @@ end;
 
 function TFmrItemsEditorDragObject.GetDragCursor(Accepted: Boolean; X, Y: Integer): TCursor;
 begin
-  if not Accepted and (FmrExternalItemDrop <> nil) and (FindVCLWindow(Point(X, Y)) = nil) and
+  // The window under the mouse itself, not its parents: in the IDE the FMX form of the designer is a child window of
+  // a VCL control (FindVCLWindow would find that one).
+  if not Accepted and (FmrExternalItemDrop <> nil) and (FindControl(WindowFromPoint(Point(X, Y))) = nil) and
     FmrExternalItemDrop.ExternalDragOver(Point(X, Y), Items) then
     Result := crDrag
   else

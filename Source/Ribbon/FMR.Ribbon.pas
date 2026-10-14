@@ -20,6 +20,9 @@ unit FMR.Ribbon;
 /// The ribbon implements IFmrRibbonStructureOwner (tabs, groups and context groups are its children) and listens to
 /// its bar manager; every change only marks the structure, the layout or the arrangement invalid, the work is done
 /// once on idle, on resize or before painting.
+/// At design time the ribbon is design-interactive: it takes the mouse on all of its parts and passes it to the hook
+/// of the design package (IFmrRibbonDesignHook), and implements IFmrRibbonDesignSupport (hit tests, bounds, drop
+/// targets, insertion mark and selection frames) - see FMR.Ribbon.DesignSupport and Docs\DESIGNTIME.md.
 
 interface
 
@@ -31,7 +34,7 @@ uses
   FMR.Ribbon.Types, FMR.Bars.Images, FMR.Bars, FMR.Bars.Items, FMR.Ribbon.Structure, FMR.Ribbon.Layout,
   FMR.Ribbon.KeyTips, FMR.Ribbon.Persistence, FMR.Ribbon.Merge, FMR.Ribbon.Strings, FMR.Ribbon.Theme,
   FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Painter, FMR.Ribbon.Views, FMR.Ribbon.Popup, FMR.Ribbon.Editors,
-  FMR.Ribbon.ScreenTips, FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Ribbon.BiDi;
+  FMR.Ribbon.ScreenTips, FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Ribbon.BiDi, FMR.Ribbon.DesignSupport;
 
 type
   TFmrRibbon = class;
@@ -234,6 +237,14 @@ type
     procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
     procedure DoMouseLeave; override;
     procedure Resize; override;
+    /// <summary>Design time: no editor control of the part takes the mouse; a part inside the ribbon leaves the
+    /// clicks to the ribbon, a part in the frame host takes them and passes them on.</summary>
+    function ObjectAtPoint(AScreenPoint: TPointF): IControl; override;
+    /// <summary>Design time: a component dropped from the palette never lands in a part or an editor control.
+    /// </summary>
+    function FindTarget(P: TPointF; const Data: TDragObject): IControl; override;
+    /// <summary>Design time: insertion mark and selection frames above the children.</summary>
+    procedure AfterPaint; override;
     /// <summary>True when a click at P must still be processed while popups are open (it closed them first).
     /// </summary>
     function KeepClickWhenClosingPopups(const P: TPointF): Boolean; virtual;
@@ -357,12 +368,14 @@ type
 
   /// <summary>Microsoft Office style ribbon.</summary>
   TFmrRibbon = class(TControl, IFmrRibbonStructureOwner, IFmrBarManagerListener, IFmrKeyHandler, IFmrThemeSource,
-    IFmrThemeProvider)
+    IFmrThemeProvider, IFmrRibbonDesignSupport)
   private type
     TKeyTipEntryRec = record
       Element: TFmrElement;
       Tip: string;
     end;
+
+    TDesignMouseEvent = (Down, Move, Up);
 
     TRibbonPopupContext = class(TFmrPopupContext, IFmrMirroredHost)
     private
@@ -458,7 +471,6 @@ type
     FDeactivateId: TMessageSubscriptionId;
     FLanguageId: TMessageSubscriptionId;
     FFrameStateId: TMessageSubscriptionId;
-    FFrameDirty: Boolean;
     FLastHooked: Boolean;
     FLastMode: TFmrFrameMode;
     FAltArmed: Boolean;
@@ -480,6 +492,11 @@ type
     FAutoHideClosedTick: Cardinal;
     FLastRTL: Boolean;
     FAccVersion: Integer;
+    FTabTipOverlay: TControl;
+    { design time }
+    FDesignSelection: TArray<TPersistent>;
+    FDesignTarget: TFmrDesignDropTarget;
+    FDesignTab: TFmrRibbonTab;
     procedure SetBarManager(const Value: TFmrBarManager);
     procedure SetQAT(const Value: TFmrRibbonQuickAccessToolbar);
     procedure SetAppButton(const Value: TFmrRibbonApplicationButton);
@@ -614,6 +631,31 @@ type
     procedure ShowDisplayOptionsMenu(const AElement: TFmrElement; const AByKeyboard: Boolean);
     procedure AddDisplayModeButton(const ABounds: TRectF);
     procedure QueueCustomizationForm(const APage: TFmrCustomizationPage);
+    /// <summary>Key tips of the tabs below the tab row while the body is hidden (minimized ribbon): painted by an
+    /// overlay on the form, like Office.</summary>
+    procedure UpdateTabTipOverlay;
+    { design time }
+    function TabShown(const T: TFmrRibbonTab): Boolean;
+    function DesignParts: TArray<TFmrRibbonPart>;
+    function DesignPartAt(const ALocalPoint: TPointF; out APart: TFmrRibbonPart; out ALogical: TPointF): Boolean;
+    /// <summary>Logical rectangle of a part -> local rectangle of the ribbon (the part may be in the frame host).
+    /// </summary>
+    function PartToLocal(const APart: TFmrRibbonPart; const ALogical: TRectF): TRectF;
+    /// <summary>Local rectangle of the ribbon -> physical rectangle of a part (painting).</summary>
+    function LocalToPart(const APart: TControl; const ALocal: TRectF): TRectF;
+    /// <summary>Groups shown in the body with their rectangles (body coordinates); simplified mode: the span of
+    /// their views.</summary>
+    function DesignGroupBoxes: TArray<TFmrGroupBox>;
+    /// <summary>Every place where AObject (tab, context group, group, link, item) is shown, ribbon coordinates.
+    /// Compares pointers only: AObject may already be freed.</summary>
+    function DesignRectsOf(const AObject: TPersistent): TArray<TRectF>;
+    function DesignHitAt(const ALocalPoint: TPointF): TFmrDesignHit;
+    function DesignLinkTarget(const APart: TFmrRibbonPart; const P: TPointF): TFmrDesignDropTarget;
+    function DesignGroupTarget(const APart: TFmrRibbonPart; const P: TPointF): TFmrDesignDropTarget;
+    function DesignTabTarget(const P: TPointF): TFmrDesignDropTarget;
+    procedure DesignMouseEvent(const AEvent: TDesignMouseEvent; const AButton: TMouseButton; const AShift: TShiftState;
+      const ALocalPoint: TPointF);
+    procedure PaintDesignFeedback(const APart: TControl; const ACanvas: TCanvas);
   protected
     { IFmrRibbonStructureOwner }
     function GetStructureObject: TFmxObject;
@@ -647,6 +689,9 @@ type
     procedure Resize; override;
     procedure Paint; override;
     procedure DialogKey(var Key: Word; Shift: TShiftState); override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
+    procedure MouseMove(Shift: TShiftState; X, Y: Single); override;
+    procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
     procedure DoAddObject(const AObject: TFmxObject); override;
     procedure DoRemoveObject(const AObject: TFmxObject); override;
     function GetDefaultSize: TSizeF; override;
@@ -720,6 +765,13 @@ type
     function AccessibilitySetValue(const AElement: TObject; const AValue: string): Boolean;
     /// <summary>Changes whenever the elements are rebuilt or rearranged.</summary>
     property AccessibilityVersion: Integer read FAccVersion;
+    { IFmrRibbonDesignSupport (design time; local coordinates of the ribbon) }
+    function DesignHitTest(const ALocalPoint: TPointF): TFmrDesignHit;
+    function DesignObjectBounds(const AObject: TPersistent): TRectF;
+    function DesignDropTarget(const ALocalPoint: TPointF; const AKind: TFmrDesignDragKind): TFmrDesignDropTarget;
+    procedure DesignShowDropTarget(const ATarget: TFmrDesignDropTarget);
+    procedure DesignSetSelection(const AObjects: TArray<TPersistent>);
+    procedure DesignSelectTab(const ATab: TFmrRibbonTab);
     property Painter: TFmrRibbonPainter read FPainter;
     property ThemeObject: TFmrTheme read FTheme;
     property CaptionBar: TFmrRibbonCaptionBar read FCaptionBar;
@@ -1226,6 +1278,9 @@ begin
   HitTest := True;
   AutoCapture := True;
   CanFocus := False;
+  // Design time: a part in the frame host (outside the ribbon) takes the mouse for the ribbon (ObjectAtPoint).
+  FDesignInteractive := csDesigning in ComponentState;
+  SetAcceptsControls(False);
   FTracker := TFmrElementTracker.Create(Self,
     function(const P: TPointF): TFmrElement
     begin
@@ -1350,11 +1405,40 @@ begin
     FRibbon.FScreenTips.Hover(nil, TRectF.Empty, GetPainter, FRibbon.OwnerForm);
 end;
 
+type
+  /// The frame host paints the non-client strip with TCanvas.Offset only while an FMX drop-down of one of its
+  /// controls is open (Docs\FRAME.md, "Coordinates while painting"); TCanvasSaveState would then apply the offset a
+  /// second time after every RestoreState. The parts fold a non-zero offset into the matrix while they paint; in
+  /// every other case the offset is zero and nothing happens.
+  TFmrCanvasOffsetGuard = record
+    Saved: TPointF;
+    procedure Enter(const ACanvas: TCanvas);
+    procedure Leave(const ACanvas: TCanvas);
+  end;
+
+procedure TFmrCanvasOffsetGuard.Enter(const ACanvas: TCanvas);
+var
+  M: TMatrix;
+begin
+  Saved := ACanvas.Offset;
+  if not Saved.IsZero then
+  begin
+    M := ACanvas.Matrix;
+    ACanvas.Offset := TPointF.Zero;
+    ACanvas.SetMatrix(M);
+  end;
+end;
+
+procedure TFmrCanvasOffsetGuard.Leave(const ACanvas: TCanvas);
+begin
+  if not Saved.IsZero then
+    ACanvas.Offset := Saved;
+end;
+
 procedure TFmrRibbonPart.Paint;
 var
-  SavedOffset: TPointF;
+  Guard: TFmrCanvasOffsetGuard;
   State: TCanvasSaveState;
-  M: TMatrix;
 begin
   if (FRibbon = nil) or (FRibbon.FPainter = nil) then
     Exit;
@@ -1368,16 +1452,7 @@ begin
       FRibbon.FPainting := False;
     end;
   end;
-  // The non-client host paints with TCanvas.Offset; TCanvasSaveState restores the matrix with the offset applied a
-  // second time, so every SaveState/RestoreState pair (glyph drawing, clipping) would shift what follows. Paint
-  // with the offset folded into the matrix and put it back afterwards.
-  SavedOffset := Canvas.Offset;
-  if not SavedOffset.IsZero then
-  begin
-    M := Canvas.Matrix;
-    Canvas.Offset := TPointF.Zero;
-    Canvas.SetMatrix(M);
-  end;
+  Guard.Enter(Canvas);
   State := Canvas.SaveState;
   try
     Canvas.IntersectClipRect(LocalRect);
@@ -1386,9 +1461,41 @@ begin
     PaintPart(Canvas);
   finally
     Canvas.RestoreState(State);
-    if not SavedOffset.IsZero then
-      Canvas.Offset := SavedOffset;
+    Guard.Leave(Canvas);
   end;
+end;
+
+procedure TFmrRibbonPart.AfterPaint;
+begin
+  inherited;
+  if (FRibbon <> nil) and (csDesigning in ComponentState) and not FRibbon.FDestroying then
+    FRibbon.PaintDesignFeedback(Self, Canvas);
+end;
+
+function TFmrRibbonPart.ObjectAtPoint(AScreenPoint: TPointF): IControl;
+var
+  P: TPointF;
+begin
+  if not (csDesigning in ComponentState) or (FRibbon = nil) then
+    Exit(inherited ObjectAtPoint(AScreenPoint));
+  // The form designer gives the mouse to the design-interactive control under it: the ribbon itself, or this part
+  // when it lies in the frame host. Editor controls (not owned by the form) are never hit at design time.
+  Result := nil;
+  if (Parent = FRibbon) or not ShouldTestMouseHits then
+    Exit;
+  P := AScreenPoint;
+  if Scene <> nil then
+    P := Scene.ScreenToLocal(P);
+  if PointInObject(P.X, P.Y) then
+    Result := Self;
+end;
+
+function TFmrRibbonPart.FindTarget(P: TPointF; const Data: TDragObject): IControl;
+begin
+  if csDesigning in ComponentState then
+    Result := nil
+  else
+    Result := inherited FindTarget(P, Data);
 end;
 
 procedure TFmrRibbonPart.PaintKeyTips(const ACanvas: TCanvas);
@@ -1412,8 +1519,10 @@ begin
     // toolbar below the caption row (top of the tab row).
     HostCtl := K.Element.Host.GetHostControl;
     Disp := HostCtl;
-    if (HostCtl = FRibbon.FTabBar) and (FRibbon.FBody <> nil) and FRibbon.FBody.Visible and
-      (FRibbon.FBody.Parent = FRibbon) then
+    if (HostCtl = FRibbon.FTabBar) and (FRibbon.FTabTipOverlay <> nil) and FRibbon.FTabTipOverlay.Visible then
+      Continue // minimized ribbon: below the tab row (TFmrTabTipOverlay)
+    else if (HostCtl = FRibbon.FTabBar) and (FRibbon.FBody <> nil) and FRibbon.FBody.Visible and
+      ((FRibbon.FBody.Parent = FRibbon) or (FRibbon.FBody.Parent = HostCtl.Parent)) then
       Disp := FRibbon.FBody
     else if (HostCtl = FRibbon.FCaptionBar) and (FRibbon.FTabBar <> nil) and FRibbon.FTabBar.Visible then
       Disp := FRibbon.FTabBar;
@@ -1458,30 +1567,67 @@ type
 
 procedure TFmrTipOverlay.Paint;
 var
-  SavedOffset: TPointF;
-  M: TMatrix;
+  Guard: TFmrCanvasOffsetGuard;
+  State: TCanvasSaveState;
 begin
   if FPart = nil then
     Exit;
-  SavedOffset := Canvas.Offset;
-  if not SavedOffset.IsZero then
-  begin
-    M := Canvas.Matrix;
-    Canvas.Offset := TPointF.Zero;
-    Canvas.SetMatrix(M);
-  end;
-  if FPart.IsMirrored then
-  begin
-    M := Canvas.Matrix;
-    FmrMirrorCanvas(Canvas, Width);
-  end;
+  Guard.Enter(Canvas);
+  State := Canvas.SaveState;
   try
+    if FPart.IsMirrored then
+      FmrMirrorCanvas(Canvas, Width);
     FPart.PaintKeyTips(Canvas);
   finally
-    if FPart.IsMirrored then
-      Canvas.SetMatrix(M);
-    if not SavedOffset.IsZero then
-      Canvas.Offset := SavedOffset;
+    Canvas.RestoreState(State);
+    Guard.Leave(Canvas);
+  end;
+end;
+
+type
+  /// Key tips of the tabs while the body is hidden (minimized ribbon): a control on the form right below the tab
+  /// row, so the badges do not cover the tab captions (Office shows them there too).
+  TFmrTabTipOverlay = class(TControl)
+  private
+    [Weak] FRibbon: TFmrRibbon;
+  protected
+    procedure Paint; override;
+  end;
+
+procedure TFmrTabTipOverlay.Paint;
+var
+  I: Integer;
+  K: TFmrRibbon.TKeyTipEntryRec;
+  Bar: TFmrRibbonTabBar;
+  Painter: TFmrRibbonPainter;
+  P: TPointF;
+  Sz: TSizeF;
+  R: TRectF;
+begin
+  if (FRibbon = nil) or FRibbon.FDestroying or (FRibbon.FKeyTipLevel = TFmrKeyTipLevel.None) or
+    (FRibbon.FTabBar = nil) then
+    Exit;
+  Bar := FRibbon.FTabBar;
+  Painter := Bar.GetPainter;
+  for I := 0 to FRibbon.FKeyTips.Count - 1 do
+  begin
+    K := FRibbon.FKeyTips[I];
+    if (K.Element = nil) or (K.Element.Host = nil) or (K.Element.Host.GetHostControl <> Bar) or
+      not K.Element.Visible or not FRibbon.FKeyTipMatcher.IsCandidate(I) then
+      Continue;
+    Sz := Painter.KeyTipSize(K.Tip);
+    // Logical X in the tab row -> physical -> screen -> here.
+    P := PointF(K.Element.Bounds.CenterPoint.X, 0);
+    if Bar.IsMirrored then
+      P.X := Bar.Width - P.X;
+    P := ScreenToLocal(Bar.LocalToScreen(P));
+    R := RectF(P.X - Sz.Width / 2, 1, P.X + Sz.Width / 2, 1 + Sz.Height);
+    if R.Left < 2 then
+      R.Offset(2 - R.Left, 0);
+    if R.Right > Width - 2 then
+      R.Offset(Width - 2 - R.Right, 0);
+    R := RectF(Round(R.Left), R.Top, Round(R.Left) + R.Width, R.Bottom);
+    Painter.DrawKeyTip(Canvas, R, K.Tip, K.Element.IsEnabled);
   end;
 end;
 
@@ -1514,8 +1660,15 @@ end;
 procedure TFmrRibbonPart.MouseMove(Shift: TShiftState; X, Y: Single);
 begin
   inherited;
-  if (FRibbon = nil) or (csDesigning in ComponentState) then
+  if FRibbon = nil then
     Exit;
+  if csDesigning in ComponentState then
+  begin
+    // A part in the frame host at design time: the ribbon handles the mouse (ribbon coordinates).
+    FRibbon.DesignMouseEvent(TFmrRibbon.TDesignMouseEvent.Move, TMouseButton.mbLeft, Shift,
+      FRibbon.ScreenToLocal(LocalToScreen(PointF(X, Y))));
+    Exit;
+  end;
   FRibbon.EnsureAll;
   FTracker.MouseMove(Logical(X, Y));
 end;
@@ -1527,8 +1680,14 @@ var
   Item: TFmrBarItem;
 begin
   inherited;
-  if (FRibbon = nil) or (csDesigning in ComponentState) then
+  if FRibbon = nil then
     Exit;
+  if csDesigning in ComponentState then
+  begin
+    FRibbon.DesignMouseEvent(TFmrRibbon.TDesignMouseEvent.Down, Button, Shift,
+      FRibbon.ScreenToLocal(LocalToScreen(PointF(X, Y))));
+    Exit;
+  end;
   FRibbon.EnsureAll;
   FRibbon.FScreenTips.Cancel;
   FRibbon.FAltArmed := False;
@@ -1560,14 +1719,24 @@ end;
 procedure TFmrRibbonPart.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
 begin
   inherited;
-  if (FRibbon = nil) or (csDesigning in ComponentState) then
+  if FRibbon = nil then
     Exit;
+  if csDesigning in ComponentState then
+  begin
+    FRibbon.DesignMouseEvent(TFmrRibbon.TDesignMouseEvent.Up, Button, Shift,
+      FRibbon.ScreenToLocal(LocalToScreen(PointF(X, Y))));
+    Exit;
+  end;
   FTracker.MouseUp(Button, Logical(X, Y));
 end;
 
 procedure TFmrRibbonPart.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
 begin
   inherited;
+  // The element under the mouse first (an in-ribbon gallery scrolls its rows).
+  if not Handled and not (csDesigning in ComponentState) and (FTracker <> nil) and (FTracker.Hot <> nil) and
+    FTracker.Hot.Visible and FTracker.Hot.MouseWheel(WheelDelta) then
+    Handled := True;
 end;
 
 procedure TFmrRibbonPart.DoMouseLeave;
@@ -2444,12 +2613,25 @@ begin
   begin
     FMenuLoopId := TMessageManager.DefaultManager.SubscribeToMessage(TStartMenuLoopMessage, MenuLoopHandler);
     FDeactivateId := TMessageManager.DefaultManager.SubscribeToMessage(TFormDeactivateMessage, DeactivateHandler);
+  end
+  else
+  begin
+    // Like TTabItem: the form designer passes the mouse to a design-interactive control; the parts leave it to the
+    // ribbon (ObjectAtPoint), which gives it to the design package (TFmrRibbonDesignHooks). Controls dropped from
+    // the palette do not become children of the ribbon (its children are tabs and context groups).
+    FDesignInteractive := True;
+    AutoCapture := True;
+    SetAcceptsControls(False);
   end;
+  FDesignTarget := TFmrDesignDropTarget.Empty;
   UpdateHeights;
 end;
 
 procedure TFmrRibbon.BeforeDestruction;
 begin
+  // csDestroying may be set already (the form destroys its components): HookFor would answer nil.
+  if (csDesigning in ComponentState) and (TFmrRibbonDesignHooks.Hook <> nil) then
+    TFmrRibbonDesignHooks.Hook.DesignRibbonDestroying(Self);
   FDestroying := True;
   if FIdleId <> 0 then
     TMessageManager.DefaultManager.Unsubscribe(TIdleMessage, FIdleId);
@@ -2482,6 +2664,7 @@ var
   V: TFmrItemView;
 begin
   FDestroying := True;
+  FreeAndNil(FTabTipOverlay);
   FreeAndNil(FScreenTips);
   if FBarManager <> nil then
   begin
@@ -2894,6 +3077,49 @@ begin
     FGroupPopupContent.Repaint;
     FGroupPopupContent.UpdateTipOverlay;
   end;
+  UpdateTabTipOverlay;
+end;
+
+procedure TFmrRibbon.UpdateTabTipOverlay;
+var
+  Show: Boolean;
+  Form: TCommonCustomForm;
+  P: TPointF;
+begin
+  Form := nil;
+  Show := not FDestroying and (FKeyTipLevel = TFmrKeyTipLevel.Top) and (FTabBar <> nil) and FTabBar.Visible and
+    (FTabBar.Parent <> nil) and (FBarPainter <> nil);
+  // The badges hang into the body when it is shown below the tab row.
+  if Show and (FBody <> nil) and FBody.Visible and ((FBody.Parent = Self) or (FBody.Parent = FTabBar.Parent)) then
+    Show := False;
+  if Show then
+  begin
+    Form := OwnerForm;
+    Show := (Form <> nil) and not (csDestroying in Form.ComponentState);
+  end;
+  if not Show then
+  begin
+    if FTabTipOverlay <> nil then
+      FTabTipOverlay.Visible := False;
+    Exit;
+  end;
+  if FTabTipOverlay = nil then
+  begin
+    FTabTipOverlay := TFmrTabTipOverlay.Create(nil);
+    TFmrTabTipOverlay(FTabTipOverlay).FRibbon := Self;
+    FTabTipOverlay.Stored := False;
+    FTabTipOverlay.Locked := True;
+    FTabTipOverlay.HitTest := False;
+    FTabTipOverlay.FreeNotification(Self);
+  end;
+  if FTabTipOverlay.Parent <> Form then
+    FTabTipOverlay.Parent := Form;
+  // Below the tab row; in the non-client modes the tab row ends at the top of the client area.
+  P := Form.ScreenToClient(FTabBar.LocalToScreen(PointF(0, FTabBar.Height)));
+  FTabTipOverlay.SetBounds(P.X, Max(0, P.Y), FTabBar.Width, FBarPainter.KeyTipSize('W').Height + 4);
+  FTabTipOverlay.Visible := True;
+  FTabTipOverlay.BringToFront;
+  FTabTipOverlay.Repaint;
 end;
 
 procedure TFmrRibbon.Resize;
@@ -2967,6 +3193,8 @@ begin
   end;
   if AComponent = FApplicationMenu then
     FApplicationMenu := nil;
+  if AComponent = FTabTipOverlay then
+    FTabTipOverlay := nil;
   if AComponent = FCaptionBar then
     FCaptionBar := nil;
   if AComponent = FTabBar then
@@ -3004,6 +3232,8 @@ begin
   inherited;
   if (AObject = FActiveTab) then
     FActiveTab := nil;
+  if AObject = FDesignTab then
+    FDesignTab := nil;
   if (AObject is TFmrRibbonStructureObject) and not FDestroying then
     InvalidateStructure;
 end;
@@ -3092,7 +3322,7 @@ begin
     UpdateHeights;
     InvalidateArrange;
     InvalidateParts;
-    if Assigned(FOnMinimizedChanged) and not (csLoading in ComponentState) then
+    if Assigned(FOnMinimizedChanged) and ([csLoading, csDesigning] * ComponentState = []) then
       FOnMinimizedChanged(Self);
   end;
 end;
@@ -3121,7 +3351,7 @@ begin
     UpdateHeights;
     InvalidateLayout;
     InvalidateParts;
-    if Assigned(FOnDisplayModeChanged) and not (csLoading in ComponentState) then
+    if Assigned(FOnDisplayModeChanged) and ([csLoading, csDesigning] * ComponentState = []) then
       FOnDisplayModeChanged(Self);
   end;
 end;
@@ -3299,6 +3529,9 @@ end;
 
 procedure TFmrRibbon.DoTabChanged;
 begin
+  // At design time the event properties hold the designer's method references, not code.
+  if csDesigning in ComponentState then
+    Exit;
   if Assigned(FOnTabChanged) then
     FOnTabChanged(Self);
 end;
@@ -3363,6 +3596,8 @@ var
 begin
   if AObject = FActiveTab then
     FActiveTab := nil;
+  if AObject = FDesignTab then
+    FDesignTab := nil;
   if AObject is TFmrRibbonGroup then
   begin
     if (FGroupPopupContent <> nil) and (FGroupPopupContent.FGroup = AObject) then
@@ -3549,15 +3784,23 @@ var
 begin
   Result := nil;
   for T in TFmrRibbonStructure.Tabs(Self) do
-    if IsVisibleTab(T) then
+    if TabShown(T) then
       Result := Result + [T];
+end;
+
+function TFmrRibbon.TabShown(const T: TFmrRibbonTab): Boolean;
+begin
+  // Design time: a hidden tab (of a hidden contextual group) is shown while it is selected, so its groups can be
+  // designed.
+  Result := IsVisibleTab(T) or ((T <> nil) and (T = FDesignTab) and (csDesigning in ComponentState) and
+    not (csDestroying in T.ComponentState));
 end;
 
 procedure TFmrRibbon.PickActiveTab;
 var
   A: TArray<TFmrRibbonTab>;
 begin
-  if (FActiveTab <> nil) and ((FActiveTab.Parent <> Self) or not IsVisibleTab(FActiveTab)) then
+  if (FActiveTab <> nil) and ((FActiveTab.Parent <> Self) or not TabShown(FActiveTab)) then
     FActiveTab := nil;
   if FActiveTab = nil then
   begin
@@ -4256,7 +4499,7 @@ begin
     if FShowTabGroups and FTabBar.Visible and (FAutoHidePopup = nil) then
       for CG in TFmrRibbonStructure.ContextGroups(Self) do
       begin
-        if not CG.Visible then
+        if not CG.Visible and not ((FDesignTab <> nil) and (FDesignTab.ContextGroup = CG)) then
           Continue;
         Found := False;
         L := 0;
@@ -4617,17 +4860,6 @@ var
 begin
   if FDestroying or (csDestroying in ComponentState) then
     Exit;
-  if FFrameDirty then
-  begin
-    FFrameDirty := False;
-    if (FFrame <> nil) and ((FFrame.Hooked <> FLastHooked) or (FFrame.Mode <> FLastMode)) then
-    begin
-      FLastHooked := FFrame.Hooked;
-      FLastMode := FFrame.Mode;
-      FStructureValid := False;
-      UpdateHeights;
-    end;
-  end;
   if not FArrangeValid or not FLayoutValid or not FStructureValid then
   begin
     EnsureAll;
@@ -4707,12 +4939,22 @@ begin
 end;
 
 procedure TFmrRibbon.FrameStateHandler(const Sender: TObject; const M: TMessage);
+var
+  State: TFmrFrameState;
 begin
-  // The frame was hooked, unhooked or changed its mode: the caption buttons and the heights depend on it. Handled on
-  // idle, when the frame has finished attaching.
-  if not FDestroying and (FFrame <> nil) and (M is TFmrFrameStateMessage) and
-    (TFmrFrameStateMessage(M).Host = FFrame.Host) then
-    FFrameDirty := True;
+  // Sent after the frame finished attaching or detaching (State.Hooked) and on every change of the window state:
+  // the caption buttons, the title and the heights depend on Hooked and Mode.
+  if FDestroying or (FFrame = nil) or not (M is TFmrFrameStateMessage) or
+    (TFmrFrameStateMessage(M).Host <> FFrame.Host) then
+    Exit;
+  State := TFmrFrameStateMessage(M).State;
+  if (State.Hooked <> FLastHooked) or (State.Mode <> FLastMode) then
+  begin
+    FLastHooked := State.Hooked;
+    FLastMode := State.Mode;
+    InvalidateStructure;
+    UpdateHeights;
+  end;
 end;
 
 procedure TFmrRibbon.LanguageHandler(const Sender: TObject; const M: TMessage);
@@ -5994,6 +6236,694 @@ begin
   for T in FTabElements do
     if T.Visible and T.Bounds.Contains(P) then
       Exit(T.FTab);
+end;
+
+{ design time (IFmrRibbonDesignSupport) }
+
+procedure TFmrRibbon.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+  inherited;
+  if csDesigning in ComponentState then
+    DesignMouseEvent(TDesignMouseEvent.Down, Button, Shift, PointF(X, Y));
+end;
+
+procedure TFmrRibbon.MouseMove(Shift: TShiftState; X, Y: Single);
+begin
+  inherited;
+  if csDesigning in ComponentState then
+    DesignMouseEvent(TDesignMouseEvent.Move, TMouseButton.mbLeft, Shift, PointF(X, Y));
+end;
+
+procedure TFmrRibbon.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Single);
+begin
+  inherited;
+  if csDesigning in ComponentState then
+    DesignMouseEvent(TDesignMouseEvent.Up, Button, Shift, PointF(X, Y));
+end;
+
+procedure TFmrRibbon.DesignMouseEvent(const AEvent: TDesignMouseEvent; const AButton: TMouseButton;
+  const AShift: TShiftState; const ALocalPoint: TPointF);
+var
+  Hook: IFmrRibbonDesignHook;
+  Hit: TFmrDesignHit;
+begin
+  if FDestroying then
+    Exit;
+  Hook := TFmrRibbonDesignHooks.HookFor(Self);
+  if Hook <> nil then
+    case AEvent of
+      TDesignMouseEvent.Down:
+        // FMX reports a double click as a second MouseDown with ssDouble.
+        if (AButton = TMouseButton.mbLeft) and (ssDouble in AShift) then
+        begin
+          if Hook.DesignDblClick(Self, ALocalPoint) then
+            Exit;
+        end
+        else if Hook.DesignMouseDown(Self, AButton, AShift, ALocalPoint) then
+          Exit;
+      TDesignMouseEvent.Move:
+        if Hook.DesignMouseMove(Self, AShift, ALocalPoint) then
+          Exit;
+      TDesignMouseEvent.Up:
+        if Hook.DesignMouseUp(Self, AButton, AShift, ALocalPoint) then
+          Exit;
+    end;
+  // Without the design package: a click on a tab shows it.
+  if (AEvent = TDesignMouseEvent.Down) and (AButton = TMouseButton.mbLeft) and not (ssDouble in AShift) then
+  begin
+    Hit := DesignHitTest(ALocalPoint);
+    if Hit.Kind = TFmrDesignHitKind.Tab then
+      DesignSelectTab(Hit.Tab);
+  end;
+end;
+
+function TFmrRibbon.DesignParts: TArray<TFmrRibbonPart>;
+var
+  P: TFmrRibbonPart;
+begin
+  Result := nil;
+  for P in TArray<TFmrRibbonPart>.Create(FCaptionBar, FTabBar, FBody, FQATBar) do
+    if (P <> nil) and P.Visible and (P.Parent <> nil) and not (csDestroying in P.ComponentState) then
+      Result := Result + [P];
+end;
+
+function TFmrRibbon.DesignPartAt(const ALocalPoint: TPointF; out APart: TFmrRibbonPart; out ALogical: TPointF): Boolean;
+var
+  P: TFmrRibbonPart;
+  SP, LP: TPointF;
+begin
+  APart := nil;
+  ALogical := TPointF.Zero;
+  // Screen coordinates: the caption row and the tab row may be in the frame host (above the ribbon).
+  SP := LocalToScreen(ALocalPoint);
+  for P in DesignParts do
+  begin
+    LP := P.ScreenToLocal(SP);
+    if P.LocalRect.Contains(LP) then
+    begin
+      APart := P;
+      ALogical := P.Logical(LP.X, LP.Y);
+      Exit(True);
+    end;
+  end;
+  Result := False;
+end;
+
+function TFmrRibbon.PartToLocal(const APart: TFmrRibbonPart; const ALogical: TRectF): TRectF;
+var
+  R: TRectF;
+begin
+  R := APart.PhysicalRect(ALogical);
+  Result := TRectF.Create(ScreenToLocal(APart.LocalToScreen(R.TopLeft)),
+    ScreenToLocal(APart.LocalToScreen(R.BottomRight)), True);
+end;
+
+function TFmrRibbon.LocalToPart(const APart: TControl; const ALocal: TRectF): TRectF;
+begin
+  Result := TRectF.Create(APart.ScreenToLocal(LocalToScreen(ALocal.TopLeft)),
+    APart.ScreenToLocal(LocalToScreen(ALocal.BottomRight)), True);
+end;
+
+function TFmrRibbon.DesignGroupBoxes: TArray<TFmrGroupBox>;
+var
+  V: TFmrItemView;
+  G: TFmrRibbonGroup;
+  I: Integer;
+  Area, R: TRectF;
+  Found: Boolean;
+  Box: TFmrGroupBox;
+begin
+  if FDisplayMode = TFmrRibbonDisplayMode.Classic then
+    Exit(Copy(FGroupBoxes));
+  Result := nil;
+  Area := GroupAreaRect;
+  for V in FBodyViews do
+  begin
+    if not V.Visible or (V.Link = nil) or not (V.Link.LinksOwner is TFmrRibbonGroup) then
+      Continue;
+    G := TFmrRibbonGroup(V.Link.LinksOwner);
+    R := RectF(V.Bounds.Left, Area.Top, V.Bounds.Right, Area.Bottom);
+    Found := False;
+    for I := 0 to High(Result) do
+      if Result[I].Group = G then
+      begin
+        Result[I].Rect := TRectF.Union(Result[I].Rect, R);
+        Found := True;
+        Break;
+      end;
+    if not Found then
+    begin
+      Box := System.Default(TFmrGroupBox);
+      Box.Group := G;
+      Box.Rect := R;
+      Result := Result + [Box];
+    end;
+  end;
+end;
+
+function TFmrRibbon.DesignRectsOf(const AObject: TPersistent): TArray<TRectF>;
+var
+  E: TFmrTabElement;
+  Pair: TPair<TFmrRibbonContextGroup, TRectF>;
+  Box: TFmrGroupBox;
+  V: TFmrItemView;
+  Host: TControl;
+begin
+  Result := nil;
+  if (AObject = nil) or (AObject = Self) or FDestroying then
+    Exit;
+  if (FTabBar <> nil) and FTabBar.Visible then
+    for E in FTabElements do
+      if E.Visible and (E.FTab = AObject) then
+        Result := Result + [PartToLocal(FTabBar, E.Bounds)];
+  if (FCaptionBar <> nil) and FCaptionBar.Visible then
+    for Pair in FContextHeaders do
+      if Pair.Key = AObject then
+        Result := Result + [PartToLocal(FCaptionBar, Pair.Value)];
+  if (FBody <> nil) and FBody.Visible then
+    for Box in DesignGroupBoxes do
+      if Box.Group = AObject then
+        Result := Result + [PartToLocal(FBody, Box.Rect)];
+  for V in FBodyViews.ToArray + FQATViews.ToArray do
+    if V.Visible and ((V.Link = AObject) or (V.Item = AObject)) and (V.Host <> nil) then
+    begin
+      Host := V.Host.GetHostControl;
+      if (Host is TFmrRibbonPart) and Host.Visible then
+        Result := Result + [PartToLocal(TFmrRibbonPart(Host), V.Bounds)];
+    end;
+end;
+
+function TFmrRibbon.DesignHitAt(const ALocalPoint: TPointF): TFmrDesignHit;
+var
+  Part: TFmrRibbonPart;
+  P: TPointF;
+  E: TFmrElement;
+  Pair: TPair<TFmrRibbonContextGroup, TRectF>;
+  Box: TFmrGroupBox;
+  V: TFmrItemView;
+begin
+  Result := TFmrDesignHit.Empty;
+  if not DesignPartAt(ALocalPoint, Part, P) then
+  begin
+    if LocalRect.Contains(ALocalPoint) then
+    begin
+      Result.Kind := TFmrDesignHitKind.Ribbon;
+      Result.Bounds := LocalRect;
+    end;
+    Exit;
+  end;
+  Result.Kind := TFmrDesignHitKind.Ribbon;
+  Result.Bounds := PartToLocal(Part, Part.LocalRect);
+  E := Part.FindElement(P);
+  if Part = FCaptionBar then
+  begin
+    for Pair in FContextHeaders do
+      if Pair.Value.Contains(P) then
+      begin
+        Result.Kind := TFmrDesignHitKind.ContextGroup;
+        Result.ContextGroup := Pair.Key;
+        Result.Bounds := PartToLocal(Part, Pair.Value);
+        Exit;
+      end;
+    if (E <> nil) and (E = FAppElement) then
+    begin
+      Result.Kind := TFmrDesignHitKind.ApplicationButton;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else if E is TFmrItemView then
+    begin
+      Result.Kind := TFmrDesignHitKind.QATLink;
+      Result.Link := TFmrItemView(E).Link;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else if FCaptionBar.FQATRect.Contains(P) then
+    begin
+      Result.Kind := TFmrDesignHitKind.QAT;
+      Result.Bounds := PartToLocal(Part, FCaptionBar.FQATRect);
+    end;
+  end
+  else if Part = FTabBar then
+  begin
+    if E is TFmrTabElement then
+    begin
+      Result.Kind := TFmrDesignHitKind.Tab;
+      Result.Tab := TFmrTabElement(E).FTab;
+      Result.ContextGroup := Result.Tab.ContextGroup;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else if (E <> nil) and (E = FAppElement) then
+    begin
+      Result.Kind := TFmrDesignHitKind.ApplicationButton;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end;
+  end
+  else if Part = FBody then
+  begin
+    Result.Tab := FActiveTab;
+    if E is TFmrCollapsedGroupElement then
+    begin
+      Result.Kind := TFmrDesignHitKind.CollapsedGroup;
+      Result.Group := TFmrCollapsedGroupElement(E).FGroup;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else if E is TFmrLauncherElement then
+    begin
+      Result.Kind := TFmrDesignHitKind.GroupLauncher;
+      Result.Group := TFmrLauncherElement(E).FGroup;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else if (E is TFmrItemView) and (TFmrItemView(E).Link <> nil) then
+    begin
+      V := TFmrItemView(E);
+      Result.Kind := TFmrDesignHitKind.Link;
+      Result.Link := V.Link;
+      if V.Link.LinksOwner is TFmrRibbonGroup then
+        Result.Group := TFmrRibbonGroup(V.Link.LinksOwner);
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else
+      for Box in DesignGroupBoxes do
+        if Box.Rect.Contains(P) then
+        begin
+          Result.Kind := TFmrDesignHitKind.Group;
+          Result.Group := Box.Group;
+          Result.Bounds := PartToLocal(Part, Box.Rect);
+          Break;
+        end;
+  end
+  else if Part = FQATBar then
+  begin
+    if E is TFmrItemView then
+    begin
+      Result.Kind := TFmrDesignHitKind.QATLink;
+      Result.Link := TFmrItemView(E).Link;
+      Result.Bounds := PartToLocal(Part, E.Bounds);
+    end
+    else
+      Result.Kind := TFmrDesignHitKind.QAT;
+  end;
+end;
+
+function TFmrRibbon.DesignHitTest(const ALocalPoint: TPointF): TFmrDesignHit;
+begin
+  EnsureAll;
+  Result := DesignHitAt(ALocalPoint);
+end;
+
+function TFmrRibbon.DesignObjectBounds(const AObject: TPersistent): TRectF;
+var
+  Rects: TArray<TRectF>;
+begin
+  EnsureAll;
+  Rects := DesignRectsOf(AObject);
+  if Rects = nil then
+    Result := TRectF.Empty
+  else
+    Result := Rects[0];
+end;
+
+function TFmrRibbon.DesignLinkTarget(const APart: TFmrRibbonPart; const P: TPointF): TFmrDesignDropTarget;
+var
+  M: TFmrThemeMetrics;
+  Boxes: TArray<TFmrGroupBox>;
+  Box: TFmrGroupBox;
+  I, BI: Integer;
+  D, BestD, X, Y, ContentTop, ContentBottom: Single;
+  Views: TList<TFmrItemView>;
+  V, Prev, Before: TFmrItemView;
+  R, Area, Mark: TRectF;
+  Links: TFmrItemLinks;
+  IsBefore: Boolean;
+begin
+  Result := TFmrDesignDropTarget.Empty;
+  M := FPainter.Metrics;
+  Views := TList<TFmrItemView>.Create;
+  try
+    if (APart = FCaptionBar) or (APart = FQATBar) then
+    begin
+      // Quick access toolbar: before the first button whose center is right of the point.
+      if APart = FCaptionBar then
+      begin
+        Area := FCaptionBar.FQATRect;
+        Area.Inflate(6, 0);
+        if (FCaptionBar.FQATRect.Width <= 0) or not Area.Contains(P) then
+          Exit;
+      end
+      else
+        Area := RectF(6, 0, FQATBar.Width - 6, FQATBar.Height);
+      for V in FQATViews do
+        if V.Visible and (V.Host <> nil) and (V.Host.GetHostControl = APart) then
+          Views.Add(V);
+      Links := FQAT.ItemLinks;
+      Before := nil;
+      for V in Views do
+        if P.X < V.Bounds.CenterPoint.X then
+        begin
+          Before := V;
+          Break;
+        end;
+      if Before <> nil then
+      begin
+        Result.Index := Before.Link.Index;
+        R := Before.Bounds;
+        Mark := RectF(R.Left - 1, R.Top, R.Left + 1, R.Bottom);
+      end
+      else
+      begin
+        Result.Index := Links.Count;
+        if Views.Count > 0 then
+        begin
+          R := Views.Last.Bounds;
+          Mark := RectF(R.Right - 1, R.Top, R.Right + 1, R.Bottom);
+        end
+        else
+        begin
+          Y := (Area.Top + Area.Bottom) / 2;
+          Mark := RectF(Area.Left + 5, Y - M.QATButtonSize / 2, Area.Left + 7, Y + M.QATButtonSize / 2);
+        end;
+      end;
+      Result.Kind := TFmrDesignDragKind.Link;
+      Result.Links := Links;
+      Result.Mark := PartToLocal(APart, Mark);
+      Exit;
+    end;
+    if APart <> FBody then
+      Exit;
+    // Body: the group under the point, or the nearest one when the point is in a gap.
+    Boxes := DesignGroupBoxes;
+    BI := -1;
+    BestD := MaxSingle;
+    for I := 0 to High(Boxes) do
+    begin
+      R := Boxes[I].Rect;
+      if (P.X >= R.Left) and (P.X <= R.Right) then
+        D := 0
+      else
+        D := Min(Abs(P.X - R.Left), Abs(P.X - R.Right));
+      if D < BestD then
+      begin
+        BestD := D;
+        BI := I;
+      end;
+    end;
+    if (BI < 0) or (BestD > M.GroupSpacing + 12) then
+      Exit;
+    Box := Boxes[BI];
+    Links := Box.Group.ItemLinks;
+    Result.Kind := TFmrDesignDragKind.Link;
+    Result.Links := Links;
+    if FDisplayMode = TFmrRibbonDisplayMode.Classic then
+    begin
+      ContentTop := Box.Rect.Top + M.GroupPaddingTop;
+      ContentBottom := ContentTop + M.ContentHeight;
+    end
+    else
+    begin
+      ContentTop := Box.Rect.Top + 4;
+      ContentBottom := Box.Rect.Bottom - 4;
+    end;
+    if Box.Collapsed then
+    begin
+      // A collapsed group takes the link at its end.
+      Result.Index := Links.Count;
+      Result.Mark := PartToLocal(APart, RectF(Box.Rect.Right - 4, ContentTop, Box.Rect.Right - 2, ContentBottom));
+      Exit;
+    end;
+    // The views of the group in link order (the body lists them in that order).
+    for V in FBodyViews do
+      if V.Visible and (V.Link <> nil) and (V.Link.Collection = Links) and not (V is TFmrSeparatorView) and
+        (V.Host <> nil) and (V.Host.GetHostControl = FBody) then
+        Views.Add(V);
+    // Before the first view right of the point; in a column of small buttons: below the point.
+    Before := nil;
+    Prev := nil;
+    for I := 0 to Views.Count - 1 do
+    begin
+      R := Views[I].Bounds;
+      if (P.Y >= R.Top) and (P.Y <= R.Bottom) then
+        IsBefore := P.X < R.CenterPoint.X
+      else if (P.X >= R.Left) and (P.X <= R.Right) then
+        IsBefore := P.Y < R.CenterPoint.Y
+      else
+        IsBefore := P.X < R.CenterPoint.X;
+      if IsBefore then
+      begin
+        Before := Views[I];
+        if I > 0 then
+          Prev := Views[I - 1];
+        Break;
+      end;
+    end;
+    if Before <> nil then
+    begin
+      Result.Index := Before.Link.Index;
+      R := Before.Bounds;
+      if (Prev <> nil) and (Prev.Bounds.Left < R.Right - 2) and (Prev.Bounds.Right > R.Left + 2) and
+        (Prev.Bounds.Bottom <= R.Top + 2) then
+      begin
+        // Stacked in a column: a horizontal bar between the two rows.
+        Y := (Prev.Bounds.Bottom + R.Top) / 2;
+        Mark := RectF(R.Left, Y - 1, R.Right, Y + 1);
+      end
+      else
+      begin
+        if (Prev <> nil) and (Prev.Bounds.Right <= R.Left + 0.5) and (R.Left - Prev.Bounds.Right < 12) then
+          X := (Prev.Bounds.Right + R.Left) / 2
+        else
+          X := R.Left - 1;
+        Mark := RectF(X - 1, R.Top, X + 1, R.Bottom);
+      end;
+    end
+    else
+    begin
+      Result.Index := Links.Count;
+      if Views.Count > 0 then
+      begin
+        R := Views.Last.Bounds;
+        if (R.Height < M.ContentHeight * 0.6) and (P.Y > R.Bottom) and (P.X <= R.Right) and
+          (R.Bottom + R.Height <= ContentBottom + 1) then
+          Mark := RectF(R.Left, R.Bottom, R.Right, R.Bottom + 2)
+        else
+          Mark := RectF(R.Right, R.Top, R.Right + 2, R.Bottom);
+      end
+      else
+        Mark := RectF(Box.Rect.Left + 4, ContentTop, Box.Rect.Left + 6, ContentBottom);
+    end;
+    Result.Mark := PartToLocal(APart, Mark);
+  finally
+    Views.Free;
+  end;
+end;
+
+function TFmrRibbon.DesignGroupTarget(const APart: TFmrRibbonPart; const P: TPointF): TFmrDesignDropTarget;
+var
+  M: TFmrThemeMetrics;
+  E: TFmrElement;
+  Boxes: TArray<TFmrGroupBox>;
+  Area: TRectF;
+  X: Single;
+  I: Integer;
+begin
+  Result := TFmrDesignDropTarget.Empty;
+  M := FPainter.Metrics;
+  if APart = FTabBar then
+  begin
+    // Over a tab: the group goes to the end of that tab.
+    E := FTabBar.FindElement(P);
+    if E is TFmrTabElement then
+    begin
+      Result.Kind := TFmrDesignDragKind.Group;
+      Result.Tab := TFmrTabElement(E).FTab;
+      Result.Index := -1;
+      Result.Mark := PartToLocal(FTabBar, RectF(E.Bounds.Left + 2, E.Bounds.Bottom - 3, E.Bounds.Right - 2,
+        E.Bounds.Bottom - 1));
+    end;
+    Exit;
+  end;
+  if (APart <> FBody) or (FActiveTab = nil) then
+    Exit;
+  Boxes := DesignGroupBoxes;
+  Area := GroupAreaRect;
+  Result.Kind := TFmrDesignDragKind.Group;
+  Result.Tab := FActiveTab;
+  Result.Index := FActiveTab.GroupCount;
+  if Length(Boxes) = 0 then
+    X := Area.Left + 2
+  else
+    X := Boxes[High(Boxes)].Rect.Right + M.GroupSpacing / 2;
+  for I := 0 to High(Boxes) do
+    if P.X < Boxes[I].Rect.CenterPoint.X then
+    begin
+      Result.Index := Boxes[I].Group.GroupIndex;
+      if I > 0 then
+        X := (Boxes[I - 1].Rect.Right + Boxes[I].Rect.Left) / 2
+      else
+        X := Max(Area.Left, Boxes[I].Rect.Left - M.GroupSpacing / 2);
+      Break;
+    end;
+  Result.Mark := PartToLocal(FBody, RectF(X - 1, Area.Top, X + 1, Area.Bottom));
+end;
+
+function TFmrRibbon.DesignTabTarget(const P: TPointF): TFmrDesignDropTarget;
+var
+  M: TFmrThemeMetrics;
+  T, Last: TFmrTabElement;
+  X: Single;
+begin
+  Result := TFmrDesignDropTarget.Empty;
+  M := FPainter.Metrics;
+  Last := nil;
+  for T in FTabElements do
+    if T.Visible then
+    begin
+      if P.X < T.Bounds.CenterPoint.X then
+      begin
+        if Last <> nil then
+          X := (Last.Bounds.Right + T.Bounds.Left) / 2
+        else
+          X := T.Bounds.Left - M.TabSpacing / 2 - 1;
+        Result.Kind := TFmrDesignDragKind.Tab;
+        Result.Index := T.FTab.TabIndex;
+        Result.Mark := PartToLocal(FTabBar, RectF(X - 1, 2, X + 1, FTabBar.Height - 1));
+        Exit;
+      end;
+      Last := T;
+    end;
+  if Last <> nil then
+  begin
+    X := Last.Bounds.Right + M.TabSpacing / 2 + 1;
+    Result.Kind := TFmrDesignDragKind.Tab;
+    Result.Index := TabCount;
+    Result.Mark := PartToLocal(FTabBar, RectF(X - 1, 2, X + 1, FTabBar.Height - 1));
+  end;
+end;
+
+function TFmrRibbon.DesignDropTarget(const ALocalPoint: TPointF;
+  const AKind: TFmrDesignDragKind): TFmrDesignDropTarget;
+var
+  Part: TFmrRibbonPart;
+  P: TPointF;
+begin
+  Result := TFmrDesignDropTarget.Empty;
+  EnsureAll;
+  if FDestroying or not DesignPartAt(ALocalPoint, Part, P) then
+    Exit;
+  case AKind of
+    TFmrDesignDragKind.Link:
+      Result := DesignLinkTarget(Part, P);
+    TFmrDesignDragKind.Group:
+      Result := DesignGroupTarget(Part, P);
+    TFmrDesignDragKind.Tab:
+      if Part = FTabBar then
+        Result := DesignTabTarget(P);
+  end;
+end;
+
+procedure TFmrRibbon.DesignShowDropTarget(const ATarget: TFmrDesignDropTarget);
+begin
+  if (FDesignTarget.Kind = ATarget.Kind) and (FDesignTarget.Links = ATarget.Links) and
+    (FDesignTarget.Tab = ATarget.Tab) and (FDesignTarget.Index = ATarget.Index) and
+    (FDesignTarget.Mark = ATarget.Mark) then
+    Exit;
+  FDesignTarget := ATarget;
+  if not FDestroying then
+    InvalidateParts;
+end;
+
+procedure TFmrRibbon.DesignSetSelection(const AObjects: TArray<TPersistent>);
+begin
+  FDesignSelection := Copy(AObjects);
+  if not FDestroying then
+    InvalidateParts;
+end;
+
+procedure TFmrRibbon.DesignSelectTab(const ATab: TFmrRibbonTab);
+var
+  OldDesignTab: TFmrRibbonTab;
+begin
+  if (ATab = nil) or (ATab.Parent <> Self) or FDestroying or (csDestroying in ATab.ComponentState) then
+    Exit;
+  OldDesignTab := FDesignTab;
+  if (csDesigning in ComponentState) and not IsVisibleTab(ATab) then
+    FDesignTab := ATab
+  else
+    FDesignTab := nil;
+  if FActiveTab <> ATab then
+  begin
+    // No OnTabChanging/OnTabChanged, no popups.
+    ClosePopups;
+    FActiveTab := ATab;
+    FScrollOffset := 0;
+    InvalidateLayout;
+  end;
+  if OldDesignTab <> FDesignTab then
+    InvalidateStructure;
+  EnsureAll;
+  InvalidateParts;
+end;
+
+procedure TFmrRibbon.PaintDesignFeedback(const APart: TControl; const ACanvas: TCanvas);
+var
+  Obj: TPersistent;
+  R, F, Clip: TRectF;
+  Accent: TAlphaColor;
+  State: TCanvasSaveState;
+  C: TPointF;
+begin
+  if (FTheme = nil) or ((FDesignSelection = nil) and FDesignTarget.Mark.IsEmpty) then
+    Exit;
+  Accent := FTheme.Colors[TFmrToken.Accent];
+  Clip := APart.LocalRect;
+  State := ACanvas.SaveState;
+  try
+    ACanvas.IntersectClipRect(Clip);
+    ACanvas.Stroke.Kind := TBrushKind.Solid;
+    ACanvas.Stroke.Thickness := 1;
+    // Selected objects: a dashed frame (accent on a light line, visible on light and dark themes).
+    for Obj in FDesignSelection do
+      for R in DesignRectsOf(Obj) do
+      begin
+        F := LocalToPart(APart, R);
+        if not F.IntersectsWith(Clip) then
+          Continue;
+        F := RectF(Round(F.Left) + 0.5, Round(F.Top) + 0.5, Round(F.Right) - 0.5, Round(F.Bottom) - 0.5);
+        ACanvas.Stroke.Dash := TStrokeDash.Solid;
+        ACanvas.Stroke.Color := $B0FFFFFF;
+        ACanvas.DrawRect(F, 0, 0, AllCorners, 1);
+        ACanvas.Stroke.Dash := TStrokeDash.Dash;
+        ACanvas.Stroke.Color := Accent;
+        ACanvas.DrawRect(F, 0, 0, AllCorners, 1);
+      end;
+    // Insertion mark: a bar in the accent color with small triangles at both ends.
+    if not FDesignTarget.Mark.IsEmpty then
+    begin
+      F := LocalToPart(APart, FDesignTarget.Mark);
+      R := F;
+      R.Inflate(5, 5);
+      if R.IntersectsWith(Clip) then
+      begin
+        ACanvas.Fill.Kind := TBrushKind.Solid;
+        ACanvas.Fill.Color := Accent;
+        ACanvas.FillRect(F, 0, 0, AllCorners, 1);
+        if F.Height >= F.Width then
+        begin
+          C := PointF(F.CenterPoint.X, F.Top);
+          ACanvas.FillPolygon([PointF(C.X - 4, C.Y - 1), PointF(C.X + 4, C.Y - 1), PointF(C.X, C.Y + 4)], 1);
+          C := PointF(F.CenterPoint.X, F.Bottom);
+          ACanvas.FillPolygon([PointF(C.X - 4, C.Y + 1), PointF(C.X + 4, C.Y + 1), PointF(C.X, C.Y - 4)], 1);
+        end
+        else
+        begin
+          C := PointF(F.Left, F.CenterPoint.Y);
+          ACanvas.FillPolygon([PointF(C.X - 1, C.Y - 4), PointF(C.X - 1, C.Y + 4), PointF(C.X + 4, C.Y)], 1);
+          C := PointF(F.Right, F.CenterPoint.Y);
+          ACanvas.FillPolygon([PointF(C.X + 1, C.Y - 4), PointF(C.X + 1, C.Y + 4), PointF(C.X - 4, C.Y)], 1);
+        end;
+      end;
+    end;
+  finally
+    ACanvas.RestoreState(State);
+  end;
 end;
 
 function TFmrRibbon.DebugDump: string;

@@ -12,6 +12,9 @@ unit DesignPreviewMain;
 ///   /glyph=E8C8      glyph code of the image edited by /image
 ///   /shot=FILE       save a screenshot of the opened window (PNG) after /delay ms, then exit
 ///   /delay=MS        default 1200
+///   /selftest[=LOG]  design controller + structure editor against the fake ribbon (exit code = failures)
+///   /realtest[=LOG]  in-form design against a real TFmrRibbon on an FMX form in the design state (RealRibbonTest);
+///                    screenshots in /shots=DIR (default shots\design)
 
 interface
 
@@ -135,7 +138,7 @@ implementation
 uses
   System.StrUtils, Vcl.Imaging.pngimage, FMR.Ribbon.Theme, FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Design.Graphics,
   FMR.Ribbon.Design.Window, FMR.Ribbon.Design.ItemsEditor, FMR.Ribbon.Design.StructureEditor,
-  FMR.Ribbon.Design.ImageDialog, FMR.Ribbon.Design.Templates, FMR.Ribbon.Design.Interactive;
+  FMR.Ribbon.Design.ImageDialog, FMR.Ribbon.Design.Templates, FMR.Ribbon.Design.Interactive, RealRibbonTest;
 
 function Param(const AName: string; out AValue: string): Boolean;
 var
@@ -774,6 +777,21 @@ begin
   if Param('selftest', S) then
   begin
     I := RunSelfTest;
+    if S <> '' then
+      FLog.Lines.SaveToFile(S);
+    ExitCode := I;
+    Close;
+    Exit;
+  end;
+  if Param('realtest', S) then
+  begin
+    if not Param('shots', ShotFile) then
+      ShotFile := 'shots\design';
+    I := RunRealRibbonTest(
+      procedure(Line: string)
+      begin
+        Log(Line);
+      end, ShotFile);
     if S <> '' then
       FLog.Lines.SaveToFile(S);
     ExitCode := I;

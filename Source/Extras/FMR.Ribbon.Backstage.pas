@@ -1474,6 +1474,9 @@ begin
   HideKeyTips;
   FHotIndex := -1;
   FPressedIndex := -1;
+  // The hint of the hot entry ("Back") would stay on the screen: the view disappears under the mouse (Esc).
+  if not (csDesigning in ComponentState) and (Application <> nil) then
+    Application.HideHint;
   Visible := False;
   F := FFocusBefore;
   SetFocusBefore(nil);

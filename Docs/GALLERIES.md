@@ -113,8 +113,9 @@ arrows (geometric), Home/End, Enter, Esc.
 5 columns with "Stop Highlighting"), `ShowRecentColors`, `OnPreview(Sender, Color, Active)` (live preview: Active =
 False restores), `OnMoreColors(Sender, var Color, var Handled)` (replace the dialog).
 
-`FmrShowColorDialog(Initial, Title, OnDone)`: a modal FMX form with a `TColorPanel` (hue/saturation square), a hex
-edit (`#RRGGBB`), new/current preview (click "current" to go back) and OK/Cancel; it uses the default FMX style.
+`FmrShowColorDialog(Initial, Title, OnDone, Painter = nil, Owner = nil)`: a modal FMX form with a `TColorPanel`
+(hue/saturation square), a hex edit (`#RRGGBB`), new/current preview (click "current" to go back) and OK/Cancel,
+painted with the theme of `Painter` (the color gallery passes the ribbon's; the default theme when nil).
 
 ## Application menu (`FMR.Ribbon.AppMenu`)
 
@@ -207,13 +208,23 @@ by `FMR.Ribbon.ScreenTips`. Large rows with descriptions (Office 2007 style) exi
 
 ## Known issues
 
-- The mini toolbar window is outside the popup chain (so menus of the ribbon never close it): typing into its combo
-  boxes is not routed to them (popup windows never get the keyboard focus); their lists work with the mouse.
+- Fixed (phase B follow-up): typing into the combo boxes of the mini toolbar. A click into an editor used to close the
+  toolbar (FMX's text input activates the popup window, FMX then closes all popups); now the popups stay
+  (`Docs\RIBBON.md`, "Popups"), the toolbar window gets the keys, the toolbar stays opaque and open while the editor
+  has the focus, the context menu shown with it closes, Enter/Tab commit and give the keyboard back to the document,
+  Esc only gives it back. Keys still arriving at the owner form are routed through the key sink
+  (`IFmrKeyHandler`). Checked: font size 28 + Enter in RibbonBasic applied.
 - Fading of the mini toolbar paints it into a bitmap drawn with the opacity (the painter itself draws opaque); the
   radial menu animation scales the disc and fades only the glyphs and texts.
-- Entry screen tips are placed below the cell (they cover the next row while shown); the mouse wheel over an
-  in-ribbon gallery switches tabs (ribbon behavior) instead of scrolling rows.
-- The "More Colors" dialog is a modal FMX form with the default FMX style (not themed).
+- Fixed: entry screen tips of drop-down galleries are shown right of the drop-down, aligned with the row of the entry
+  (like menu tips), so they never cover entries; in-ribbon galleries keep them below the whole gallery (mirrored
+  correctly in right to left). The mouse wheel over an in-ribbon gallery scrolls one row per notch (the tab no longer
+  changes); scrolling hides the entry tip.
+- Fixed: the "More Colors" dialog takes the theme of the ribbon (`FmrShowColorDialog` got optional `APainter` and
+  `AOwner`): form color, labels, a themed hex edit (`TFmrRibbonEdit`), themed OK/Cancel (`TFmrCustButton`, Enter/Esc),
+  dark title bar in dark themes, owned by the ribbon's form. The hue/saturation square (`TColorPanel`) is FMX's.
+- Fixed: gallery entry icons are drawn with `FmrDrawImage`, so they stay unmirrored in a right-to-left ribbon (not
+  checked on a screenshot: no right-to-left demo has a gallery with glyphs).
 - The application menu has the Office 2007 look only; with Office 2010+ themes the backstage view is the better choice
   (the menu still works, below the "File" tab).
 - No right-to-left mirroring in the new popups; no touch-mode sizes.
