@@ -196,7 +196,7 @@ The editor controls of `TFmrEditorView` are created from `FMR.Ribbon.EditorStyle
 - `EditFill`, `EditBorder`, `EditBorderHot`, `EditText`;
 - `ButtonArrow`, menu fill/text, accent.
 
-A theme change gives the control a new unique `StyleLookup`, so FMX loads the new style. Live switching was checked (Office365White to FluentDark).
+A theme change gives the control the `StyleLookup` of the new color scheme (one name per scheme; the tree built in `GetStyleObject` is tagged with it), so FMX loads the new style, and the old tree is freed. FMX recycles style trees into a global style cache (reparenting, out of view) and takes one back only by its tag: with names per control or per theme change the cache grew with every theme switch (about 6 MB per 50 switches in the Word template) until the application ended. A combo also frees the tree of its list box before the list box style changes (`TCustomListBox.ApplyStyle` adds two clones of `selection` to a recycled tree every time it is used again). Live switching was checked (Office365White to FluentDark; `tools\Stress`: no heap growth over 50 switches).
 
 FMX creates some objects itself: list items, the combo popup, spin buttons and track bar thumbs. Their styles are registered in the FMX resource pool, one set per color scheme.
 

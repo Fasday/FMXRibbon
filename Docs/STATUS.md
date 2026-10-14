@@ -36,7 +36,8 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
 | Packages (runtime + design, Win32/Win64), registration, property and component editors, items and structure editors, image picker, templates | done | compiled with 0 warnings, `LoadPackage` test, DesignPreview screenshots |
 | In-form design (tab click, selection, drag & drop, insertion marks, drop from items editor) | done | `DesignPreview /realtest`: 45/45 checks with the real ribbon in design state |
 | Demos: NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize | done | screenshots, leak check on close |
-| Tests | 156 DUnitX tests pass on Win64 and Win32, no leaks | `Tests\FmrRibbonTests.dpr` |
+| Tests | 169 DUnitX tests pass on Win64 and Win32, no leaks (model and layout; theme contrast of every text token; the real `TFmrRibbon` without a window: destroy orders, deleted items, key tips) | `Tests\FmrRibbonTests.dpr` |
+| Stress and destroy paths (QA round, 2026-10-14) | 25 scenarios pass on Win64/Win32, Debug/Release: 50 theme switches, frame modes with maximize/restore, 50 popup and key tip cycles, display modes, ribbon or manager freed first, manager set to nil, items/groups/tabs deleted while hot, pressed or shown in open menus, form closed with each kind of popup open, frame/application menu/backstage/mini toolbar/radial menu freed while open, unknown theme, StyleBook set/freed, focus after menus and deactivation; GDI, USER and heap do not grow; no leak report | `tools\Stress\FmrStress.dpr` |
 
 ## Not verified (no environment here)
 
@@ -61,6 +62,18 @@ checked on Windows 11 25H2, 150 % DPI, Delphi 13 (37.0), Win64 and Win32.
   image-list indexes.
 - Other platforms: the frame units compile for macOS (not linked, no SDK here); the ribbon was not built or run on
   macOS, iOS, Android or Linux.
+- Popup contents written by an application (own `IFmrPopupContent` controls) are closed when an item or link they
+  show is destroyed only if they implement `IFmrItemDisplay`; the library's menus, color palettes and drop-down
+  galleries do.
+- `BarManager := nil` at run time does not hide the commands: links reference their items directly, so the views
+  stay (without the manager's image list and change notifications) until the links or items go away.
+- Office 2007 themes: the top-level key tips of the quick access toolbar hang over the tab captions (as in Office
+  2007); the "File" text on the glass orb has a gradient behind it (lower contrast than a flat button).
+- Many theme switches without processing messages in between (a loop in code) queue their repaint work; memory is
+  given back as soon as the message loop runs.
+- Not verified by automation: real mouse double-click on the non-client caption (the drive tool posts client
+  messages only; maximize/restore was checked through the system menu) and the per-monitor DPI move between the
+  two monitors of the test machine.
 
 ## Next steps
 

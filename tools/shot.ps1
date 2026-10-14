@@ -1,4 +1,4 @@
-﻿# Copy of tools\shot.ps1 for the NCProof demo: FindMain also accepts windows owned by the FMX application window
+# Copy of tools\shot.ps1 for the NCProof demo: FindMain also accepts windows owned by the FMX application window
 # (TFMAppClass). Usage and output are the same as tools\shot.ps1.
 <#
 .SYNOPSIS
@@ -143,6 +143,9 @@ if ($Actions) {
     $kind, $arg = $a.Split(':', 2)
     switch ($kind) {
       'move'   { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 150 }
+      # wheel:X,Y,N - real wheel input (N notches, negative = down) with the cursor at X,Y
+      'wheel'  { $q = $arg.Split(','); $p = To-Screen ($q[0] + ',' + $q[1]); [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 120
+                 [ShotNativeFmx]::mouse_event(0x0800, 0, 0, [BitConverter]::ToUInt32([BitConverter]::GetBytes([int]([int]$q[2] * 120)), 0), [IntPtr]::Zero); Start-Sleep -Milliseconds 250 }
       'click'  { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80
                  [ShotNativeFmx]::mouse_event(2, 0, 0, 0, [IntPtr]::Zero); [ShotNativeFmx]::mouse_event(4, 0, 0, 0, [IntPtr]::Zero); Start-Sleep -Milliseconds 200 }
       'dclick' { $p = To-Screen $arg; [void][ShotNativeFmx]::SetCursorPos($p[0], $p[1]); Start-Sleep -Milliseconds 80

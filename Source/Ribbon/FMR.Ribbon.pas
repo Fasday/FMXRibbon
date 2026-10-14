@@ -406,6 +406,7 @@ type
     FShowTabGroups: Boolean;
     FFrame: TFmrFormFrame;
     FFrameAuto: Boolean;
+    FFrameCheckPending: Boolean;
     FCaptionText: string;
     FShowCaption: Boolean;
     FShowSearchBox: Boolean;
@@ -842,6 +843,7 @@ implementation
 
 uses
   System.Character, System.StrUtils, System.Math.Vectors, System.Rtti, System.TypInfo, FMX.Styles, FMX.Menus,
+  FMX.Layouts,
   FMR.Ribbon.Fonts.Win, FMR.Ribbon.Customize,
   // Linked for their registrations: galleries and the color gallery work in every application with a ribbon.
   FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery;
@@ -1730,8 +1732,60 @@ begin
   FTracker.MouseUp(Button, Logical(X, Y));
 end;
 
+/// Gives the wheel to the drop-down list of an open popup form (a combo box list): returns True when a popup form
+/// is visible, whether or not its list could scroll.
+function RouteWheelToOpenPopup(const AShift: TShiftState; const AWheelDelta: Integer): Boolean;
+
+  function FindScrollBox(const AObject: TFmxObject): TCustomScrollBox;
+  var
+    I: Integer;
+  begin
+    if (AObject is TCustomScrollBox) and TCustomScrollBox(AObject).Visible then
+      Exit(TCustomScrollBox(AObject));
+    for I := 0 to AObject.ChildrenCount - 1 do
+    begin
+      Result := FindScrollBox(AObject.Children[I]);
+      if Result <> nil then
+        Exit;
+    end;
+    Result := nil;
+  end;
+
+var
+  I: Integer;
+  F: TCommonCustomForm;
+  Box: TCustomScrollBox;
+  Handled: Boolean;
+begin
+  Result := False;
+  if Screen = nil then
+    Exit;
+  for I := Screen.PopupFormCount - 1 downto 0 do
+  begin
+    F := Screen.PopupForms[I];
+    if (F = nil) or not F.Visible then
+      Continue;
+    Result := True;
+    Box := FindScrollBox(F);
+    if Box <> nil then
+    begin
+      Handled := False;
+      (Box as IControl).MouseWheel(AShift, AWheelDelta, Handled);
+      Exit;
+    end;
+  end;
+end;
+
 procedure TFmrRibbonPart.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
 begin
+  // FMX offers the wheel to the popup forms only when the mouse is over them; otherwise (the mouse still over the
+  // combo box that opened its list, or a list already scrolled to its end) the main form gets it and the ribbon
+  // would switch tabs under an open drop-down. Like Office, the wheel scrolls the open list instead.
+  if not (csDesigning in ComponentState) and RouteWheelToOpenPopup(Shift, WheelDelta) then
+  begin
+    Handled := True;
+    Exit;
+  end;
   inherited;
   // The element under the mouse first (an in-ribbon gallery scrolls its rows).
   if not Handled and not (csDesigning in ComponentState) and (FTracker <> nil) and (FTracker.Hot <> nil) and
@@ -2477,6 +2531,9 @@ var
   Caption: string;
   R: TRectF;
 begin
+  // Closed and waiting to be freed: the group or the ribbon may be gone.
+  if (FRibbon = nil) or (FGroup = nil) then
+    Exit;
   P := GetPainter;
   M := P.Metrics;
   R := LocalRect;
@@ -2740,6 +2797,31 @@ begin
     Result := TStyleManager.ActiveStyle(Form);
 end;
 
+function FmrContrastRatio(const A, B: TAlphaColor): Single;
+var
+  LA, LB: Single;
+begin
+  LA := FmrLuminance(A);
+  LB := FmrLuminance(B);
+  Result := (Max(LA, LB) + 0.05) / (Min(LA, LB) + 0.05);
+end;
+
+/// The caption and tab rows need their own button colors when they are painted with the accent (Colorful themes)
+/// or when the body glyph color does not read on the caption (dark caption of a light theme: Office 2007/2010
+/// Black, Office 2016 Dark Gray, or a StyleBook override).
+function FmrCaptionNeedsBarColors(const T: TFmrTheme): Boolean;
+var
+  Bg: TAlphaColor;
+  GlyphContrast: Single;
+begin
+  if T.Style.ColoredCaption then
+    Exit(True);
+  Bg := T.Fills[TFmrToken.CaptionFill].MainColor or $FF000000;
+  GlyphContrast := FmrContrastRatio(T.Colors[TFmrToken.GlyphTint] or $FF000000, Bg);
+  Result := (GlyphContrast < 3) and (FmrContrastRatio(T.Colors[TFmrToken.CaptionText] or $FF000000, Bg) >
+    GlyphContrast);
+end;
+
 procedure TFmrRibbon.BuildTheme;
 var
   NewTheme, NewBar: TFmrTheme;
@@ -2773,11 +2855,13 @@ begin
     NewTheme.Metrics := M;
   end;
   NewBar := NewTheme.Clone;
-  if NewTheme.Style.ColoredCaption then
+  if FmrCaptionNeedsBarColors(NewTheme) then
   begin
     NewBar.Colors[TFmrToken.GlyphTint] := NewTheme.Colors[TFmrToken.CaptionText];
     NewBar.Colors[TFmrToken.ButtonText] := NewTheme.Colors[TFmrToken.CaptionText];
     NewBar.Colors[TFmrToken.ButtonArrow] := NewTheme.Colors[TFmrToken.CaptionText];
+    NewBar.Colors[TFmrToken.GlyphTintDisabled] := FmrWithAlpha(NewTheme.Colors[TFmrToken.CaptionText], 0.45);
+    NewBar.Colors[TFmrToken.ButtonTextDisabled] := FmrWithAlpha(NewTheme.Colors[TFmrToken.CaptionText], 0.45);
     NewBar.Fills[TFmrToken.ButtonHotFill] := NewTheme.Fills[TFmrToken.CaptionButtonHotFill];
     NewBar.Fills[TFmrToken.ButtonPressedFill] := NewTheme.Fills[TFmrToken.CaptionButtonPressedFill];
     NewBar.Fills[TFmrToken.ButtonCheckedFill] := NewTheme.Fills[TFmrToken.CaptionButtonPressedFill];
@@ -3593,6 +3677,7 @@ end;
 procedure TFmrRibbon.StructureObjectRemoving(const AObject: TObject);
 var
   I: Integer;
+  Content: TFmrGroupPopupContent;
 begin
   if AObject = FActiveTab then
     FActiveTab := nil;
@@ -3601,7 +3686,12 @@ begin
   if AObject is TFmrRibbonGroup then
   begin
     if (FGroupPopupContent <> nil) and (FGroupPopupContent.FGroup = AObject) then
+    begin
+      Content := FGroupPopupContent;
       ClosePopups;
+      // The closed popup is freed later: it must not reach the group any more.
+      Content.FGroup := nil;
+    end;
     // Links of a destroyed group go away silently: release their views now.
     FreeViewsOf(TFmrRibbonGroup(AObject).ItemLinks);
     for I := 0 to High(FLayoutGroups) do
@@ -3838,6 +3928,8 @@ end;
 procedure TFmrRibbon.FreeView(const AView: TFmrItemView);
 var
   I: Integer;
+  Removed: Boolean;
+  Tips: TArray<string>;
 begin
   if AView = nil then
     Exit;
@@ -3849,9 +3941,21 @@ begin
     FDroppedElement := nil;
   if FKeyFocus = AView then
     FKeyFocus := nil;
+  Removed := False;
   for I := FKeyTips.Count - 1 downto 0 do
     if FKeyTips[I].Element = AView then
+    begin
       FKeyTips.Delete(I);
+      Removed := True;
+    end;
+  // The matcher answers indexes into FKeyTips: it must see the same list.
+  if Removed then
+  begin
+    SetLength(Tips, FKeyTips.Count);
+    for I := 0 to FKeyTips.Count - 1 do
+      Tips[I] := FKeyTips[I].Tip;
+    FKeyTipMatcher.Reset(Tips);
+  end;
   if FScreenTips <> nil then
     FScreenTips.Cancel;
   if FCaptionBar <> nil then
@@ -4860,6 +4964,11 @@ var
 begin
   if FDestroying or (csDestroying in ComponentState) then
     Exit;
+  if FFrameCheckPending then
+  begin
+    FFrameCheckPending := False;
+    UpdateFrameAttachment;
+  end;
   if not FArrangeValid or not FLayoutValid or not FStructureValid then
   begin
     EnsureAll;
@@ -4944,6 +5053,10 @@ var
 begin
   // Sent after the frame finished attaching or detaching (State.Hooked) and on every change of the window state:
   // the caption buttons, the title and the heights depend on Hooked and Mode.
+  // A frame created on the form after the ribbon is found on the next idle.
+  if not FDestroying and (FFrame = nil) and FFrameAuto and (Sender is TFmrFormFrame) and
+    (TFmrFormFrame(Sender).Form <> nil) and (TFmrFormFrame(Sender).Form = OwnerForm) then
+    FFrameCheckPending := True;
   if FDestroying or (FFrame = nil) or not (M is TFmrFrameStateMessage) or
     (TFmrFrameStateMessage(M).Host <> FFrame.Host) then
     Exit;

@@ -119,6 +119,14 @@ type
     function PaintsOwnBackground: Boolean;
   end;
 
+  /// <summary>Optional interface of popup contents that show bar items: an open popup whose content shows an item
+  /// or a link that is being destroyed is closed (FmrItemDestroyingHook, FmrLinkDestroyingHook).</summary>
+  IFmrItemDisplay = interface
+    ['{4C8B2E61-7D3A-4F95-B0C2-9E1D5A6F3B47}']
+    function ShowsItem(const AItem: TFmrBarItem): Boolean;
+    function ShowsLink(const ALink: TFmrItemLink): Boolean;
+  end;
+
   /// <summary>Receives the keys of a form while it captures the keyboard (key tips).</summary>
   IFmrKeyHandler = interface
     ['{C3B1E6A8-9D24-4F0E-8A6C-5E7F2B1D9A63}']
@@ -208,6 +216,7 @@ type
     FSink: TFmrKeySink;
     FSinkForm: TCommonCustomForm;
     FSavedFocus: TControl;
+    FPendingFocus: TControl;
     FHandlers: TList<IFmrKeyHandler>;
     FUpdatingSink: Boolean;
     FClosingAll: Boolean;
@@ -217,6 +226,7 @@ type
     procedure Bury(const APopup: TFmrPopupForm);
     procedure UpdateSink;
     procedure RemoveSink(const ARestoreFocus: Boolean);
+    procedure RestorePendingFocus;
     procedure SinkLostFocus;
     function NeedsSink(out AForm: TCommonCustomForm): Boolean;
     function SinkKey(var Key: Word; var KeyChar: WideChar; const Shift: TShiftState): Boolean;
@@ -326,7 +336,7 @@ type
   /// <summary>Menu content: rows built from item links (glyph gutter, caption, shortcut, check marks, submenu
   /// arrows, separators and headers, large rows with descriptions). Submenus open on hover after a delay or with
   /// the keyboard.</summary>
-  TFmrMenuControl = class(TControl, IFmrElementHost, IFmrPopupContent)
+  TFmrMenuControl = class(TControl, IFmrElementHost, IFmrPopupContent, IFmrItemDisplay)
   private
     FContext: IFmrPopupContext;
     FLinks: TFmrItemLinks;
@@ -385,6 +395,9 @@ type
     procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
     procedure DoMouseLeave; override;
   public
+    { IFmrItemDisplay }
+    function ShowsItem(const AItem: TFmrBarItem): Boolean;
+    function ShowsLink(const ALink: TFmrItemLink): Boolean;
     constructor CreateMenu(const AContext: IFmrPopupContext; const ALinks: TFmrItemLinks;
       const AStyle: TFmrMenuItemStyle = TFmrMenuItemStyle.Auto; const AMinWidth: Single = 0);
     destructor Destroy; override;
@@ -399,7 +412,7 @@ type
 
   /// <summary>Color palette of a TFmrColorItem: automatic color, theme colors with tints and shades, standard
   /// colors, no color.</summary>
-  TFmrColorPaletteControl = class(TControl, IFmrPopupContent)
+  TFmrColorPaletteControl = class(TControl, IFmrPopupContent, IFmrItemDisplay)
   private type
     TCell = record
       Color: TAlphaColor;
@@ -428,6 +441,9 @@ type
     procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Single); override;
     procedure DoMouseLeave; override;
   public
+    { IFmrItemDisplay }
+    function ShowsItem(const AItem: TFmrBarItem): Boolean;
+    function ShowsLink(const ALink: TFmrItemLink): Boolean;
     constructor CreatePalette(const AContext: IFmrPopupContext; const AItem: TFmrColorItem);
     destructor Destroy; override;
   end;
@@ -717,7 +733,7 @@ var
   Painter: TFmrRibbonPainter;
   C: IFmrPopupContent;
 begin
-  if (FPopup = nil) or (FPopup.FContext = nil) then
+  if (FPopup = nil) or (FPopup.FContext = nil) or FPopup.FClosed then
     Exit;
   Painter := FPopup.FContext.Painter;
   R := LocalRect;
@@ -764,6 +780,8 @@ begin
   // Destroyed while open (its owner form is going away): closing returns borrowed controls to their owners.
   if not FClosed and (GPopups <> nil) then
     GPopups.PopupClosing(Self);
+  if GPopups <> nil then
+    GPopups.Forget(Self);
   if FContent <> nil then
   begin
     FContent.Free;
@@ -1013,6 +1031,11 @@ begin
   FTimer.Enabled := False;
   FreeAndNil(FTimer);
   FHandlers.Clear;
+  if FPendingFocus <> nil then
+  begin
+    FPendingFocus.RemoveFreeNotification(FNotifier);
+    FPendingFocus := nil;
+  end;
   if FSink <> nil then
   begin
     FSink.FManager := nil;
@@ -1049,6 +1072,8 @@ begin
   end;
   if AComponent = FSavedFocus then
     FSavedFocus := nil;
+  if AComponent = FPendingFocus then
+    FPendingFocus := nil;
   if AComponent = FSinkForm then
   begin
     FSinkForm := nil;
@@ -1197,6 +1222,12 @@ end;
 procedure TFmrPopupManager.Bury(const APopup: TFmrPopupForm);
 begin
   APopup.FCloseTime := Now;
+  // A hidden transparent window is still painted when its content is invalidated (views given back, editors
+  // moved): its content may show objects that are freed meanwhile (a deleted group, the ribbon and its painter).
+  if (APopup.FFrame <> nil) and APopup.FFrame.Visible then
+    APopup.FFrame.Visible := False;
+  // Windows shown without Show (screen tips) have no notification yet; their parent form may free them first.
+  APopup.FreeNotification(FNotifier);
   if not FGraveyard.Contains(APopup) then
     FGraveyard.Add(APopup);
   FTimer.Enabled := True;
@@ -1215,8 +1246,9 @@ begin
   {$ENDIF}
   if Busy then
     Exit;
+  // Freeing a popup frees the popups parented to it (submenus): they leave the graveyard through Forget.
   for P in FGraveyard.ToArray do
-    if (Now - P.FCloseTime) * SecsPerDay > 0.2 then
+    if FGraveyard.Contains(P) and ((Now - P.FCloseTime) * SecsPerDay > 0.2) then
     begin
       FGraveyard.Remove(P);
       P.RemoveFreeNotification(FNotifier);
@@ -1436,9 +1468,28 @@ begin
   if Saved <> nil then
     Saved.RemoveFreeNotification(FNotifier);
   try
-    if ARestoreFocus and Sink.IsFocused and (Saved <> nil) and not (csDestroying in Saved.ComponentState) and
-      Saved.CanFocus and Saved.ParentedVisible then
-      Saved.SetFocus
+    // The form deactivates its focused control (DoExit) while it keeps it as Focused: the sink still holds the focus
+    // of the form when the popups close because the window was deactivated (Alt+Tab with a menu open).
+    if ARestoreFocus and (Sink.IsFocused or ((Sink.Root <> nil) and (Sink.Root.Focused = IControl(Sink)))) and
+      (Saved <> nil) and not (csDestroying in Saved.ComponentState) and Saved.CanFocus and Saved.ParentedVisible then
+    begin
+      Saved.SetFocus;
+      // FMX ignores a focus change requested while another one runs (the popups close because the window is
+      // being deactivated): the editor would end up without focus once the sink goes. Try again from the queue.
+      if not Saved.IsFocused then
+      begin
+        if FPendingFocus <> nil then
+          FPendingFocus.RemoveFreeNotification(FNotifier);
+        FPendingFocus := Saved;
+        FPendingFocus.FreeNotification(FNotifier);
+        TThread.ForceQueue(nil,
+          procedure
+          begin
+            if GPopups <> nil then
+              GPopups.RestorePendingFocus;
+          end);
+      end;
+    end
     else if Sink.IsFocused and (Sink.Root <> nil) then
       Sink.Root.SetFocused(nil);
   except
@@ -1454,6 +1505,29 @@ begin
       if (GLiveSinks <> nil) and GLiveSinks.Contains(Sink) then
         Sink.Free;
     end);
+end;
+
+procedure TFmrPopupManager.RestorePendingFocus;
+var
+  C: TControl;
+  F: TCommonCustomForm;
+begin
+  C := FPendingFocus;
+  FPendingFocus := nil;
+  if C = nil then
+    Exit;
+  C.RemoveFreeNotification(FNotifier);
+  // A new capture started meanwhile, or the user focused something else.
+  if (FSink <> nil) or (csDestroying in C.ComponentState) or C.IsFocused then
+    Exit;
+  F := FmrFormOf(C);
+  if (F <> nil) and not (csDestroying in F.ComponentState) and ((F.Focused = nil) or
+    (F.Focused.GetObject is TFmrKeySink)) and C.CanFocus and C.ParentedVisible then
+  try
+    C.SetFocus;
+  except
+    // The form cannot take the focus now (closing).
+  end;
 end;
 
 procedure TFmrPopupManager.SinkLostFocus;
@@ -1558,7 +1632,9 @@ begin
     TThread.ForceQueue(nil,
       procedure
       begin
-        if (GPopups <> nil) and (GPopups.FSink = Self) and not FReleasing and not IsFocused then
+        // A deactivated window keeps the sink as its focused control: that is not a focus moved by the user.
+        if (GPopups <> nil) and (GPopups.FSink = Self) and not FReleasing and not IsFocused and
+          ((Root = nil) or (Root.Focused <> IControl(Self))) then
           GPopups.SinkLostFocus;
       end);
 end;
@@ -1925,6 +2001,30 @@ begin
   FreeAndNil(FOwned);
   FContext := nil;
   inherited;
+end;
+
+function TFmrMenuControl.ShowsItem(const AItem: TFmrBarItem): Boolean;
+var
+  Row: TFmrMenuRow;
+begin
+  if (FLinks <> nil) and (FLinks.Owner = AItem) then
+    Exit(True);
+  if FRows <> nil then
+    for Row in FRows do
+      if Row.FItem = AItem then
+        Exit(True);
+  Result := False;
+end;
+
+function TFmrMenuControl.ShowsLink(const ALink: TFmrItemLink): Boolean;
+var
+  Row: TFmrMenuRow;
+begin
+  if FRows <> nil then
+    for Row in FRows do
+      if Row.FLink = ALink then
+        Exit(True);
+  Result := False;
 end;
 
 function TFmrMenuControl.MyPopup: TFmrPopupForm;
@@ -2632,6 +2732,16 @@ end;
 
 { TFmrColorPaletteControl }
 
+function TFmrColorPaletteControl.ShowsItem(const AItem: TFmrBarItem): Boolean;
+begin
+  Result := AItem = FItem;
+end;
+
+function TFmrColorPaletteControl.ShowsLink(const ALink: TFmrItemLink): Boolean;
+begin
+  Result := False;
+end;
+
 constructor TFmrColorPaletteControl.CreatePalette(const AContext: IFmrPopupContext; const AItem: TFmrColorItem);
 begin
   inherited Create(nil);
@@ -3143,13 +3253,43 @@ begin
   Result := Menu;
 end;
 
+{ items and links destroyed while popups show them }
+
+procedure ClosePopupsShowing(const AItem: TFmrBarItem; const ALink: TFmrItemLink);
+var
+  P: TFmrPopupForm;
+  D: IFmrItemDisplay;
+begin
+  if (GPopups = nil) or (GPopups.FChain.Count = 0) then
+    Exit;
+  for P in GPopups.FChain.ToArray do
+    if GPopups.FChain.Contains(P) and not P.FClosed and (P.Content <> nil) and
+      Supports(P.Content, IFmrItemDisplay, D) and
+      (((AItem <> nil) and D.ShowsItem(AItem)) or ((ALink <> nil) and D.ShowsLink(ALink))) then
+      GPopups.Close(P);
+end;
+
+procedure PopupItemDestroying(const AItem: TFmrBarItem);
+begin
+  ClosePopupsShowing(AItem, nil);
+end;
+
+procedure PopupLinkDestroying(const ALink: TFmrItemLink);
+begin
+  ClosePopupsShowing(nil, ALink);
+end;
+
 initialization
   GDropDowns := TList<TPair<TFmrBarItemClass, TFmrDropDownFactory>>.Create;
   FmrRegisterDropDown(TFmrColorItem, CreateColorDropDown);
   FmrRegisterDropDown(TFmrGalleryItem, CreateGalleryDropDown);
   RegisterFmxClasses([TFmrPopupMenu]);
+  FmrItemDestroyingHook := PopupItemDestroying;
+  FmrLinkDestroyingHook := PopupLinkDestroying;
 
 finalization
+  FmrItemDestroyingHook := nil;
+  FmrLinkDestroyingHook := nil;
   FreeAndNil(GPopups);
   FreeAndNil(GDropDowns);
   FreeAndNil(GLiveSinks);

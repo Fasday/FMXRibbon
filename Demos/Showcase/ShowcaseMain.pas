@@ -26,7 +26,8 @@ uses
   FMR.Bars.Images, FMR.Bars, FMR.Bars.Items, FMR.Ribbon.Structure, FMR.Ribbon.Theme, FMR.Ribbon.Painter, FMR.Ribbon,
   FMR.Ribbon.Views, FMR.Ribbon.Popup, FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery, FMR.Ribbon.AppMenu,
   FMR.Ribbon.MiniToolbar, FMR.Ribbon.RadialMenu, FMR.Ribbon.Backstage, FMR.Ribbon.Backstage.Controls,
-  FMR.Ribbon.StatusBar, FMR.Ribbon.Templates, FMR.Ribbon.Strings, FMR.Frame.Types, FMR.Frame;
+  FMR.Ribbon.StatusBar, FMR.Ribbon.Templates, FMR.Ribbon.Strings, FMR.Ribbon.EditorStyles, FMR.Frame.Types,
+  FMR.Frame;
 
 type
   /// <summary>Background of the pages and theme provider of the helper controls placed on it: it forwards the
@@ -84,7 +85,7 @@ type
     FEmbeddedManager: TFmrBarManager;
     FEmbeddedFrame: TFmrFormFrame;
     FEmbeddedHost: TLayout;
-    FWidthTrack: TTrackBar;
+    FWidthTrack: TFmrRibbonTrackBar;
     FChild: TFmrRibbon;
     FChildManager: TFmrBarManager;
     FChildFrame: TFmrFormFrame;
@@ -763,6 +764,8 @@ begin
     FChild.AccentColor := AAccent;
     FChild.Theme := AName;
   end;
+  if FWidthTrack <> nil then
+    FmrThemeEditor(FWidthTrack, FRibbon.ThemeObject);
   SetMessage('Theme: ' + TFmrTheme.ThemeDisplayName(AName));
 end;
 
@@ -1290,14 +1293,17 @@ begin
   Row.Height := 32;
   Row.Position.Y := NextPos;
   Row.Parent := FBox;
-  FWidthTrack := TTrackBar.Create(FBox);
+  FWidthTrack := TFmrRibbonTrackBar.Create(FBox);
   FWidthTrack.Align := TAlignLayout.Left;
   FWidthTrack.Width := 420;
+  FWidthTrack.Margins.Top := 6;
+  FWidthTrack.Margins.Bottom := 6;
   FWidthTrack.Min := 240;
   FWidthTrack.Max := 1500;
   FWidthTrack.Value := 1000;
   FWidthTrack.Parent := Row;
   FWidthTrack.OnChange := TrackChange;
+  FmrThemeEditor(FWidthTrack, FRibbon.ThemeObject);
   FEmbeddedHost := TLayout.Create(FBox);
   FEmbeddedHost.Align := TAlignLayout.Top;
   FEmbeddedHost.Height := 140;

@@ -111,7 +111,14 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   flipped and clamped to the work area), `Close` (closes descendants), `CloseAll`, `PopupOf(Object)`, `Top`, `IsOpen`.
   FMX closes popup forms on outside clicks and deactivation; the manager mirrors that in its chain.
 - Closed windows go to a graveyard and are freed later (0.2 s and no mouse button down), because FMX may still hold
-  them in its prepared-popup list while the button is pressed.
+  them in its prepared-popup list while the button is pressed. A buried window hides its content (FMX still paints a
+  hidden transparent window when its content is invalidated, and the content may show objects freed meanwhile); a
+  window freed by its parent form leaves the graveyard (free notification).
+- Contents that show bar items implement `IFmrItemDisplay` (`ShowsItem`, `ShowsLink`; menus, color palettes,
+  drop-down galleries): an open popup whose item or link is destroyed is closed first (`FmrItemDestroyingHook`). Own
+  popup contents that keep item references should implement it too.
+- Focus: the key sink saves the focused control and gives the focus back when the popups close, also when they close
+  because the window was deactivated (FMX keeps the sink as the focused control of the inactive form).
 - Keyboard: popup forms never get focus. While a capturing popup chain is open or a key handler is registered
   (key tips), an invisible focusable `TFmrKeySink` takes the focus of the owner form and gives every key to the top
   popup (`PopupKeyDown`), to an editor focused inside it, then to the `IFmrKeyHandler` stack
@@ -153,8 +160,10 @@ button ("...") with a menu of what does not fit. Switch with the chevron at the 
   (FullNC, Dwm); placed from the right by hand. `IFmrFrameStateAware` gives the active/maximized state (inactive
   colors, maximized top offset added to the caption row height).
 - Colors: `ApplyFrameColors` sets `Frame.CaptionColor`, `CaptionInactiveColor` and `DarkMode` from the theme. In
-  colored-caption themes (Office 2016 Colorful...) the caption and tab rows use a cloned "bar theme" whose button and
-  glyph tokens are mapped to caption tokens.
+  colored-caption themes (Office 2016 Colorful...) and whenever the glyph color does not read on the caption color
+  (contrast below 3: the dark captions of Office 2007/2010 Black and Office 2016 Dark Gray, or a StyleBook override)
+  the caption and tab rows use a cloned "bar theme" whose button, glyph and disabled tokens are mapped to caption
+  tokens.
 - `NCStrip`: Windows keeps its own caption; the caption bar is shown only when the QAT is above the ribbon and has
   items (no title, no window buttons in it); otherwise only the tab row is in the strip.
 - No frame: the caption row inside the ribbon holds the QAT and the search box; it shows a title only when the form

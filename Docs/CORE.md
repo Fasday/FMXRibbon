@@ -67,6 +67,9 @@ tab/group/context group destroyed ─► owner.StructureObjectRemoving(obj) + St
 - `TFmrBarManager.BeginUpdate/EndUpdate` turns all changes into one `Updated` notification;
   `IFmrRibbonStructureOwner.BeginStructureUpdate/EndStructureUpdate` brackets layout loading and merging (the owner
   should postpone its re-layout to the outermost `EndStructureUpdate`).
+- `FmrItemDestroyingHook` / `FmrLinkDestroyingHook` (global procedure variables) are called first in the destructor of
+  every item and link, also without a manager and inside `BeginUpdate`: `FMR.Ribbon.Popup` closes the open popups
+  that show them (menus keep raw references to their rows' items and links).
 
 ### Actions
 

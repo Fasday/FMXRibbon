@@ -141,6 +141,15 @@ end;
 bin\Win64\Debug\FmrRibbonTests.exe
 ```
 
+Нагрузочные проверки настоящей ленты на настоящих окнах (циклы смены тем, режимов рамки и отображения с замером
+GDI, USER и кучи; попапы открываются и закрываются; компоненты освобождаются в любом порядке; код выхода — число
+ошибок):
+
+```
+.\build.ps1 -Project tools\Stress\FmrStress.dpr
+bin\Win64\Debug\FmrStress.exe /log=stress.log
+```
+
 ## Лицензия
 
 MIT, см. [LICENSE](LICENSE).

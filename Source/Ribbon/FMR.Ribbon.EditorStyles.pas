@@ -1,4 +1,4 @@
-{*******************************************************}
+﻿{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Editor controls painted with the ribbon theme        }
@@ -75,6 +75,7 @@ type
     procedure ListPopup(Sender: TObject);
   protected
     function GetStyleObject(const Clone: Boolean): TFmxObject; override;
+    procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
   public
     constructor Create(AOwner: TComponent); override;
     procedure SetEditorColors(const AColors: TFmrEditorColors);
@@ -87,6 +88,7 @@ type
     procedure ListPopup(Sender: TObject);
   protected
     function GetStyleObject(const Clone: Boolean): TFmxObject; override;
+    procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
   public
     constructor Create(AOwner: TComponent); override;
     procedure SetEditorColors(const AColors: TFmrEditorColors);
@@ -127,17 +129,72 @@ function FmrPopupStyleName(const AColors: TFmrEditorColors): string;
 implementation
 
 uses
-  System.Generics.Collections, System.Math, FMX.Objects, FMX.Layouts, FMX.Ani, FMX.ComboEdit.Style, FMX.Pickers;
+  System.Generics.Collections, System.Math, FMX.Objects, FMX.Layouts, FMX.Ani, FMX.ComboEdit.Style, FMX.Pickers,
+  FMX.Controls.Presentation;
+
+type
+  TStyledControlAccess = class(TStyledControl);
 
 var
   GCounter: Integer;
   GPool: TDictionary<string, string>;
   GPooled: TList<TFmxObject>;
+  GSchemeLookups: TDictionary<string, string>;
 
 function NextLookup(const AKind: string): string;
 begin
   Inc(GCounter);
   Result := 'fmrribbon' + AKind + IntToStr(GCounter);
+end;
+
+/// FMX recycles the style tree of a control into its global style cache when the control is reparented, out of view
+/// or gets another StyleLookup (TStyledControl.NeedStyleLookup), and takes a tree from there only when its TagString
+/// is the StyleLookup asked for. The themed controls build their trees in GetStyleObject: the trees are tagged with
+/// the lookup, and the lookup names a color scheme (equal names = equal trees), so a recycled tree is taken again by
+/// any control of that scheme instead of staying in the cache until the application ends. A control that changes
+/// its scheme frees its old tree.
+procedure DropStyleTree(const AControl: TStyledControl);
+var
+  P: TObject;
+begin
+  TStyledControlAccess(AControl).KillResourceLink;
+  if AControl is TPresentedControl then
+  begin
+    P := TPresentedControl(AControl).Presentation;
+    if P is TStyledControl then
+      TStyledControlAccess(P).KillResourceLink;
+  end;
+end;
+
+procedure SetSchemeLookup(const AControl: TStyledControl; const AKind: string; const AColors: TFmrEditorColors);
+var
+  K, Name: string;
+begin
+  K := AKind + '|' + AColors.Key;
+  if not GSchemeLookups.TryGetValue(K, Name) then
+  begin
+    Name := NextLookup(AKind);
+    GSchemeLookups.Add(K, Name);
+  end;
+  if SameText(AControl.StyleLookup, Name) then
+    Exit;
+  DropStyleTree(AControl);
+  AControl.StyleLookup := Name;
+end;
+
+/// TCustomListBox.ApplyStyle adds two clones of 'selection' to its style tree; a tree FMX recycled and hands out
+/// again (the pooled list box styles) gets two more every time. A list box that changes its style frees its tree.
+procedure DropListBoxTree(const AListBox: TControl);
+begin
+  if AListBox is TStyledControl then
+    TStyledControlAccess(AListBox).KillResourceLink;
+end;
+
+function TaggedTree(const ATree: TFmxObject; const AControl: TStyledControl): TFmxObject;
+begin
+  Result := ATree;
+  if Result <> nil then
+    Result.TagString := AControl.StyleLookup;
 end;
 
 { building blocks }
@@ -637,7 +694,7 @@ end;
 function TFmrRibbonEdit.GetStyleObject(const Clone: Boolean): TFmxObject;
 begin
   if FThemed then
-    Result := FmrBuildEditStyle(FColors, False, False)
+    Result := TaggedTree(FmrBuildEditStyle(FColors, False, False), Self)
   else
     Result := inherited GetStyleObject(Clone);
 end;
@@ -648,7 +705,7 @@ begin
     Exit;
   FColors := AColors;
   FThemed := True;
-  StyleLookup := NextLookup('edit');
+  SetSchemeLookup(Self, 'edit', FColors);
 end;
 
 { TFmrRibbonComboEdit }
@@ -664,7 +721,7 @@ end;
 function TFmrRibbonComboEdit.GetStyleObject(const Clone: Boolean): TFmxObject;
 begin
   if FThemed then
-    Result := FmrBuildEditStyle(FColors, True, False)
+    Result := TaggedTree(FmrBuildEditStyle(FColors, True, False), Self)
   else
     Result := inherited GetStyleObject(Clone);
 end;
@@ -689,14 +746,33 @@ begin
   end;
 end;
 
+procedure TFmrRibbonComboEdit.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
+var
+  L: TCustomListBox;
+begin
+  // While the list is open the wheel scrolls it (Office), also when the combo box holds the mouse capture or the
+  // list cannot scroll further; it must not change the text or reach the ribbon behind.
+  if DroppedDown and (Presentation is TStyledComboEdit) then
+  begin
+    L := TStyledComboEdit(Presentation).ListBox;
+    if L <> nil then
+      (L as IControl).MouseWheel(Shift, WheelDelta, Handled);
+    Handled := True;
+    Exit;
+  end;
+  inherited;
+end;
+
 procedure TFmrRibbonComboEdit.SetEditorColors(const AColors: TFmrEditorColors);
 begin
   if FThemed and (FColors.Key = AColors.Key) then
     Exit;
   FColors := AColors;
   FThemed := True;
+  if Presentation is TStyledComboEdit then
+    DropListBoxTree(TStyledComboEdit(Presentation).ListBox);
   ListBoxResource := FmrListBoxStyleName(FColors);
-  StyleLookup := NextLookup('comboedit');
+  SetSchemeLookup(Self, 'comboedit', FColors);
 end;
 
 { TFmrRibbonComboBox }
@@ -711,9 +787,21 @@ end;
 function TFmrRibbonComboBox.GetStyleObject(const Clone: Boolean): TFmxObject;
 begin
   if FThemed then
-    Result := FmrBuildComboBoxStyle(FColors)
+    Result := TaggedTree(FmrBuildComboBoxStyle(FColors), Self)
   else
     Result := inherited GetStyleObject(Clone);
+end;
+
+procedure TFmrRibbonComboBox.MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean);
+begin
+  if DroppedDown then
+  begin
+    if ListBox <> nil then
+      (ListBox as IControl).MouseWheel(Shift, WheelDelta, Handled);
+    Handled := True;
+    Exit;
+  end;
+  inherited;
 end;
 
 procedure TFmrRibbonComboBox.ListPopup(Sender: TObject);
@@ -729,11 +817,12 @@ begin
   FColors := AColors;
   FThemed := True;
   // The face shows the selected list item, so the items need the themed style before the face is painted.
+  DropListBoxTree(ListBox);
   ListBoxResource := FmrListBoxStyleName(FColors);
   ThemeListBox(ListBox, FColors);
   if Popup <> nil then
     Popup.StyleLookup := FmrPopupStyleName(FColors);
-  StyleLookup := NextLookup('combobox');
+  SetSchemeLookup(Self, 'combobox', FColors);
 end;
 
 { TFmrRibbonSpinBox }
@@ -741,7 +830,7 @@ end;
 function TFmrRibbonSpinBox.GetStyleObject(const Clone: Boolean): TFmxObject;
 begin
   if FThemed then
-    Result := FmrBuildEditStyle(FColors, False, True)
+    Result := TaggedTree(FmrBuildEditStyle(FColors, False, True), Self)
   else
     Result := inherited GetStyleObject(Clone);
 end;
@@ -752,7 +841,7 @@ begin
     Exit;
   FColors := AColors;
   FThemed := True;
-  StyleLookup := NextLookup('spinbox');
+  SetSchemeLookup(Self, 'spinbox', FColors);
 end;
 
 { TFmrRibbonTrackBar }
@@ -760,7 +849,7 @@ end;
 function TFmrRibbonTrackBar.GetStyleObject(const Clone: Boolean): TFmxObject;
 begin
   if FThemed then
-    Result := FmrBuildTrackBarStyle(FColors)
+    Result := TaggedTree(FmrBuildTrackBarStyle(FColors), Self)
   else
     Result := inherited GetStyleObject(Clone);
 end;
@@ -771,7 +860,7 @@ begin
     Exit;
   FColors := AColors;
   FThemed := True;
-  StyleLookup := NextLookup('trackbar');
+  SetSchemeLookup(Self, 'trackbar', FColors);
 end;
 
 procedure FreePool;
@@ -786,11 +875,13 @@ begin
     end;
   FreeAndNil(GPooled);
   FreeAndNil(GPool);
+  FreeAndNil(GSchemeLookups);
 end;
 
 initialization
   GPool := TDictionary<string, string>.Create;
   GPooled := TList<TFmxObject>.Create;
+  GSchemeLookups := TDictionary<string, string>.Create;
 
 finalization
   FreePool;

@@ -237,7 +237,7 @@ begin
     B.Category := 'File';
     B := Btn('btnEmail', 'Email', $E715);
     B.Category := 'File';
-    B := Btn('btnSpelling', 'Spelling & Grammar', $E8FD);
+    B := Btn('btnSpelling', 'Spelling && Grammar', $E8FD);
     B.Category := 'Review';
     B := Btn('btnCustomize', 'Customize Ribbon...', $E713);
     B.Category := 'Tools';

@@ -39,7 +39,8 @@ Packages\          FMRRibbon.dpk (runtime), dclFMRRibbon.dpk (design), FMRRibbon
 Tests\             FmrRibbonTests.dpr (DUnitX console runner) + test units
 Demos\             NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize (Demos\README.md)
 tools\             build-packages.ps1, shot.ps1 / drive.ps1 / capture.ps1 / keys.ps1 (run, drive and capture
-                   programs), closecheck.ps1, ThemeSheet, DesignPreview, fix-encoding.ps1
+                   programs), closecheck.ps1, ThemeSheet, DesignPreview, Stress (stress and destroy paths of the
+                   real ribbon), fix-encoding.ps1
 ```
 
 ## Building and checking
@@ -51,6 +52,9 @@ tools\             build-packages.ps1, shot.ps1 / drive.ps1 / capture.ps1 / keys
   the client rect in screen coordinates, the non-client thickness on each side and the hit-test code under probe
   points. Look at the PNG (the Read tool shows images) to check what was drawn.
 - Tests: `.\build.ps1 -Project Tests\FmrRibbonTests.dpr` then run `bin\Win64\Debug\FmrRibbonTests.exe`.
+- Stress: `.\build.ps1 -Project tools\Stress\FmrStress.dpr`, `bin\Win64\Debug\FmrStress.exe /log=<file>
+  [/only=<scenario,...>] [/repeat=N]`: loops and destroy paths on real windows, GDI/USER/heap growth checks, stack
+  traces of exceptions from the map file (`-GD`); a Debug build also reports leaks on exit.
 
 ## The frame (`Source\Frame`)
 

@@ -1,4 +1,4 @@
-﻿{*******************************************************}
+{*******************************************************}
 {                                                       }
 {  FMR Ribbon for FireMonkey                            }
 {  Galleries: in-ribbon, drop-down and menu galleries   }
@@ -204,7 +204,7 @@ type
   end;
 
   /// <summary>Content of a drop-down gallery (and of menus with gallery links).</summary>
-  TFmrGalleryPopupContent = class(TControl, IFmrPopupContent)
+  TFmrGalleryPopupContent = class(TControl, IFmrPopupContent, IFmrItemDisplay)
   private type
     TCellRef = record
       Section: Integer;
@@ -295,6 +295,9 @@ type
     procedure MouseWheel(Shift: TShiftState; WheelDelta: Integer; var Handled: Boolean); override;
     procedure DoMouseLeave; override;
   public
+    { IFmrItemDisplay }
+    function ShowsItem(const AItem: TFmrBarItem): Boolean;
+    function ShowsLink(const ALink: TFmrItemLink): Boolean;
     /// <summary>Drop-down of a gallery item: the gallery, its filter, its commands (DropDownLinks) and the resize
     /// grip.</summary>
     constructor CreateGallery(const AContext: IFmrPopupContext; const AGallery: TFmrGalleryItem);
@@ -1246,7 +1249,9 @@ begin
   if not FInRibbon then
     Exit(inherited KeyTipAnchor);
   R := PartRect(TFmrGalleryPart.DropDown);
-  Result := PointF(R.CenterPoint.X, Bounds.Bottom - 2);
+  // On the drop-down button rather than on the bottom edge: the dialog launcher of the group, right below it in
+  // the caption, has its own tip (they covered each other in the boxed Office 2007/2010 groups).
+  Result := PointF(R.CenterPoint.X, Min(Bounds.Bottom - 2, R.CenterPoint.Y));
 end;
 
 { TFmrGallerySection }
@@ -1514,6 +1519,32 @@ begin
   FreeAndNil(FSections);
   FContext := nil;
   inherited;
+end;
+
+function TFmrGalleryPopupContent.ShowsItem(const AItem: TFmrBarItem): Boolean;
+var
+  S: TFmrGallerySection;
+begin
+  if (AItem = FOwnerItem) or (AItem = FGallery) or (AItem = FPreviewGallery) or
+    ((FLinks <> nil) and (FLinks.Owner = AItem)) then
+    Exit(True);
+  if FSections <> nil then
+    for S in FSections do
+      if (S.FGallery = AItem) or ((S.FLinks <> nil) and (S.FLinks.Owner = AItem)) or
+        ((S.FMenu <> nil) and S.FMenu.ShowsItem(AItem)) then
+        Exit(True);
+  Result := False;
+end;
+
+function TFmrGalleryPopupContent.ShowsLink(const ALink: TFmrItemLink): Boolean;
+var
+  S: TFmrGallerySection;
+begin
+  if FSections <> nil then
+    for S in FSections do
+      if (S.FMenu <> nil) and S.FMenu.ShowsLink(ALink) then
+        Exit(True);
+  Result := False;
 end;
 
 function TFmrGalleryPopupContent.Painter: TFmrRibbonPainter;

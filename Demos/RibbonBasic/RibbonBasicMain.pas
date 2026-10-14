@@ -530,7 +530,7 @@ begin
     Link(G, Btn('btnLink', 'Link', $E71B, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Link(G, Btn('btnBookmark', 'Bookmark', $E8A4, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Link(G, Btn('btnComment', 'Comment', $E90A, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    G := Group(Insert, 'Header & Footer');
+    G := Group(Insert, 'Header && Footer');
     for S in ['Header', 'Footer', 'Page Number'] do
     begin
       B := Btn('', S, $E7C3, True, TFmrButtonStyle.DropDown);

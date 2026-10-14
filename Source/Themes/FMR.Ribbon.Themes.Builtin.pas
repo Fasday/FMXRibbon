@@ -682,6 +682,8 @@ begin
   P.EditBorder := $FF9A9A9A;
   ApplyFlat(T, P);
   T.Colors[TFmrToken.AppButtonText] := TAlphaColors.White;
+  // The status bar has the dark caption color: light text, like the caption.
+  T.Colors[TFmrToken.StatusBarText] := $FFF0F0F0;
   ApplyAccentBackstage(T, A);
 end;
 
@@ -948,6 +950,8 @@ begin
   T.Colors[TFmrToken.CaptionButtonPressedFill] := FmrWithAlpha($FFFFFFFF, 0.1);
   T[TFmrToken.TabHotFill] := V(FmrWithAlpha($FFFFFFFF, 0.3), FmrWithAlpha($FFFFFFFF, 0.1));
   T.Colors[TFmrToken.StatusBarText] := $FFF2F2F2;
+  // The warm highlight would put the light status bar text on a light fill.
+  T.Colors[TFmrToken.StatusBarItemHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
 end;
 
 { Office 2007 }
@@ -1017,6 +1021,7 @@ begin
   T.Colors[TFmrToken.CaptionButtonHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
   T.Colors[TFmrToken.CaptionButtonPressedFill] := FmrWithAlpha($FFFFFFFF, 0.1);
   T.Colors[TFmrToken.StatusBarText] := $FFF0F0F0;
+  T.Colors[TFmrToken.StatusBarItemHotFill] := FmrWithAlpha($FFFFFFFF, 0.18);
 end;
 
 { Fluent }

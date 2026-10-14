@@ -152,7 +152,7 @@ function Update-FmrIcons {
       $suffix = if ($size -eq 24) { '' } else { "$size" }
       $file = Join-Path $iconDir ("{0}{1}.png" -f $spec.Class, $suffix)
       if ($Icons -or -not (Test-Path $file)) { New-FmrIconPng $spec $size $file }
-      [void]$rc.AppendLine(('{0}{1}_PNG RCDATA "{2}"' -f $spec.Class.ToUpper(), $suffix, (Split-Path $file -Leaf))))
+      [void]$rc.AppendLine(('{0}{1}_PNG RCDATA "{2}"' -f $spec.Class.ToUpper(), $suffix, (Split-Path $file -Leaf)))
     }
   }
   $rcFile = Join-Path $iconDir 'FMR.Ribbon.Reg.rc'

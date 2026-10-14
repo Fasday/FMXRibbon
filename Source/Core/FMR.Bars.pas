@@ -408,6 +408,16 @@ type
     property Images: TCustomImageList read GetImages write SetImages;
   end;
 
+  TFmrItemDestroyingHook = procedure(const AItem: TFmrBarItem);
+  TFmrLinkDestroyingHook = procedure(const ALink: TFmrItemLink);
+
+var
+  /// <summary>Called first in the destructor of every bar item, also of items without a manager (FMR.Ribbon.Popup
+  /// closes the open popups that show the item).</summary>
+  FmrItemDestroyingHook: TFmrItemDestroyingHook = nil;
+  /// <summary>Called first in the destructor of every item link.</summary>
+  FmrLinkDestroyingHook: TFmrLinkDestroyingHook = nil;
+
 implementation
 
 resourcestring
@@ -674,6 +684,8 @@ end;
 
 destructor TFmrBarItem.Destroy;
 begin
+  if Assigned(FmrItemDestroyingHook) then
+    FmrItemDestroyingHook(Self);
   while FLinks.Count > 0 do
     FLinks.Last.Free;
   DetachManager;
@@ -1026,6 +1038,8 @@ end;
 
 destructor TFmrItemLink.Destroy;
 begin
+  if Assigned(FmrLinkDestroyingHook) then
+    FmrLinkDestroyingHook(Self);
   // Leave the collection first so its owner is told (LinkRemoving) while Item is still assigned.
   Collection := nil;
   if FItem <> nil then

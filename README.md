@@ -143,6 +143,14 @@ switches are listed in `Demos\README.md`.
 bin\Win64\Debug\FmrRibbonTests.exe
 ```
 
+Stress and destroy-path checks of the real ribbon on real windows (theme/frame/mode loops with GDI, USER and heap
+measurements, popups opened and closed, components freed in every order; exit code = failures):
+
+```
+.\build.ps1 -Project tools\Stress\FmrStress.dpr
+bin\Win64\Debug\FmrStress.exe /log=stress.log
+```
+
 ## License
 
 MIT, see [LICENSE](LICENSE).

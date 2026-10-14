@@ -25,7 +25,9 @@ uses
   FMR.Tests.KeyTips in 'FMR.Tests.KeyTips.pas',
   FMR.Tests.Extras in 'FMR.Tests.Extras.pas',
   FMR.Tests.Customize in 'FMR.Tests.Customize.pas',
-  FMR.Tests.Templates in 'FMR.Tests.Templates.pas';
+  FMR.Tests.Templates in 'FMR.Tests.Templates.pas',
+  FMR.Tests.Themes in 'FMR.Tests.Themes.pas',
+  FMR.Tests.RibbonControl in 'FMR.Tests.RibbonControl.pas';
 
 var
   Runner: ITestRunner;

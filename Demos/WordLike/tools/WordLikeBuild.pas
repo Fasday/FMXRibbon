@@ -701,7 +701,7 @@ begin
   B := Btn('btnTextBox', 'Text Box', FmrGlyphTextBox, F.InsertTextClick, TFmrButtonStyle.Default, True);
   B.Tag := 4;
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-  B := Btn('btnDateTime', 'Date & Time', $E787, F.InsertTextClick);
+  B := Btn('btnDateTime', 'Date && Time', $E787, F.InsertTextClick);
   B.Caption := 'Date && Time';
   B.Tag := 2;
   Link(G, B);
