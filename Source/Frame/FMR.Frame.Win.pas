@@ -23,9 +23,17 @@ type
     /// <summary>The window keeps WS_THICKFRAME but loses WS_CAPTION: DWM draws only the border, the shadow and the
     /// rounded corners (Windows 11); the caption strip below the top sizing border is ours (default).</summary>
     NoCaptionStyle,
-    /// <summary>The window keeps WS_CAPTION; the top non-client area is replaced by the caption strip. DWM draws its
-    /// caption over the strip (kept for comparison).</summary>
-    KeepCaptionStyle);
+    /// <summary>Experiment: the window keeps WS_CAPTION; below the top sizing border the system caption is replaced by
+    /// the caption strip. DWM still paints its caption (title bar color, caption buttons) over the strip.</summary>
+    KeepCaptionStyle,
+    /// <summary>Experiment: KeepCaptionStyle with DWMWA_ALLOW_NCPAINT = TRUE.</summary>
+    KeepCaptionAllowNCPaint,
+    /// <summary>Experiment: KeepCaptionStyle with DWMWA_NCRENDERING_POLICY = DWMNCRP_DISABLED (no DWM frame: no
+    /// shadow, no rounded corners, classic borders painted by the default procedure).</summary>
+    KeepCaptionNoDwmFrame,
+    /// <summary>Experiment: NoCaptionStyle, with WS_CAPTION put back for the duration of a minimize/maximize/restore
+    /// system command so that the window manager animates it.</summary>
+    CaptionDuringAnimation);
 
 var
   /// <summary>Strategy of the FullNC mode for frames attached from now on.</summary>
@@ -40,6 +48,8 @@ type
     FAttached: Boolean;
     FMode: TFmrFrameMode;
     FCaptionStyleRemoved: Boolean;
+    FCaptionForAnimation: Boolean;
+    FDwmPolicySet: Boolean;
     FThickFrameAdded: Boolean;
     FActive: Boolean;
     FHot: TFmrHitArea;
@@ -69,6 +79,7 @@ type
     procedure AdjustClientRect(const AWindowRect: TRect; var AClientRect: TRect);
     procedure ApplyAutoHideTaskbar(var AClientRect: TRect);
     procedure AdjustMaximizedBounds(const AInfo: PMinMaxInfo);
+    function GetWorkArea(out ARect: TRect): Boolean;
     function NCHitTest(const AScreenPoint: TPoint; const ADefault: LRESULT): LRESULT;
     function HostRectOnScreen: TRect;
     function HostScreenPointFromPx(const AScreenPx: TPoint): TPointF;
@@ -95,6 +106,7 @@ type
     procedure UpdateCursor;
     function AreaFromHitCode(const ACode: LRESULT; const AScreenPoint: TPoint): TFmrHitArea;
     procedure SysCommand(const ACommand: WPARAM);
+    function AnimatedSysCommand(const AWParam: WPARAM; const ALParam: LPARAM): LRESULT;
   public
     destructor Destroy; override;
     procedure Attach; override;
@@ -296,6 +308,8 @@ begin
     Exit;
   end;
   FAttached := True;
+  // A repaint posted to a previous window of the form (handle recreated) never arrives.
+  FPaintPosted := False;
   FActive := GetActiveWindow = FWnd;
   FHot := TFmrHitArea.Default;
   FPressed := TFmrHitArea.Default;
@@ -333,6 +347,10 @@ begin
     RemoveWindowSubclass(FWnd, @FrameSubclassProc, SubclassId);
     FAttached := False;
     FWnd := 0;
+    // Destroyed behind FMX's back (no TBeforeDestroyFormHandle): clients learn that the frame is not hooked.
+    if not (csDestroying in Frame.ComponentState) and (Frame.Form <> nil) and
+      not (csDestroying in Frame.Form.ComponentState) then
+      Frame.UpdateState(Frame.State);
   end;
 end;
 
@@ -364,6 +382,8 @@ begin
   // The sizing border the window really has (it differs by a pixel with and without WS_CAPTION), the same the
   // default WM_NCCALCSIZE uses: left/right and bottom of the adjusted rectangle.
   Style := DWORD(GetWindowLong(FWnd, GWL_STYLE));
+  if FCaptionForAnimation then
+    Style := Style and not WS_CAPTION;
   ExStyle := DWORD(GetWindowLong(FWnd, GWL_EXSTYLE));
   R := TRect.Empty;
   if CheckWin32Version(10) then
@@ -399,6 +419,7 @@ end;
 procedure TFmrWinFrame.AdjustClientRect(const AWindowRect: TRect; var AClientRect: TRect);
 var
   Thickness: TSize;
+  Work: TRect;
 begin
   if IsIconic(FWnd) then
     Exit;
@@ -411,15 +432,25 @@ begin
       else
         AClientRect.Top := AWindowRect.Top;
     TFmrFrameMode.FullNC:
-      if FCaptionStyleRemoved then
+      if FCaptionStyleRemoved and not FCaptionForAnimation then
         // The default calculation left the top sizing border; the caption strip follows it.
         AClientRect.Top := AClientRect.Top + CaptionPx
-      else if IsMaximized then
-        AClientRect.Top := AWindowRect.Top + Thickness.cy + CaptionPx
       else
-        AClientRect.Top := AWindowRect.Top + CaptionPx;
+        // WS_CAPTION (experiments): the system caption is replaced by the strip; the top sizing border stays (a
+        // maximized window lies beyond the monitor by the same thickness).
+        AClientRect.Top := AWindowRect.Top + Thickness.cy + CaptionPx;
     TFmrFrameMode.NCStrip:
       AClientRect.Top := AClientRect.Top + CaptionPx;
+  end;
+  if IsMaximized and FCaptionStyleRemoved and GetWorkArea(Work) then
+  begin
+    // However the window was maximized (with WS_CAPTION the system uses its own, one pixel thicker frame), the strip
+    // and the client area stay inside the work area.
+    AClientRect.Left := Max(AClientRect.Left, Work.Left);
+    AClientRect.Right := Min(AClientRect.Right, Work.Right);
+    AClientRect.Bottom := Min(AClientRect.Bottom, Work.Bottom);
+    if FMode = TFmrFrameMode.FullNC then
+      AClientRect.Top := Max(AClientRect.Top, Work.Top + CaptionPx);
   end;
   if IsMaximized then
     ApplyAutoHideTaskbar(AClientRect);
@@ -460,6 +491,16 @@ begin
     Inc(AClientRect.Top, AutoHideGap)
   else if HasAutoHideBar(ABE_RIGHT) then
     Dec(AClientRect.Right, AutoHideGap);
+end;
+
+function TFmrWinFrame.GetWorkArea(out ARect: TRect): Boolean;
+var
+  Info: TMonitorInfo;
+begin
+  Info.cbSize := SizeOf(Info);
+  Result := GetMonitorInfo(MonitorFromWindow(FWnd, MONITOR_DEFAULTTONEAREST), @Info);
+  if Result then
+    ARect := Info.rcWork;
 end;
 
 procedure TFmrWinFrame.AdjustMaximizedBounds(const AInfo: PMinMaxInfo);
@@ -546,8 +587,7 @@ begin
   if (Frame.Host <> nil) and Frame.Host.Visible and (CaptionPx > 0) and HostRect.Contains(AScreenPoint) then
   begin
     // The host starts at the top of the window when nothing (sizing border, system caption) lies above it.
-    TopEdgeInHost := (FMode = TFmrFrameMode.Dwm) or
-      ((FMode = TFmrFrameMode.FullNC) and not FCaptionStyleRemoved);
+    TopEdgeInHost := FMode = TFmrFrameMode.Dwm;
     if TopEdgeInHost and IsResizable and not IsMaximized and (AScreenPoint.Y < WindowRect.Top + Thickness.cy) then
     begin
       if AScreenPoint.X < WindowRect.Left + Thickness.cx * 2 then
@@ -651,6 +691,15 @@ begin
       begin
         DoNCPaint(HRGN(AWParam));
         AResult := 0;
+        Result := True;
+      end;
+
+    WM_SYSCOMMAND:
+      if (FmrWinFullNCStrategy = TFmrWinFullNCStrategy.CaptionDuringAnimation) and FCaptionStyleRemoved and
+        (FMode = TFmrFrameMode.FullNC) and (((AWParam and $FFF0) = SC_MINIMIZE) or
+        ((AWParam and $FFF0) = SC_MAXIMIZE) or ((AWParam and $FFF0) = SC_RESTORE)) then
+      begin
+        AResult := AnimatedSysCommand(AWParam, ALParam);
         Result := True;
       end;
 
@@ -1108,7 +1157,8 @@ begin
   // window, and DWM draws its caption buttons over the caption content of a window with WS_CAPTION.
   // (Once removed, WS_CAPTION is no longer in Style: the decision must not depend on it, otherwise every later
   // FrameChanged - CaptionHeight, colors, dark mode - would put the caption style back.)
-  WantRemoved := ((FMode = TFmrFrameMode.FullNC) and (FmrWinFullNCStrategy = TFmrWinFullNCStrategy.NoCaptionStyle)) or
+  WantRemoved := ((FMode = TFmrFrameMode.FullNC) and (FmrWinFullNCStrategy in [TFmrWinFullNCStrategy.NoCaptionStyle,
+    TFmrWinFullNCStrategy.CaptionDuringAnimation])) or
     ((FMode = TFmrFrameMode.Dwm) and (Frame.Backdrop <> TFmrFrameBackdrop.None));
   if WantRemoved and not FCaptionStyleRemoved and ((Style and WS_CAPTION) = WS_CAPTION) then
   begin
@@ -1120,6 +1170,25 @@ begin
   end
   else if not WantRemoved and FCaptionStyleRemoved then
     RestoreWindowStyle;
+end;
+
+function TFmrWinFrame.AnimatedSysCommand(const AWParam: WPARAM; const ALParam: LPARAM): LRESULT;
+begin
+  // The window manager animates minimize, maximize and restore only for a window with WS_CAPTION at that moment;
+  // the geometry stays the one without it (AdjustClientRect).
+  FCaptionForAnimation := True;
+  SetWindowLong(FWnd, GWL_STYLE, GetWindowLong(FWnd, GWL_STYLE) or WS_CAPTION);
+  try
+    Result := DefSubclassProc(FWnd, WM_SYSCOMMAND, AWParam, ALParam);
+  finally
+    FCaptionForAnimation := False;
+    if FAttached and IsWindow(FWnd) then
+    begin
+      SetWindowLong(FWnd, GWL_STYLE, GetWindowLong(FWnd, GWL_STYLE) and not WS_CAPTION);
+      SetWindowPos(FWnd, 0, 0, 0, 0, 0, SWP_FRAMECHANGED or SWP_NOMOVE or SWP_NOSIZE or SWP_NOZORDER or
+        SWP_NOACTIVATE or SWP_NOOWNERZORDER);
+    end;
+  end;
 end;
 
 procedure TFmrWinFrame.RestoreWindowStyle;
@@ -1139,8 +1208,8 @@ end;
 
 procedure TFmrWinFrame.ApplyDwmAttributes;
 var
-  Dark: BOOL;
-  Corner, Backdrop: DWORD;
+  Dark, AllowNCPaint: BOOL;
+  Corner, Backdrop, Policy: DWORD;
   Margins: TMargins;
 begin
   Dark := Frame.DarkMode;
@@ -1170,6 +1239,21 @@ begin
   DwmSetWindowAttribute(FWnd, DWMWA_SYSTEMBACKDROP, @Backdrop, SizeOf(Backdrop));
   DwmExtendFrameIntoClientArea(FWnd, Margins);
   ApplyCaptionColor;
+
+  // Experiments with WS_CAPTION kept (see Docs\FRAME.md); the default strategy never touches these attributes.
+  Policy := DWMNCRP_USEWINDOWSTYLE;
+  AllowNCPaint := False;
+  if FMode = TFmrFrameMode.FullNC then
+    case FmrWinFullNCStrategy of
+      TFmrWinFullNCStrategy.KeepCaptionAllowNCPaint: AllowNCPaint := True;
+      TFmrWinFullNCStrategy.KeepCaptionNoDwmFrame: Policy := DWMNCRP_DISABLED;
+    end;
+  if FDwmPolicySet or (Policy <> DWMNCRP_USEWINDOWSTYLE) or AllowNCPaint then
+  begin
+    DwmSetWindowAttribute(FWnd, DWMWA_NCRENDERING_POLICY, @Policy, SizeOf(Policy));
+    DwmSetWindowAttribute(FWnd, DWMWA_ALLOW_NCPAINT, @AllowNCPaint, SizeOf(AllowNCPaint));
+    FDwmPolicySet := (Policy <> DWMNCRP_USEWINDOWSTYLE) or AllowNCPaint;
+  end;
 end;
 
 procedure TFmrWinFrame.ApplyCaptionColor;
@@ -1194,7 +1278,8 @@ end;
 
 procedure TFmrWinFrame.ResetDwmAttributes;
 var
-  Corner, Backdrop, Color: DWORD;
+  Corner, Backdrop, Color, Policy: DWORD;
+  AllowNCPaint: BOOL;
   Margins: TMargins;
 begin
   Corner := DWMWCP_DEFAULT;
@@ -1205,6 +1290,14 @@ begin
   DwmExtendFrameIntoClientArea(FWnd, Margins);
   Color := DWMWA_COLOR_DEFAULT;
   DwmSetWindowAttribute(FWnd, DWMWA_CAPTION_COLOR_ATTR, @Color, SizeOf(Color));
+  if FDwmPolicySet then
+  begin
+    Policy := DWMNCRP_USEWINDOWSTYLE;
+    DwmSetWindowAttribute(FWnd, DWMWA_NCRENDERING_POLICY, @Policy, SizeOf(Policy));
+    AllowNCPaint := False;
+    DwmSetWindowAttribute(FWnd, DWMWA_ALLOW_NCPAINT, @AllowNCPaint, SizeOf(AllowNCPaint));
+    FDwmPolicySet := False;
+  end;
 end;
 
 procedure TFmrWinFrame.ApplyFormFill;
@@ -1298,7 +1391,7 @@ begin
   State.MaximizedTopOffset := 0;
   if (State.Active <> Frame.State.Active) or (State.Maximized <> Frame.State.Maximized) or
     (State.Minimized <> Frame.State.Minimized) or (State.Mode <> FMode) or (Frame.State.Mode <> Frame.Mode) or
-    (Frame.State.DarkMode <> Frame.DarkMode) or FChangingFrame then
+    (Frame.State.DarkMode <> Frame.DarkMode) or (Frame.State.Hooked <> FAttached) or FChangingFrame then
     Frame.UpdateState(State);
 end;
 

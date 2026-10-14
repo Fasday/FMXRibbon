@@ -80,7 +80,6 @@ type
     procedure AfterCreateFormHandle(const Sender: TObject; const AMsg: TMessage);
     procedure BeforeDestroyFormHandle(const Sender: TObject; const AMsg: TMessage);
     procedure FormBeforeShown(const Sender: TObject; const AMsg: TMessage);
-    function FormWasShown: Boolean;
     procedure HostInvalidate(const ARect: TRectF);
     procedure SetMode(const Value: TFmrFrameMode);
     procedure SetCaptionHeight(const Value: Single);
@@ -133,7 +132,10 @@ type
     property Host: TFmrFrameHost read FHost;
     /// <summary>State of the window (active, maximized, mode...).</summary>
     property State: TFmrFrameState read FState;
-    /// <summary>True when the window is hooked by a platform implementation.</summary>
+    /// <summary>True when the window is hooked by a platform implementation. The window is hooked synchronously as
+    /// soon as it exists (in the constructor or Loaded of the frame, when the form's handle is created), so Hooked is
+    /// already True before the form is shown; every change (attach, detach when the handle is recreated or the frame
+    /// is disabled) sends a <c>TFmrFrameStateMessage</c> whose <c>State.Hooked</c> tells the new value.</summary>
     property Hooked: Boolean read GetHooked;
     property PlatformFrame: TFmrFramePlatform read FPlatform;
   published
@@ -154,7 +156,7 @@ type
       default TAlphaColors.Null;
     /// <summary>False: the window keeps its standard frame and the host is an ordinary top control.</summary>
     property Enabled: Boolean read FEnabled write SetEnabled default True;
-    /// <summary>The window state changed (active, maximized, minimized, mode).</summary>
+    /// <summary>The window state changed (active, maximized, minimized, mode, hooked).</summary>
     property OnStateChanged: TNotifyEvent read FOnStateChanged write FOnStateChanged;
   end;
 
@@ -213,9 +215,10 @@ begin
       FBeforeDestroyHandleId := TMessageManager.DefaultManager.SubscribeToMessage(TBeforeDestroyFormHandle,
         BeforeDestroyFormHandle);
       FBeforeShownId := TMessageManager.DefaultManager.SubscribeToMessage(TFormBeforeShownMessage, FormBeforeShown);
-      // The window is hooked just before the form is shown the first time (the form is complete then); a frame
-      // created for a form that is already on screen hooks now.
-      if FormWasShown and not (csLoading in ComponentState) then
+      // Hooked synchronously as soon as the window exists: now (frame created in code, TFmrForm), in Loaded (frame read
+      // from a form resource) or when the handle is created; Hooked is reliable from then on and every change of it is
+      // announced with TFmrFrameStateMessage.
+      if not (csLoading in ComponentState) then
         Hook;
     end;
   end;
@@ -272,11 +275,6 @@ begin
     inherited;
 end;
 
-function TFmrFormFrame.FormWasShown: Boolean;
-begin
-  Result := (FForm <> nil) and not (TFmxFormState.WasNotShown in FForm.FormState);
-end;
-
 procedure TFmrFormFrame.Loaded;
 begin
   inherited;
@@ -286,7 +284,7 @@ begin
     if not Hooked then
       PlaceHostInClient(FCaptionHeight);
   end;
-  if FormWasShown and not (csDesigning in ComponentState) then
+  if not (csDesigning in ComponentState) then
     Hook;
 end;
 
@@ -315,13 +313,22 @@ begin
   if FPlatform = nil then
     FPlatform := FmrFramePlatformClass.Create(Self);
   if not FPlatform.IsAttached then
+  begin
     FPlatform.Attach;
+    // Attach sends the state of the attached frame already; this covers a platform that did not attach.
+    if not FPlatform.IsAttached then
+      UpdateState(FState);
+  end;
 end;
 
 procedure TFmrFormFrame.Unhook;
 begin
   if (FPlatform <> nil) and FPlatform.IsAttached then
+  begin
     FPlatform.Detach;
+    if not (csDestroying in ComponentState) and ((FForm = nil) or not (csDestroying in FForm.ComponentState)) then
+      UpdateState(FState);
+  end;
 end;
 
 function TFmrFormFrame.GetHooked: Boolean;
@@ -331,13 +338,15 @@ end;
 
 procedure TFmrFormFrame.AfterCreateFormHandle(const Sender: TObject; const AMsg: TMessage);
 begin
-  // A recreated handle of a form that was already shown (BorderStyle changed...); a new form hooks before it is shown.
-  if (AMsg is TAfterCreateFormHandle) and (TAfterCreateFormHandle(AMsg).Value = FForm) and FormWasShown then
+  // A recreated handle (BorderStyle, FormStyle changed...) is hooked at once, before anybody paints it.
+  if (AMsg is TAfterCreateFormHandle) and (TAfterCreateFormHandle(AMsg).Value = FForm) then
     Hook;
 end;
 
 procedure TFmrFormFrame.FormBeforeShown(const Sender: TObject; const AMsg: TMessage);
 begin
+  // Normally hooked long before; this catches a frame that could not hook earlier (Enabled set to True while the form
+  // was loading...).
   if (AMsg is TFormBeforeShownMessage) and (TFormBeforeShownMessage(AMsg).Value = FForm) then
     Hook;
 end;
@@ -554,6 +563,7 @@ end;
 procedure TFmrFormFrame.UpdateState(const AState: TFmrFrameState);
 begin
   FState := AState;
+  FState.Hooked := Hooked;
   FState.Mode := FMode;
   FState.DarkMode := FDarkMode;
   FState.Transparent := IsCaptionTransparent;

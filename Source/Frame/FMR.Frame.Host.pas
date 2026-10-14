@@ -12,8 +12,8 @@ unit FMR.Frame.Host;
 interface
 
 uses
-  System.Types, System.UITypes, System.SysUtils, System.Classes, System.Messaging, FMX.Types, FMX.Controls,
-  FMX.Graphics, FMX.Forms, FMR.Frame.Types;
+  System.Types, System.UITypes, System.SysUtils, System.Classes, System.Messaging, System.Math.Vectors, FMX.Types,
+  FMX.Controls, FMX.Graphics, FMX.Forms, FMR.Frame.Types;
 
 type
   /// <summary>Called by a frame host whose caption content needs repainting while it lives in the non-client area.
@@ -32,14 +32,20 @@ type
   /// unchanged; painting goes into <see cref="Buffer"/> (<see cref="PaintBuffer"/>), which the platform frame copies
   /// to the window DC, and invalidation goes through <see cref="OnInvalidate"/>. Absolute coordinates of the children
   /// stay client coordinates of the form, so all FMX conversions (popups, IME, hit tests) work.</para>
-  /// <para>Limitation of the non-client modes: the buffer is painted with <c>TCanvas.Offset</c>, which FMX applies
-  /// before the control's matrix; children must not be rotated or scaled.</para>
+  /// <para>While the buffer is painted the children's absolute matrices are relative to the host (the host's
+  /// children matrix cancels its position), so the canvas is used without <c>TCanvas.Offset</c>: SaveState and
+  /// RestoreState, clipping and transformed children work as on a form. The scene conversions take this into account,
+  /// so LocalToScreen/ScreenToLocal called from Paint stay right. Exception: while an FMX drop-down (<c>TPopup</c>) of
+  /// a control in the host is open, the buffer is painted with <c>TCanvas.Offset</c> (see PaintBuffer).</para>
   /// </remarks>
   TFmrFrameHost = class(TControl, IStyleBookOwner, IScene)
   private
     FOwnScene: Boolean;
     FBuffer: TBitmap;
     FPaintingBuffer: Boolean;
+    FChildrenRelative: Boolean;
+    FSwitchingOrigin: Boolean;
+    FPaintOrigin: TPointF;
     FInvalidatedWhilePainting: Boolean;
     FDisableUpdating: Integer;
     FDirtyRect: TRectF;
@@ -59,6 +65,8 @@ type
     procedure EnsureBuffer(const AWidth, AHeight: Integer; const AScale: Single);
     function GetCurrentFillColor: TAlphaColor;
     procedure NotifyState(const AControl: TControl);
+    procedure SetChildrenRelative(const AValue: Boolean);
+    function HasOpenPopup: Boolean;
   protected
     { IScene }
     procedure AddUpdateRect(const R: TRectF);
@@ -84,6 +92,8 @@ type
     procedure Paint; override;
     procedure PaintChildren; override;
     function GetDefaultSize: TSizeF; override;
+    function GetChildrenMatrix(var Matrix: TMatrix; var Simple: Boolean): Boolean; override;
+    function DoGetUpdateRect: TRectF; override;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -350,12 +360,66 @@ begin
     FBuffer.SetSize(W, H);
 end;
 
+function TFmrFrameHost.GetChildrenMatrix(var Matrix: TMatrix; var Simple: Boolean): Boolean;
+begin
+  Result := inherited;
+  if FChildrenRelative then
+  begin
+    // Cancels the host's position: the children's absolute coordinates become bitmap coordinates.
+    Matrix := TMatrix.CreateTranslation(-FPaintOrigin.X, -FPaintOrigin.Y);
+    Simple := True;
+    Result := True;
+  end;
+end;
+
+function TFmrFrameHost.DoGetUpdateRect: TRectF;
+begin
+  // Children of a host with ClipChildren intersect their update rectangles with this one: same coordinates.
+  if FChildrenRelative then
+    Result := TRectF.Create(0, 0, Width, Height)
+  else
+    Result := inherited;
+end;
+
+procedure TFmrFrameHost.SetChildrenRelative(const AValue: Boolean);
+begin
+  if FChildrenRelative = AValue then
+    Exit;
+  FSwitchingOrigin := True;
+  try
+    if AValue then
+      FPaintOrigin := LocalToAbsolute(TPointF.Zero);
+    FChildrenRelative := AValue;
+    // The children compute their absolute matrices and update rectangles again (lazily) from GetChildrenMatrix.
+    RecalcAbsolute;
+    RecalcUpdateRect;
+  finally
+    FSwitchingOrigin := False;
+  end;
+end;
+
+function TFmrFrameHost.HasOpenPopup: Boolean;
+var
+  I: Integer;
+  Popup: TPopup;
+begin
+  for I := 0 to GetPopupCount - 1 do
+    if GetPopup(I) is TPopup then
+    begin
+      Popup := TPopup(GetPopup(I));
+      if ((Popup.PlacementTarget <> nil) and (FmrFindFrameHost(Popup.PlacementTarget) = Self)) or
+        (FmrFindFrameHost(Popup) = Self) then
+        Exit(True);
+    end;
+  Result := False;
+end;
+
 function TFmrFrameHost.PaintBuffer(const AWidth, AHeight: Integer; const AScale: Single): TBitmap;
 var
   I: Integer;
   Child: TControl;
   LCanvas: TCanvas;
-  Origin: TPointF;
+  UseOffset: Boolean;
 begin
   EnsureBuffer(AWidth, AHeight, AScale);
   Result := FBuffer;
@@ -364,10 +428,15 @@ begin
     if Controls[I].Visible then
       TOpenControl(Controls[I]).PrepareForPaint;
   LCanvas := FBuffer.Canvas;
-  // Absolute coordinates of the children are client coordinates of the form; the bitmap starts at the host.
-  Origin := LocalToAbsolute(TPointF.Zero);
-  LCanvas.Offset := TPointF.Create(-Origin.X, -Origin.Y);
   FPaintingBuffer := True;
+  // While an FMX drop-down of a control in the host is open, the children keep their matrices: switching them calls
+  // DoAbsoluteChanged, and TComboEdit/TComboTrackBar close their drop-down when they find themselves outside the
+  // form's client rectangle. TCanvas.Offset is used meanwhile (FMX applies it a second time after RestoreState).
+  UseOffset := HasOpenPopup;
+  if UseOffset then
+    LCanvas.Offset := -LocalToAbsolute(TPointF.Zero)
+  else
+    SetChildrenRelative(True);
   try
     if LCanvas.BeginScene then
     try
@@ -383,8 +452,11 @@ begin
       LCanvas.EndScene;
     end;
   finally
+    if UseOffset then
+      LCanvas.Offset := TPointF.Zero
+    else
+      SetChildrenRelative(False);
     FPaintingBuffer := False;
-    LCanvas.Offset := TPointF.Zero;
   end;
   if FInvalidatedWhilePainting then
   begin
@@ -502,7 +574,8 @@ end;
 
 procedure TFmrFrameHost.AddUpdateRect(const R: TRectF);
 begin
-  if (FDisableUpdating > 0) or (csDestroying in ComponentState) then
+  // Switching the children between client and bitmap coordinates is not a change of the content.
+  if (FDisableUpdating > 0) or FSwitchingOrigin or (csDestroying in ComponentState) then
     Exit;
   // A control that changes while it is being painted (style animations) is painted again afterwards.
   if FPaintingBuffer then
@@ -525,7 +598,11 @@ end;
 
 function TFmrFrameHost.GetUpdateRect(const Index: Integer): TRectF;
 begin
-  Result := AbsoluteRect;
+  // The whole host is repainted; in the children's coordinates (bitmap coordinates while painting).
+  if FChildrenRelative then
+    Result := TRectF.Create(0, 0, Width, Height)
+  else
+    Result := AbsoluteRect;
 end;
 
 function TFmrFrameHost.GetSceneObject: TFmxObject;
@@ -557,12 +634,17 @@ end;
 function TFmrFrameHost.SceneLocalToScreen(const AScenePoint: TPointF): TPointF;
 var
   FormScene: IScene;
+  P: TPointF;
 begin
+  // Scene coordinates are client coordinates of the form, host-relative while the buffer is painted.
+  P := AScenePoint;
+  if FChildrenRelative then
+    P := P + FPaintOrigin;
   FormScene := GetFormScene;
   if FormScene <> nil then
-    Result := FormScene.LocalToScreen(AScenePoint)
+    Result := FormScene.LocalToScreen(P)
   else
-    Result := AScenePoint;
+    Result := P;
 end;
 
 function TFmrFrameHost.SceneScreenToLocal(const AScreenPoint: TPointF): TPointF;
@@ -574,6 +656,8 @@ begin
     Result := FormScene.ScreenToLocal(AScreenPoint)
   else
     Result := AScreenPoint;
+  if FChildrenRelative then
+    Result := Result - FPaintOrigin;
 end;
 
 procedure TFmrFrameHost.ChangeScrollingState(const AControl: TControl; const AActive: Boolean);

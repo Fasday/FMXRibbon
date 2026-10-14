@@ -76,6 +76,11 @@ type
     DarkMode: Boolean;
     /// <summary>The caption background is transparent: a system backdrop (Mica, Acrylic) shows through it.</summary>
     Transparent: Boolean;
+    /// <summary>The platform frame is attached to the window: the host is where <see cref="Mode"/> puts it (non-client
+    /// strip or top of the client area). False: design time, another platform, a frame being (re)attached; the host is
+    /// an ordinary control at the top of the client area. A <c>TFmrFrameStateMessage</c> is sent whenever it
+    /// changes.</summary>
+    Hooked: Boolean;
   end;
 
   /// <summary>System backdrop material of the window (Windows 11 22H2 and later; ignored elsewhere).</summary>

@@ -13,7 +13,7 @@ interface
 
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Messaging, FMX.Types, FMX.Controls, FMX.Forms, FMX.Graphics,
-  FMX.StdCtrls, FMX.Edit, FMX.ListBox, FMX.Layouts, FMX.Objects, FMX.Controls.Presentation,
+  FMX.StdCtrls, FMX.Edit, FMX.ComboEdit, FMX.Pickers, FMX.ListBox, FMX.Layouts, FMX.Objects, FMX.Controls.Presentation,
   FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Frame.Buttons, FMR.Frame.Form;
 
 type
@@ -60,12 +60,14 @@ type
   private
     // caption row
     FCaptionRow: TLayout;
+    FDiamond: TRectangle;
     FRightBox: TLayout;
     FButtonsBox: TLayout;
     FAppIcon: TAppIcon;
     FQat: array [0..2] of TSpeedButton;
     FQatPaths: array [0..2] of TPath;
     FCombo: TComboBox;
+    FZoom: TComboEdit;
     FTitle: TLabel;
     FSearch: TEdit;
     FMinButton, FMaxButton, FCloseButton: TFmrCaptionButton;
@@ -87,6 +89,16 @@ type
     FTimer: TTimer;
     FLastAction: string;
     FUpdatingUI: Boolean;
+    FAnimTest: Boolean;
+    FHookLog: string;
+    FLastHooked: Boolean;
+    FStateMessages: Integer;
+    FStateMsgId: TMessageSubscriptionId;
+    FSimDpi: Cardinal;
+    FDpiButton: TButton;
+    procedure DpiButtonClick(Sender: TObject);
+    procedure SimulateDpiChange;
+    procedure AddImeInfo(const ALines: TStrings);
     procedure BuildCaption;
     procedure BuildClient;
     procedure ApplyCommandLine;
@@ -109,6 +121,7 @@ type
       const AHeight: Single): TLabel;
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
   end;
 
 var
@@ -117,8 +130,8 @@ var
 implementation
 
 uses
-  System.Math, System.StrUtils
-  {$IFDEF MSWINDOWS}, Winapi.Windows, Winapi.Messages, Winapi.Dwmapi, FMX.Platform.Win, FMR.Frame.Win{$ENDIF};
+  System.Math, System.StrUtils, FMX.Text
+  {$IFDEF MSWINDOWS}, Winapi.Windows, Winapi.Messages, Winapi.Dwmapi, Winapi.Imm, FMX.Platform.Win, FMR.Frame.Win{$ENDIF};
 
 const
   LightCaption = $FFF3F3F3;
@@ -168,12 +181,21 @@ procedure TAppIcon.Paint;
 var
   R: TRectF;
   Path: TPathData;
+  State: TCanvasSaveState;
 begin
   R := TRectF.Create(0, 0, 18, 18);
   R.SetLocation((Width - 18) / 2, (Height - 18) / 2);
-  Canvas.Fill.Kind := TBrushKind.Solid;
-  Canvas.Fill.Color := FAccent;
-  Canvas.FillRect(R, 4, 4, AllCorners, AbsoluteOpacity);
+  // Painted with a SaveState/RestoreState pair and clipping on purpose: in the non-client strip the glyph after
+  // RestoreState lands where the background is only if the host paints without TCanvas.Offset.
+  State := Canvas.SaveState;
+  try
+    Canvas.IntersectClipRect(R);
+    Canvas.Fill.Kind := TBrushKind.Solid;
+    Canvas.Fill.Color := FAccent;
+    Canvas.FillRect(R, 4, 4, AllCorners, AbsoluteOpacity);
+  finally
+    Canvas.RestoreState(State);
+  end;
   // A ribbon-like "R" glyph drawn with a path.
   Path := TPathData.Create;
   try
@@ -376,9 +398,34 @@ end;
 { TNCProofForm }
 
 constructor TNCProofForm.Create(AOwner: TComponent);
+{$IFDEF MSWINDOWS}
+var
+  I: Integer;
+{$ENDIF}
 begin
+{$IFDEF MSWINDOWS}
+  // The strategy is read when the frame attaches, i.e. while the form is created.
+  for I := 1 to ParamCount do
+    if SameText(ParamStr(I), '/strategy=keepcaption') then
+      FmrWinFullNCStrategy := TFmrWinFullNCStrategy.KeepCaptionStyle
+    else if SameText(ParamStr(I), '/strategy=allowncpaint') then
+      FmrWinFullNCStrategy := TFmrWinFullNCStrategy.KeepCaptionAllowNCPaint
+    else if SameText(ParamStr(I), '/strategy=nodwmframe') then
+      FmrWinFullNCStrategy := TFmrWinFullNCStrategy.KeepCaptionNoDwmFrame
+    else if SameText(ParamStr(I), '/strategy=animcaption') then
+      FmrWinFullNCStrategy := TFmrWinFullNCStrategy.CaptionDuringAnimation;
+{$ENDIF}
   // The form is built in code: no .fmx resource.
   inherited CreateNew(AOwner);
+  // TFmrForm creates its frame in InitializeNewForm, which hooks the window at once.
+  FLastHooked := Frame.Hooked;
+  FHookLog := 'after CreateNew: Hooked=' + BoolToStr(FLastHooked, True);
+  FStateMsgId := TMessageManager.DefaultManager.SubscribeToMessage(TFmrFrameStateMessage,
+    procedure(const Sender: TObject; const M: System.Messaging.TMessage)
+    begin
+      if TFmrFrameStateMessage(M).Host = Frame.Host then
+        Inc(FStateMessages);
+    end);
   Caption := 'FMR NCProof';
   Width := 1180;
   Height := 760;
@@ -393,6 +440,12 @@ begin
   FTimer.Interval := 200;
   FTimer.OnTimer := UpdateGeometry;
   UpdateGeometry(nil);
+end;
+
+destructor TNCProofForm.Destroy;
+begin
+  TMessageManager.DefaultManager.Unsubscribe(TFmrFrameStateMessage, FStateMsgId);
+  inherited;
 end;
 
 function TNCProofForm.MakeLabel(const AParent: TFmxObject; const AText: string; const AAlign: TAlignLayout;
@@ -416,6 +469,7 @@ const
   QatHints: array [0..2] of string = ('Save', 'Undo', 'Redo');
 var
   Host: TFmrFrameHost;
+  DiamondBox: TLayout;
   I: Integer;
 
   function MakeButton(const AKind: TFmrCaptionButtonKind; const AX: Single): TFmrCaptionButton;
@@ -486,6 +540,20 @@ begin
     FQatPaths[I].WrapMode := TPathWrapMode.Fit;
   end;
 
+  // A rotated child: transformed controls paint correctly in the non-client strip.
+  DiamondBox := TLayout.Create(Self);
+  DiamondBox.Parent := FCaptionRow;
+  DiamondBox.Position.X := 190;
+  DiamondBox.Align := TAlignLayout.Left;
+  DiamondBox.Width := 26;
+  FDiamond := TRectangle.Create(Self);
+  FDiamond.Parent := DiamondBox;
+  FDiamond.HitTest := False;
+  FDiamond.SetBounds(7, 10, 12, 12);
+  FDiamond.RotationAngle := 45;
+  FDiamond.Stroke.Kind := TBrushKind.None;
+  FDiamond.Fill.Color := $FFE81123;
+
   FCombo := TComboBox.Create(Self);
   FCombo.Parent := FCaptionRow;
   FCombo.Position.X := 200;
@@ -498,6 +566,18 @@ begin
   FCombo.OnPopup := ComboPopup;
   FCombo.OnClosePopup := ComboClosePopup;
   Application.OnException := AppException;
+
+  // A TComboEdit with its own TPopup (Custom): it closes the drop-down when it thinks it was moved out of sight
+  // (TStyledComboEdit.DoAbsoluteChanged).
+  FZoom := TComboEdit.Create(Self);
+  FZoom.Parent := FCaptionRow;
+  FZoom.Position.X := 400;
+  FZoom.Align := TAlignLayout.Left;
+  FZoom.Width := 86;
+  FZoom.Margins.Rect := TRectF.Create(4, 4, 4, 4);
+  FZoom.Items.AddStrings(['50%', '75%', '100%', '150%', '200%']);
+  FZoom.ItemIndex := 2;
+  FZoom.DropDownKind := TDropDownKind.Custom;
 
   FTitle := TLabel.Create(Self);
   FTitle.Parent := FCaptionRow;
@@ -597,6 +677,17 @@ begin
   FMaxToggle.Margins.Bottom := 8;
   FMaxToggle.OnClick := MaxToggleClick;
 
+  // One monitor only here: WM_DPICHANGED is simulated (FMX takes the DPI from the message; the frame recomputes
+  // the strip for the new scale).
+  FDpiButton := TButton.Create(Self);
+  FDpiButton.Parent := Panel;
+  FDpiButton.Align := TAlignLayout.Top;
+  FDpiButton.Position.Y := 365;
+  FDpiButton.Height := 30;
+  FDpiButton.Text := 'Simulate WM_DPICHANGED (120 dpi)';
+  FDpiButton.Margins.Bottom := 8;
+  FDpiButton.OnClick := DpiButtonClick;
+
   FClientLabel := MakeLabel(Panel, 'Client edit (focus comparison):', TAlignLayout.Top, 24);
   FClientLabel.Position.Y := 370;
   FClientEdit := TEdit.Create(Self);
@@ -667,8 +758,16 @@ begin
       Top := StrToIntDef(Value.Split([','])[1], Top);
     end
 {$IFDEF MSWINDOWS}
-    else if (S = '/strategy=keepcaption') or (S = '-strategy=keepcaption') then
-      FmrWinFullNCStrategy := TFmrWinFullNCStrategy.KeepCaptionStyle
+    else if S = '/animtest' then
+      // Magenta client area: tools can find the window's pixels on the screen (animation measurements).
+      FAnimTest := True
+    else if S = '/simdpi' then
+      // Simulates a DPI change shortly after the start (screenshots).
+      TThread.ForceQueue(nil,
+        procedure
+        begin
+          SimulateDpiChange;
+        end, 1500)
     else if S = '/fixed' then
       BorderStyle := TFmxFormBorderStyle.Single
     else if S = '/noframe' then
@@ -712,7 +811,12 @@ begin
     for I := 0 to 2 do
       FQatPaths[I].Stroke.Color := Text;
     // The client area keeps a solid background; with a backdrop only the caption shows the material.
-    if Dark then
+    if FAnimTest then
+    begin
+      FBackground.Fill.Color := $FFFF00FF;
+      FSidePanel.Fill.Color := $FFFF00FF;
+    end
+    else if Dark then
     begin
       FBackground.Fill.Color := DarkClient;
       FSidePanel.Fill.Color := DarkPanel;
@@ -776,6 +880,109 @@ begin
   Frame.ToggleMaximize;
 end;
 
+procedure TNCProofForm.AddImeInfo(const ALines: TStrings);
+{$IFDEF MSWINDOWS}
+var
+  TextInput: ITextInput;
+  Ctrl: TControl;
+  Wnd: HWND;
+  Scale: Single;
+  P, TL, BR: TPoint;
+  Clause, SelTL, SelBR: TPointF;
+  SelRect: TRectF;
+  IMC: HIMC;
+  Cand: TCandidateForm;
+begin
+  if (Focused = nil) or not Supports(Focused, ITextInput, TextInput) or not (Focused.GetObject is TControl) then
+    Exit;
+  Ctrl := TControl(Focused.GetObject);
+  Wnd := FormToHWND(Self);
+  Scale := Handle.Scale;
+  // What FMX's IME manager computes (TImmManager.UpdateIMEWindowPosition): the target clause point of the focused
+  // text input in form client coordinates, passed to ImmSetCandidateWindow.
+  Clause := TextInput.GetTargetClausePointF;
+  P := TPoint.Create(Round(Clause.X * Scale), Round(Clause.Y * Scale));
+  Winapi.Windows.ClientToScreen(Wnd, P);
+  TL := DpToPx(Ctrl.LocalToScreen(TPointF.Zero));
+  BR := DpToPx(Ctrl.LocalToScreen(TPointF.Create(Ctrl.Width, Ctrl.Height)));
+  ALines.Add(Format('IME clause pt   : (%d,%d) screen px; focused control (%d,%d)-(%d,%d)', [P.X, P.Y, TL.X, TL.Y,
+    BR.X, BR.Y]));
+  // The CFS_EXCLUDE rectangle as FMX computes it: Form.ScreenToClient(Focused.LocalToScreen(selection)).
+  SelRect := TextInput.GetSelectionRect;
+  SelTL := ScreenToClient(Ctrl.LocalToScreen(SelRect.TopLeft));
+  SelBR := ScreenToClient(Ctrl.LocalToScreen(SelRect.BottomRight));
+  TL := TPoint.Create(Round(SelTL.X * Scale), Round(SelTL.Y * Scale));
+  BR := TPoint.Create(Round(SelBR.X * Scale), Round(SelBR.Y * Scale));
+  Winapi.Windows.ClientToScreen(Wnd, TL);
+  Winapi.Windows.ClientToScreen(Wnd, BR);
+  ALines.Add(Format('IME exclude     : (%d,%d)-(%d,%d) screen px (selection rect of the edit)', [TL.X, TL.Y, BR.X,
+    BR.Y]));
+  // What FMX really passed to the input context (only while composing: TImmManager.UpdateIMEWindowPosition).
+  IMC := ImmGetContext(Wnd);
+  if IMC = 0 then
+    ALines.Add('IME candidate   : no input context')
+  else
+  try
+    FillChar(Cand, SizeOf(Cand), 0);
+    if ImmGetCandidateWindow(IMC, 0, @Cand) then
+    begin
+      P := Cand.ptCurrentPos;
+      Winapi.Windows.ClientToScreen(Wnd, P);
+      TL := Cand.rcArea.TopLeft;
+      BR := Cand.rcArea.BottomRight;
+      Winapi.Windows.ClientToScreen(Wnd, TL);
+      Winapi.Windows.ClientToScreen(Wnd, BR);
+      ALines.Add(Format('IME candidate   : style $%x pos (%d,%d) exclude (%d,%d)-(%d,%d) screen px',
+        [Cand.dwStyle, P.X, P.Y, TL.X, TL.Y, BR.X, BR.Y]));
+    end
+    else
+      ALines.Add('IME candidate   : not set');
+  finally
+    ImmReleaseContext(Wnd, IMC);
+  end;
+end;
+{$ELSE}
+begin
+end;
+{$ENDIF}
+
+procedure TNCProofForm.DpiButtonClick(Sender: TObject);
+begin
+  SimulateDpiChange;
+end;
+
+procedure TNCProofForm.SimulateDpiChange;
+{$IFDEF MSWINDOWS}
+var
+  Wnd: HWND;
+  R: TRect;
+  NewDpi, RealDpi: Cardinal;
+begin
+  Wnd := FormToHWND(Self);
+  RealDpi := GetDpiForWindow(Wnd);
+  if FSimDpi = 0 then
+    FSimDpi := RealDpi;
+  if FSimDpi = RealDpi then
+    NewDpi := 120
+  else
+    NewDpi := RealDpi;
+  // The suggested rectangle scales the window like Windows does when it moves to a monitor with another DPI.
+  GetWindowRect(Wnd, R);
+  R.Right := R.Left + MulDiv(R.Width, NewDpi, FSimDpi);
+  R.Bottom := R.Top + MulDiv(R.Height, NewDpi, FSimDpi);
+  FSimDpi := NewDpi;
+  SendMessage(Wnd, WM_DPICHANGED, MakeWParam(NewDpi, NewDpi), LPARAM(@R));
+  FLastAction := Format('WM_DPICHANGED %d dpi simulated', [NewDpi]);
+  if NewDpi = RealDpi then
+    FDpiButton.Text := 'Simulate WM_DPICHANGED (120 dpi)'
+  else
+    FDpiButton.Text := Format('Simulate WM_DPICHANGED back (%d dpi)', [RealDpi]);
+end;
+{$ELSE}
+begin
+end;
+{$ENDIF}
+
 procedure TNCProofForm.QatClick(Sender: TObject);
 const
   Names: array [0..2] of string = ('Save', 'Undo', 'Redo');
@@ -818,6 +1025,12 @@ procedure TNCProofForm.FrameStateChanged(Sender: TObject);
 var
   OwnButtons: Boolean;
 begin
+  if Frame.State.Hooked <> FLastHooked then
+  begin
+    FLastHooked := Frame.State.Hooked;
+    FHookLog := FHookLog + Format('; %s (%s)', [IfThen(FLastHooked, 'hooked', 'unhooked'),
+      IfThen(Visible, 'visible', 'not shown yet')]);
+  end;
   // NCStrip keeps the system title bar with its own buttons.
   OwnButtons := Frame.Mode <> TFmrFrameMode.NCStrip;
   if (FButtonsBox <> nil) and (FButtonsBox.Visible <> OwnButtons) then
@@ -923,6 +1136,10 @@ begin
     end;
     Lines.Add(Format('focused control : %s', [FocusedName]));
     Lines.Add(Format('focus in NC     : %s', [InHost]));
+{$IFDEF MSWINDOWS}
+    AddImeInfo(Lines);
+{$ENDIF}
+    Lines.Add(Format('hook log        : %s; state messages: %d', [FHookLog, FStateMessages]));
     Lines.Add(Format('search text     : "%s"', [FSearch.Text]));
     Lines.Add(Format('selected tab    : %s', [FTabRow.Tabs[FTabRow.Selected]]));
     Lines.Add(Format('combo dropped   : %s', [BoolToStr(FCombo.DroppedDown, True)]));

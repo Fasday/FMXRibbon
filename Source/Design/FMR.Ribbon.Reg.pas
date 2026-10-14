@@ -23,7 +23,8 @@ implementation
 uses
   System.Classes, DesignIntf, DesignEditors, FMX.Types, FMX.Controls, FMR.Bars, FMR.Bars.Items,
   FMR.Ribbon.Structure, FMR.Frame, FMR.Frame.Buttons, FMR.Frame.Form, FMR.Ribbon, FMR.Ribbon.Popup,
-  FMR.Ribbon.Backstage, FMR.Ribbon.Backstage.Controls, FMR.Ribbon.StatusBar, FMR.Ribbon.Design.Editors;
+  FMR.Ribbon.Backstage, FMR.Ribbon.Backstage.Controls, FMR.Ribbon.StatusBar, FMR.Ribbon.Gallery,
+  FMR.Ribbon.ColorGallery, FMR.Ribbon.AppMenu, FMR.Ribbon.MiniToolbar, FMR.Ribbon.RadialMenu, FMR.Ribbon.Design.Editors;
 
 const
   SPalettePage = 'FMR Ribbon';
@@ -33,12 +34,13 @@ begin
   RegisterComponents(SPalettePage, [TFmrRibbon, TFmrBarManager, TFmrFormFrame, TFmrPopupMenu,
     TFmrRibbonBackstageView, TFmrBackstageTab, TFmrBackstageButton, TFmrBackstageHeader, TFmrBackstageLabel,
     TFmrBackstageTile, TFmrBackstageGalleryList, TFmrStatusBar, TFmrStatusBarPanel, TFmrCaptionButton,
-    TFmrCaptionTitle]);
+    TFmrCaptionTitle, TFmrRibbonApplicationMenu, TFmrRibbonMiniToolbar, TFmrRibbonRadialMenu]);
 
   // Created by the editors and the Structure View, streamed with the form, no palette icon.
   RegisterNoIcon([TFmrRibbonTab, TFmrRibbonGroup, TFmrRibbonContextGroup, TFmrButtonItem, TFmrSubItem,
     TFmrSeparatorItem, TFmrStaticItem, TFmrControlItem, TFmrEditItem, TFmrComboItem, TFmrSpinItem,
-    TFmrTrackBarItem, TFmrFontNameItem, TFmrCheckItem, TFmrColorItem, TFmrGalleryItem]);
+    TFmrTrackBarItem, TFmrFontNameItem, TFmrCheckItem, TFmrColorItem, TFmrGalleryItem, TFmrRibbonGalleryItem,
+    TFmrColorGalleryItem]);
 
   // TFmrFormFrame is a plain TComponent: show it for FireMonkey forms only.
   GroupDescendentsWith(TFmrFormFrame, FMX.Controls.TControl);
