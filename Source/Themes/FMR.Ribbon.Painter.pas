@@ -108,6 +108,37 @@ type
     procedure DrawStatusBar(const ACanvas: TCanvas; const R: TRectF);
     procedure DrawEditFrame(const ACanvas: TCanvas; const R: TRectF; const AHot, AEnabled: Boolean);
 
+    { additions for the ribbon control and its popups }
+    /// <summary>Text with trimming (ellipsis) and optional word wrap, drawn with a text layout.</summary>
+    procedure TextEx(const ACanvas: TCanvas; const R: TRectF; const AText: string; const AColor: TAlphaColor;
+      const AHAlign, AVAlign: TTextAlign; const ASize: Single; const ABold, AWordWrap: Boolean;
+      const ATrimming: TTextTrimming = TTextTrimming.Character; const AOpacity: Single = 1);
+    /// <summary>Soft shadow around R (popups, screen tips): ASize dp of fading layers of the PopupShadow token.
+    /// </summary>
+    procedure DrawShadow(const ACanvas: TCanvas; const R: TRectF; const ARadius, ASize: Single);
+    /// <summary>Background and border of a popup window (menus, group popups, palettes).</summary>
+    procedure DrawPopupBackground(const ACanvas: TCanvas; const R: TRectF);
+    /// <summary>Check box (or radio button) of a check item painted by the ribbon.</summary>
+    procedure DrawCheckBox(const ACanvas: TCanvas; const R: TRectF; const AChecked, ARadio: Boolean;
+      const AState: TFmrPartState);
+    /// <summary>Magnifier glyph of the search box.</summary>
+    procedure DrawSearchGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+    /// <summary>Glyph of the quick access toolbar customize button (a bar above a down arrow).</summary>
+    procedure DrawCustomizeGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+    /// <summary>Double chevron (overflow of the quick access toolbar).</summary>
+    procedure DrawChevron(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+    /// <summary>Color bar under the glyph of a color button (TAlphaColors.Null: an outlined empty bar).</summary>
+    procedure DrawColorBar(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+    /// <summary>One cell of a color palette.</summary>
+    procedure DrawColorCell(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor;
+      const AHot, ASelected: Boolean);
+    /// <summary>Thin horizontal separator of a screen tip.</summary>
+    procedure DrawScreenTipSeparator(const ACanvas: TCanvas; const AX1, AX2, AY: Single);
+    /// <summary>Background of the area around a floating body (Office 365, Fluent) or of the body row.</summary>
+    procedure DrawBodyBackground(const ACanvas: TCanvas; const R: TRectF; const AActive: Boolean);
+    /// <summary>Gutter highlight of a checked menu item (Office 2007/2010 draw a box around the check mark).</summary>
+    procedure DrawMenuCheckBackground(const ACanvas: TCanvas; const R: TRectF);
+
     { state helpers }
     function ButtonTextColor(const AState: TFmrPartState): TAlphaColor;
     function GlyphTint(const AState: TFmrPartState): TAlphaColor;
@@ -979,6 +1010,193 @@ begin
     Frame(ACanvas, R, TFmrToken.EditBorderHot, Rad)
   else
     Frame(ACanvas, R, TFmrToken.EditBorder, Rad);
+end;
+
+{ additions }
+
+procedure TFmrRibbonPainter.TextEx(const ACanvas: TCanvas; const R: TRectF; const AText: string;
+  const AColor: TAlphaColor; const AHAlign, AVAlign: TTextAlign; const ASize: Single; const ABold, AWordWrap: Boolean;
+  const ATrimming: TTextTrimming; const AOpacity: Single);
+begin
+  if (AText = '') or (TAlphaColorRec(AColor).A = 0) or (R.Width <= 0) or (R.Height <= 0) then
+    Exit;
+  PrepareFont(FFont, ASize, ABold);
+  FLayout.BeginUpdate;
+  try
+    FLayout.Font := FFont;
+    FLayout.Text := AText;
+    FLayout.WordWrap := AWordWrap;
+    FLayout.Trimming := ATrimming;
+    FLayout.HorizontalAlign := AHAlign;
+    FLayout.VerticalAlign := AVAlign;
+    FLayout.Color := AColor;
+    FLayout.Opacity := AOpacity;
+    FLayout.TopLeft := R.TopLeft;
+    FLayout.MaxSize := TPointF.Create(R.Width, R.Height);
+  finally
+    FLayout.EndUpdate;
+  end;
+  FLayout.RenderLayout(ACanvas);
+  FLayout.Opacity := 1;
+end;
+
+procedure TFmrRibbonPainter.DrawShadow(const ACanvas: TCanvas; const R: TRectF; const ARadius, ASize: Single);
+var
+  I, Steps: Integer;
+  Base: TAlphaColor;
+  A: Single;
+  S: TRectF;
+begin
+  Base := FTheme.Colors[TFmrToken.PopupShadow];
+  if (TAlphaColorRec(Base).A = 0) or (ASize <= 0) then
+    Exit;
+  Steps := Max(1, Round(ASize));
+  for I := Steps downto 1 do
+  begin
+    S := R;
+    S.Inflate(I, I);
+    S.Offset(0, I * 0.35);
+    A := (TAlphaColorRec(Base).A / 255) * Sqr(1 - (I - 1) / Steps) / Steps * 1.6;
+    Fill(ACanvas, S, TFmrFill.Solid(FmrWithAlpha(Base, A)), ARadius + I);
+  end;
+end;
+
+procedure TFmrRibbonPainter.DrawPopupBackground(const ACanvas: TCanvas; const R: TRectF);
+begin
+  Fill(ACanvas, R, TFmrToken.MenuFill, FTheme.Metrics.MenuRadius);
+  Frame(ACanvas, R, TFmrToken.MenuBorder, FTheme.Metrics.MenuRadius);
+end;
+
+procedure TFmrRibbonPainter.DrawCheckBox(const ACanvas: TCanvas; const R: TRectF; const AChecked, ARadio: Boolean;
+  const AState: TFmrPartState);
+var
+  Box: TRectF;
+  Border, Mark: TAlphaColor;
+  D: Single;
+begin
+  D := Min(13, Min(R.Width, R.Height));
+  Box := RectF(0, 0, D, D).CenterAt(R);
+  Box := RectF(Round(Box.Left), Round(Box.Top), Round(Box.Left) + D, Round(Box.Top) + D);
+  if AState = TFmrPartState.Disabled then
+  begin
+    Border := FTheme.Colors[TFmrToken.ButtonTextDisabled];
+    Mark := Border;
+  end
+  else
+  begin
+    if AState in [TFmrPartState.Hot, TFmrPartState.Pressed, TFmrPartState.CheckedHot] then
+      Border := FTheme.Colors[TFmrToken.EditBorderHot]
+    else
+      Border := FTheme.Colors[TFmrToken.EditBorder];
+    Mark := FTheme.Colors[TFmrToken.ButtonText];
+  end;
+  if ARadio then
+  begin
+    FTheme.Fills[TFmrToken.EditFill].ApplyTo(FBrush);
+    ACanvas.FillEllipse(Box, 1, FBrush);
+    FStroke.Kind := TBrushKind.Solid;
+    FStroke.Color := Border;
+    FStroke.Thickness := 1;
+    ACanvas.DrawEllipse(FmrStrokeRect(Box), 1, FStroke);
+    if AChecked then
+    begin
+      ACanvas.Fill.Kind := TBrushKind.Solid;
+      ACanvas.Fill.Color := Mark;
+      ACanvas.FillEllipse(RectF(Box.CenterPoint.X - 3, Box.CenterPoint.Y - 3, Box.CenterPoint.X + 3,
+        Box.CenterPoint.Y + 3), 1);
+    end;
+  end
+  else
+  begin
+    Fill(ACanvas, Box, TFmrToken.EditFill, 2);
+    Frame(ACanvas, Box, Border, 2);
+    if AChecked then
+      DrawCheckMark(ACanvas, Box, Mark);
+  end;
+end;
+
+procedure TFmrRibbonPainter.DrawSearchGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+var
+  C: TPointF;
+  Rad: Single;
+begin
+  C := R.CenterPoint;
+  Rad := Min(R.Width, R.Height) * 0.28;
+  FStroke.Kind := TBrushKind.Solid;
+  FStroke.Color := AColor;
+  FStroke.Thickness := 1.2;
+  FStroke.Cap := TStrokeCap.Round;
+  ACanvas.DrawEllipse(RectF(C.X - Rad - 1, C.Y - Rad - 1, C.X + Rad - 1, C.Y + Rad - 1), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X + Rad * 0.7 - 1, C.Y + Rad * 0.7 - 1), PointF(C.X + Rad * 1.6, C.Y + Rad * 1.6), 1,
+    FStroke);
+  FStroke.Cap := TStrokeCap.Flat;
+end;
+
+procedure TFmrRibbonPainter.DrawCustomizeGlyph(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+var
+  C: TPointF;
+begin
+  C := R.CenterPoint;
+  C.X := Round(C.X);
+  C.Y := Round(C.Y);
+  Line(ACanvas, PointF(C.X - 3.5, C.Y - 3.5), PointF(C.X + 3.5, C.Y - 3.5), AColor);
+  Arrow(ACanvas, PointF(C.X, C.Y + 1), TFmrArrowDirection.Down, AColor, 7);
+end;
+
+procedure TFmrRibbonPainter.DrawChevron(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+var
+  C: TPointF;
+begin
+  C := R.CenterPoint;
+  FStroke.Kind := TBrushKind.Solid;
+  FStroke.Color := AColor;
+  FStroke.Thickness := 1.2;
+  ACanvas.DrawLine(PointF(C.X - 4, C.Y - 3), PointF(C.X - 1, C.Y), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X - 1, C.Y), PointF(C.X - 4, C.Y + 3), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X, C.Y - 3), PointF(C.X + 3, C.Y), 1, FStroke);
+  ACanvas.DrawLine(PointF(C.X + 3, C.Y), PointF(C.X, C.Y + 3), 1, FStroke);
+end;
+
+procedure TFmrRibbonPainter.DrawColorBar(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor);
+begin
+  if TAlphaColorRec(AColor).A = 0 then
+    Frame(ACanvas, R, TFmrToken.ButtonArrow)
+  else
+    Fill(ACanvas, R, TFmrFill.Solid(AColor));
+end;
+
+procedure TFmrRibbonPainter.DrawColorCell(const ACanvas: TCanvas; const R: TRectF; const AColor: TAlphaColor;
+  const AHot, ASelected: Boolean);
+begin
+  Fill(ACanvas, R, TFmrFill.Solid(AColor));
+  Frame(ACanvas, R, FmrWithAlpha(FTheme.Colors[TFmrToken.MenuItemText], 0.18));
+  if ASelected or AHot then
+  begin
+    Frame(ACanvas, RectF(R.Left - 1, R.Top - 1, R.Right + 1, R.Bottom + 1), TFmrToken.GalleryItemSelectedBorder,
+      0, [], 1);
+    Frame(ACanvas, R, TFmrToken.MenuFill, 0, [], 1);
+  end;
+end;
+
+procedure TFmrRibbonPainter.DrawScreenTipSeparator(const ACanvas: TCanvas; const AX1, AX2, AY: Single);
+begin
+  Line(ACanvas, PointF(AX1, Round(AY) + 0.5), PointF(AX2, Round(AY) + 0.5), FTheme.Colors[TFmrToken.ScreenTipSeparator]);
+end;
+
+procedure TFmrRibbonPainter.DrawBodyBackground(const ACanvas: TCanvas; const R: TRectF; const AActive: Boolean);
+begin
+  DrawTabRow(ACanvas, R, AActive);
+end;
+
+procedure TFmrRibbonPainter.DrawMenuCheckBackground(const ACanvas: TCanvas; const R: TRectF);
+begin
+  if FTheme.Style.Family in [TFmrThemeFamily.Office2007, TFmrThemeFamily.Office2010] then
+    DrawButton(ACanvas, R, TFmrPartState.Checked)
+  else
+  begin
+    Fill(ACanvas, R, TFmrToken.ButtonCheckedFill, FTheme.Metrics.ButtonRadius);
+    Frame(ACanvas, R, TFmrToken.ButtonCheckedBorder, FTheme.Metrics.ButtonRadius);
+  end;
 end;
 
 end.
