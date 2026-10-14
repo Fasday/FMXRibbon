@@ -1,4 +1,4 @@
-# FMR Ribbon for Delphi FireMonkey
+﻿# FMR Ribbon for Delphi FireMonkey
 
 A Microsoft Office-style ribbon for FireMonkey: tabs, groups with adaptive reduction, galleries, backstage view,
 Office 2007 application menu, quick access toolbar, key tips, screen tips, user customization, 18 themes — and the
@@ -6,6 +6,8 @@ Office 2007 application menu, quick access toolbar, key tips, screen tips, user 
 (`WM_NCCALCSIZE` / `WM_NCPAINT`) while holding ordinary FMX controls — buttons, `TEdit`, `TComboBox`, anything.
 
 [Русская версия](README.ru.md)
+
+![FMR Write: the caption row and the tab row in the real non-client area](Docs/images/fmr-write.png)
 
 ## Highlights
 

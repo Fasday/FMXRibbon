@@ -1,4 +1,4 @@
-# FMR Ribbon — architecture and decisions
+﻿# FMR Ribbon — architecture and decisions
 
 This file is the contract between the parts of the library. Read it before changing code; when a decision changes,
 change it here first.
@@ -23,34 +23,23 @@ change it here first.
 ## Source layout
 
 ```
-Source\Frame\     FMR.Frame.Types        shared enums/interfaces of the frame (contract, see below)
-                  FMR.Frame.Host         TFmrFrameHost: container of the caption content (TControl + IScene)
-                  FMR.Frame              TFmrFormFrame: platform-neutral component
-                  FMR.Frame.Win          Windows implementation (subclassing, WM_NC*, DWM, region, shadow)
-                  FMR.Frame.Buttons      TFmrCaptionButton (min/max/close/help), title label helpers
-                  FMR.Frame.Form         TFmrForm = TForm with a built-in frame
-Source\Core\      FMR.Bars               TFmrBarManager, TFmrBarItem, TFmrItemLink(s), categories
-                  FMR.Bars.Items         concrete items (button, sub item, separator, static, control, editors…)
-                  FMR.Bars.Images        TFmrImageSource and drawing of icons
-                  FMR.Ribbon.Types       enums/records shared by the ribbon
-                  FMR.Ribbon.Structure   TFmrRibbonTab, TFmrRibbonGroup, TFmrRibbonContextGroup, QAT data
-                  FMR.Ribbon.Layout      pure layout calculator (groups, view levels, collapse order)
-                  FMR.Ribbon             TFmrRibbon control
-                  FMR.Ribbon.Painter     painting of ribbon parts from theme tokens
-                  FMR.Ribbon.Theme       theme tokens, built-in themes, accent colors
-                  FMR.Ribbon.Popup       popup windows (menus, galleries, group popups) — cross-platform FMX forms
-                  FMR.Ribbon.KeyTips     key tips
-                  FMR.Ribbon.ScreenTips  rich tooltips
-                  FMR.Ribbon.Gallery     gallery items
-                  FMR.Ribbon.Backstage   backstage view
-                  FMR.Ribbon.AppMenu     application menu
-                  FMR.Ribbon.Strings     localization
-Source\Design\    design-time only (package dclFMRRibbon): registration, editors, designer window
-Source\Themes\    *.style theme files (embedded with a .rc)
-Packages\         FMRRibbon.dpk (runtime), dclFMRRibbon.dpk (design time)
-Tests\            FmrRibbonTests.dpr (DUnitX console runner) + test units
-Demos\            NCProof, WordLike, Showcase
-tools\            shot.ps1 (screenshot + window geometry + hit-test probe)
+Source\Frame\      FMR.Frame.Types, FMR.Frame.Host, FMR.Frame, FMR.Frame.Win, FMR.Frame.Buttons, FMR.Frame.Form
+                   window frame and non-client host (Docs\FRAME.md)
+Source\Core\       FMR.Bars, FMR.Bars.Items, FMR.Bars.Images, FMR.Ribbon.Types, FMR.Ribbon.Structure,
+                   FMR.Ribbon.Layout, FMR.Ribbon.Persistence, FMR.Ribbon.Merge, FMR.Ribbon.KeyTips, FMR.Ribbon.Strings
+                   non-visual model and pure logic (Docs\CORE.md)
+Source\Themes\     FMR.Ribbon.Theme, FMR.Ribbon.Themes.Builtin, FMR.Ribbon.Painter (Docs\STYLES.md)
+Source\Ribbon\     FMR.Ribbon (TFmrRibbon), Views, Popup, Editors, EditorStyles, ScreenTips, Gallery, ColorGallery,
+                   AppMenu, MiniToolbar, RadialMenu, Customize*, BiDi, Fonts.Win, UIA.Win
+                   (Docs\RIBBON.md, GALLERIES.md, CUSTOMIZATION.md, ACCESSIBILITY.md)
+Source\Extras\     FMR.Ribbon.Backstage(.Controls), FMR.Ribbon.StatusBar, FMR.Ribbon.ThemeLink (Docs\EXTRAS.md)
+Source\Templates\  FMR.Ribbon.Templates (run-time templates), FMR.Ribbon.DesignSupport (design-hook interfaces)
+Source\Design\     design-time only (dclFMRRibbon): registration, editors, editor windows (Docs\DESIGNTIME.md)
+Packages\          FMRRibbon.dpk (runtime), dclFMRRibbon.dpk (design), FMRRibbon.groupproj
+Tests\             FmrRibbonTests.dpr (DUnitX console runner) + test units
+Demos\             NCProof, RibbonBasic, WordLike, Showcase, Extras, Customize (Demos\README.md)
+tools\             build-packages.ps1, shot.ps1 / drive.ps1 / capture.ps1 / keys.ps1 (run, drive and capture
+                   programs), closecheck.ps1, ThemeSheet, DesignPreview, fix-encoding.ps1
 ```
 
 ## Building and checking

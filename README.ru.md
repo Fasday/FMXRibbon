@@ -1,4 +1,4 @@
-# FMR Ribbon для Delphi FireMonkey
+﻿# FMR Ribbon для Delphi FireMonkey
 
 Лента (ribbon) в стиле Microsoft Office для FireMonkey: вкладки, группы с адаптивным сжатием, галереи, Backstage,
 меню приложения Office 2007, QAT, KeyTips, ScreenTips, настройка пользователем, 18 тем — и **настоящая неклиентская
@@ -6,6 +6,8 @@
 в них лежат обычные FMX-контролы — кнопки, `TEdit`, `TComboBox`, что угодно.
 
 [English version](README.md)
+
+![FMR Write: строка заголовка и вкладки в настоящей NC-области](Docs/images/fmr-write.png)
 
 ## Главное
 
