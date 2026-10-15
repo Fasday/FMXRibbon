@@ -14,6 +14,7 @@ unit RibbonBasicMain;
 ///   /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname (opens the
 ///   popup about a second after the window is painted, for screenshots; fontname also shows the number of font
 ///   families in the status bar)
+///   /quitafter=N (closes the form N seconds after the window is painted: checks of a clean exit without input)
 ///   Linux (FMXWayland): /waylandframe=preview (RibbonBasicWayland: a stand-in IFMXWaylandWindowFrame)
 /// Galleries (FMR.Ribbon.Gallery, FMR.Ribbon.ColorGallery): Home > Styles (in-ribbon, owner drawn, live preview),
 /// Home > Font Color / Text Highlight Color, Insert > Cover Page (drop-down gallery with filter and grip), Insert >
@@ -62,6 +63,7 @@ type
     FAppliedStyle: Integer;
     FAppliedColor: TAlphaColor;
     FOpen: string;
+    FQuitAfter: Integer;
     FPainted: Boolean;
     FAppMenu07: TFmrRibbonApplicationMenu;
     FForceAppMenu: Boolean;
@@ -110,6 +112,7 @@ type
     procedure RibbonSearch(Sender: TObject; const AText: string);
     procedure TabChanged(Sender: TObject);
     procedure TimerTick(Sender: TObject);
+    procedure QuitTick(Sender: TObject);
     procedure FormPainted(Sender: TObject; Canvas: TCanvas; const ARect: TRectF);
     procedure SetStatus(const AText: string);
   public
@@ -156,6 +159,7 @@ var
   Mode: string;
   I: Integer;
   S: string;
+  Quit: TTimer;
 begin
   inherited CreateNew(AOwner);
   Caption := 'Document1 - FMR Ribbon';
@@ -237,6 +241,12 @@ begin
   FTimer.Interval := 900;
   FTimer.OnTimer := TimerTick;
   FTimer.Enabled := FOptKeyTips or (FDumpFile <> '') or (FOpen <> '');
+  if FQuitAfter > 0 then
+  begin
+    Quit := TTimer.Create(Self);
+    Quit.Interval := FQuitAfter * 1000;
+    Quit.OnTimer := QuitTick;
+  end;
   OnPaint := FormPainted;
 end;
 
@@ -765,6 +775,8 @@ begin
       BuildBackstage
     else if S = '/open' then
       FOpen := V.ToLower
+    else if (S = '/quitafter') and TryStrToInt(V, N) and (N > 0) then
+      FQuitAfter := N
     else if S = '/appmenu' then
       FForceAppMenu := True
     else if (S = '/tab') and TryStrToInt(V, N) and (N >= 0) and (N < FRibbon.TabCount) then
@@ -865,6 +877,14 @@ begin
     TFile.WriteAllText(FDumpFile, FRibbon.DebugDump);
   if FOpen <> '' then
     OpenPopup(FOpen);
+end;
+
+procedure TRibbonBasicForm.QuitTick(Sender: TObject);
+begin
+  if not FPainted then
+    Exit;
+  TTimer(Sender).Enabled := False;
+  Close;
 end;
 
 { galleries }

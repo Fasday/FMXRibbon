@@ -210,6 +210,23 @@ manager kept an interface of a popup's content while its closed-handler ran.
 - Observed in FMXWayland (not changed, it is read-only here): an `xdg_popup` created before its parent toplevel got
   its first configure (a demo timer that fired before the window was shown) left both windows invisible in Weston,
   although both were configured and painted. The demo now opens its popups after the first paint.
+- **FastCanvas** (Vulkan; RibbonBasic with `-Define FMR_FASTCANVAS`, see `Demos\README.md`) draws text with Pango,
+  which finds fonts through fontconfig only; `FmrEnsureIconFont` registers the icon font with Skia, so without help the
+  icons are boxes. Until the library adds the font to fontconfig too, a configuration that adds the program's `fonts`
+  folder does it (`FONTCONFIG_FILE=<file>`, or `tools\linux-run.ps1 -Env FONTCONFIG_FILE=<file>`):
+
+  ```xml
+  <?xml version="1.0"?>
+  <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+  <fontconfig>
+    <include ignore_missing="yes">/etc/fonts/fonts.conf</include>
+    <dir>/mnt/f/Projects/FMXRibbon/bin/Linux64/Debug/fonts</dir>
+  </fontconfig>
+  ```
+
+  Checked on headless Weston and WSLg (2026-10-15, lavapipe/llvmpipe): every popup of the demo, a clean exit. The
+  access violation in FastCanvas's `TGpuVkRenderer.DrawPending` that ended a WSLg session after a few popups (a bitmap
+  drawn, then freed after a `TBitmap.Map` in the same paint) is fixed in FastCanvas (commit `1b9fda0`).
 
 ## The window frame contract: IFMXWaylandWindowFrame
 
