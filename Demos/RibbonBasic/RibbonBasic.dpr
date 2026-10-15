@@ -7,10 +7,16 @@ program RibbonBasic;
 // Linux64 (FMXWayland, Docs\LINUX.md): .\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64;
 //               /waylandframe=preview: a stand-in IFMXWaylandWindowFrame (RibbonBasicWayland) to preview the
 //               integrated title bar (run with FMXWAYLAND_CSD=0)
+// With FastCanvas on Linux (Vulkan): .\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64
+//   -Define FMR_FASTCANVAS -SearchPath f:\Projects\FmxFastCanvas_GitHub\src\Canvas,f:\Projects\FmxFastCanvas_GitHub\third_party\pasvulkan\src
 
 uses
   System.StartUpCopy,
   FMX.Forms,
+  {$IFDEF FMR_FASTCANVAS}
+  FastCanvas.Device,
+  FastCanvas.Canvas,
+  {$ENDIF}
   {$IFDEF LINUX}
   FMX.Types,
   FMX.Skia,
@@ -26,9 +32,15 @@ begin
   {$IFDEF DEBUG}
   ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
+  {$IFDEF FMR_FASTCANVAS}
+  // Linux: on Vulkan, presenting to the windows' wl_surfaces itself (FastCanvasBackend is ignored there).
+  InstallFastCanvas;
+  {$ENDIF}
   {$IFDEF LINUX}
-  // FMXWayland draws with FMX's Skia canvas only.
+  {$IFNDEF FMR_FASTCANVAS}
+  // Without FastCanvas FMXWayland draws with FMX's Skia canvas.
   GlobalUseSkia := True;
+  {$ENDIF}
   RegisterWaylandFramePreview;
   {$ENDIF}
   Application.Initialize;

@@ -35,7 +35,16 @@ call `InstallFastCanvas` before `Application.Initialize` when they are built wit
 ```
 
 (Notes, Showcase and NCProof support it; the About page of Notes and the Canvas page of the Showcase show the canvas
-class in use.)
+class in use.) RibbonBasic supports it on Linux (FastCanvas on Vulkan instead of FMX's Skia canvas):
+
+```powershell
+.\build.ps1 -Project Demos\RibbonBasic\RibbonBasic.dpr -Platform Linux64 -Define FMR_FASTCANVAS `
+  -SearchPath f:\Projects\FmxFastCanvas_GitHub\src\Canvas,f:\Projects\FmxFastCanvas_GitHub\third_party\pasvulkan\src
+```
+
+FastCanvas draws text with Pango, which finds fonts through fontconfig only: the icon font next to the program
+(`fonts\FmrIcons.ttf`) needs a fontconfig configuration that adds that folder (`FONTCONFIG_FILE`, see
+`Docs\LINUX.md`).
 
 Screenshots for documentation are taken with `tools\drive.ps1` (posted mouse messages, keys, `PrintWindow`
 capture, independent of other windows on the desktop), for example
@@ -163,7 +172,8 @@ toolbar and the search box; the in-ribbon styles gallery, Cover Page (drop-down 
 the mini toolbar (selection, right click) and the radial menu. Switches: `/theme= /frame=fullnc|dwm|ncstrip|none
 /minimized /simplified /width= /height= /pos=X,Y /topmost /activelook /qatbelow /tabletools /keytips /touch /nosearch
 /tab=N /backstage /appmenu /open=stylesgallery|colorgallery|highlight|cover|shapes|appmenu|minitoolbar|minifade|radial|fontname
-/dump=<file>` (Linux: `/waylandframe=preview`; see `Docs\RIBBON.md` and `Docs\GALLERIES.md`).
+/dump=<file> /quitafter=N` (closes the form N seconds after it is painted: a clean exit without input) (Linux:
+`/waylandframe=preview`; see `Docs\RIBBON.md` and `Docs\GALLERIES.md`).
 
 ## Extras
 
