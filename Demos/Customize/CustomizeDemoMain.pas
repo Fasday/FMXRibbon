@@ -41,7 +41,7 @@ type
     FOpen, FDumpFile, FDumpCustFile, FSwitchTheme, FSaveLayout, FDropDown: string;
     FShowAutoHide, FDisplayOptions, FKeyTips: Boolean;
     FTicks: Integer;
-    function Btn(const AName, ACaption: string; const ACode: Cardinal = 0; const ALarge: Boolean = False;
+    function Btn(const AName, ACaption: string; const ACode: Cardinal = 0;
       const AStyle: TFmrButtonStyle = TFmrButtonStyle.Default): TFmrButtonItem;
     function PathGlyph(const AItem: TFmrBarItem; const APath: string): TFmrBarItem;
     procedure Link(const AGroup: TFmrRibbonGroup; const AItem: TFmrBarItem; const ALevels: TFmrViewLevels = [];
@@ -174,18 +174,14 @@ begin
   Result := AItem;
 end;
 
-function TCustomizeDemoForm.Btn(const AName, ACaption: string; const ACode: Cardinal; const ALarge: Boolean;
+function TCustomizeDemoForm.Btn(const AName, ACaption: string; const ACode: Cardinal;
   const AStyle: TFmrButtonStyle): TFmrButtonItem;
 begin
   Result := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, AName));
   Result.Caption := ACaption;
   Result.ButtonStyle := AStyle;
   if ACode <> 0 then
-  begin
     Result.Glyph.GlyphCode := ACode;
-    if ALarge then
-      Result.LargeGlyph.GlyphCode := ACode;
-  end;
   Result.OnClick := CommandClick;
 end;
 
@@ -196,6 +192,8 @@ var
 begin
   L := AGroup.ItemLinks.AddItem(AItem, ABeginGroup);
   L.ViewLevels := ALevels;
+  if (ALevels = []) and (AItem.LayoutKind = TFmrLayoutItemKind.Button) and not AItem.Glyph.IsEmpty then
+    L.ViewLevels := FmrSmallViewLevels;
   L.ButtonGroup := AButtonGroup;
 end;
 
@@ -250,7 +248,7 @@ begin
     Home := FRibbon.AddTab('Home', 'tabHome');
     G := Home.AddGroup('Clipboard');
     G.Name := 'grpClipboard';
-    Paste := Btn('btnPaste', 'Paste', $E77F, True, TFmrButtonStyle.Split);
+    Paste := Btn('btnPaste', 'Paste', $E77F, TFmrButtonStyle.Split);
     Paste.ShortCut := scCtrl or Ord('V');
     Sub := Btn('btnPasteKeep', 'Keep Source Formatting', $E77F);
     Paste.DropDownLinks.AddItem(Sub);
@@ -283,12 +281,12 @@ begin
     FontSize.Text := '11';
     FontSize.Width := 52;
     Link(G, FontSize, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
-    Bold := Btn('btnBold', 'Bold', $E8DD, False, TFmrButtonStyle.Check);
+    Bold := Btn('btnBold', 'Bold', $E8DD, TFmrButtonStyle.Check);
     Bold.ShortCut := scCtrl or Ord('B');
-    Italic := Btn('btnItalic', 'Italic', $E8DB, False, TFmrButtonStyle.Check);
+    Italic := Btn('btnItalic', 'Italic', $E8DB, TFmrButtonStyle.Check);
     Italic.ShortCut := scCtrl or Ord('I');
-    Underline := Btn('btnUnderline', 'Underline', $E8DC, False, TFmrButtonStyle.Check);
-    Strike := Btn('btnStrike', 'Strikethrough', $EDE0, False, TFmrButtonStyle.Check);
+    Underline := Btn('btnUnderline', 'Underline', $E8DC, TFmrButtonStyle.Check);
+    Strike := Btn('btnStrike', 'Strikethrough', $EDE0, TFmrButtonStyle.Check);
     Link(G, Bold, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
     Link(G, Italic, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     Link(G, Underline, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
@@ -307,23 +305,23 @@ begin
 
     G := Home.AddGroup('Paragraph');
     G.Name := 'grpParagraph';
-    AL := Btn('btnAlignLeft', 'Align Left', $E8E4, False, TFmrButtonStyle.Check);
+    AL := Btn('btnAlignLeft', 'Align Left', $E8E4, TFmrButtonStyle.Check);
     AL.GroupIndex := 1;
     AL.Down := True;
-    AC := Btn('btnAlignCenter', 'Center', $E8E3, False, TFmrButtonStyle.Check);
+    AC := Btn('btnAlignCenter', 'Center', $E8E3, TFmrButtonStyle.Check);
     AC.GroupIndex := 1;
-    AR := Btn('btnAlignRight', 'Align Right', $E8E2, False, TFmrButtonStyle.Check);
+    AR := Btn('btnAlignRight', 'Align Right', $E8E2, TFmrButtonStyle.Check);
     AR.GroupIndex := 1;
-    AJ := TFmrButtonItem(PathGlyph(Btn('btnJustify', 'Justify', 0, False, TFmrButtonStyle.Check), PathJustify));
+    AJ := TFmrButtonItem(PathGlyph(Btn('btnJustify', 'Justify', 0, TFmrButtonStyle.Check), PathJustify));
     AJ.GroupIndex := 1;
     Link(G, AL, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
     Link(G, AC, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     Link(G, AR, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     Link(G, AJ, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
-    B := Btn('btnBullets', 'Bullets', $E8FD, False, TFmrButtonStyle.Split);
+    B := Btn('btnBullets', 'Bullets', $E8FD, TFmrButtonStyle.Split);
     B.DropDownLinks.AddItem(Btn('btnBullet1', 'Bullet Style 1', $E8FD));
     Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
-    B := Btn('btnShowMarks', 'Show/Hide', $E8C1, False, TFmrButtonStyle.Check);
+    B := Btn('btnShowMarks', 'Show/Hide', $E8C1, TFmrButtonStyle.Check);
     Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     G.ShowDialogLauncher := True;
 
@@ -338,7 +336,7 @@ begin
     Link(G, Style, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
     for S in ['Heading 1', 'Heading 2', 'Title'] do
     begin
-      B := Btn('btnStyle' + S.Replace(' ', ''), S, 0, False, TFmrButtonStyle.Check);
+      B := Btn('btnStyle' + S.Replace(' ', ''), S, 0, TFmrButtonStyle.Check);
       B.GroupIndex := 2;
       B.Glyph.PathData := PathStyle;
       B.Glyph.PathViewBox := 24;
@@ -347,7 +345,7 @@ begin
 
     G := Home.AddGroup('Editing');
     G.Name := 'grpEditing';
-    B := Btn('btnFind', 'Find', $E721, False, TFmrButtonStyle.Split);
+    B := Btn('btnFind', 'Find', $E721, TFmrButtonStyle.Split);
     B.ShortCut := scCtrl or Ord('F');
     B.DropDownLinks.AddItem(Btn('btnFindAdv', 'Advanced Find...', $E721));
     Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
@@ -370,40 +368,36 @@ begin
     Insert := FRibbon.AddTab('Insert', 'tabInsert');
     G := Insert.AddGroup('Pages');
     G.Name := 'grpPages';
-    Link(G, Btn('btnCoverPage', 'Cover Page', $E8A5, True, TFmrButtonStyle.DropDown),
+    Link(G, Btn('btnCoverPage', 'Cover Page', $E8A5, TFmrButtonStyle.DropDown),
       [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnBlankPage', 'Blank Page', $E7C3, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnBlankPage', 'Blank Page', $E7C3), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     G := Insert.AddGroup('Tables');
     G.Name := 'grpTables';
-    FShowTableTools := Btn('btnTableTools', 'Table Tools', 0, False, TFmrButtonStyle.Check);
-    FShowTableTools.LargeGlyph.PathData := PathTable;
-    FShowTableTools.LargeGlyph.PathViewBox := 24;
+    FShowTableTools := Btn('btnTableTools', 'Table Tools', 0, TFmrButtonStyle.Check);
     FShowTableTools.Glyph.PathData := PathTable;
     FShowTableTools.Glyph.PathViewBox := 24;
     FShowTableTools.OnClick := TableToolsClick;
     Link(G, FShowTableTools, [TFmrViewLevel.Large]);
     G := Insert.AddGroup('Illustrations');
     G.Name := 'grpIllustrations';
-    Link(G, Btn('btnPictures', 'Pictures', $E8B9, True), [TFmrViewLevel.Large]);
-    Link(G, PathGlyph(Btn('btnShapes', 'Shapes', 0, False, TFmrButtonStyle.DropDown), PathShapes));
+    Link(G, Btn('btnPictures', 'Pictures', $E8B9), [TFmrViewLevel.Large]);
+    Link(G, PathGlyph(Btn('btnShapes', 'Shapes', 0, TFmrButtonStyle.DropDown), PathShapes));
     Link(G, Btn('btnIcons', 'Icons', $E76E));
     G := Insert.AddGroup('Links');
     G.Name := 'grpLinks';
-    Link(G, Btn('btnLink', 'Link', $E71B, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnBookmark', 'Bookmark', $E8A4, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnComment', 'Comment', $E90A, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnLink', 'Link', $E71B), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnBookmark', 'Bookmark', $E8A4), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnComment', 'Comment', $E90A), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
 
     { Layout }
     LayoutTab := FRibbon.AddTab('Layout', 'tabLayout');
     G := LayoutTab.AddGroup('Page Setup');
     G.Name := 'grpPageSetup';
-    B := TFmrButtonItem(PathGlyph(Btn('btnMargins', 'Margins', 0, False, TFmrButtonStyle.DropDown), PathMargins));
-    B.LargeGlyph.PathData := PathMargins;
-    B.LargeGlyph.PathViewBox := 24;
+    B := TFmrButtonItem(PathGlyph(Btn('btnMargins', 'Margins', 0, TFmrButtonStyle.DropDown), PathMargins));
     Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnOrientation', 'Orientation', $E7AD, True, TFmrButtonStyle.DropDown),
+    Link(G, Btn('btnOrientation', 'Orientation', $E7AD, TFmrButtonStyle.DropDown),
       [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnSize', 'Size', $E740, True, TFmrButtonStyle.DropDown), [TFmrViewLevel.Large,
+    Link(G, Btn('btnSize', 'Size', $E740, TFmrButtonStyle.DropDown), [TFmrViewLevel.Large,
       TFmrViewLevel.SmallWithText]);
 
     { View }
@@ -420,7 +414,7 @@ begin
     end;
     G := View.AddGroup('Zoom');
     G.Name := 'grpZoom';
-    Link(G, Btn('btnZoom', 'Zoom', $E71E, True), [TFmrViewLevel.Large]);
+    Link(G, Btn('btnZoom', 'Zoom', $E71E), [TFmrViewLevel.Large]);
     Track := TFmrTrackBarItem(FManager.CreateItem(TFmrTrackBarItem, 'tbZoom'));
     Track.Caption := 'Zoom';
     Track.Min := 10;
@@ -431,7 +425,7 @@ begin
     G := View.AddGroup('Customize');
     G.Name := 'grpCustomize';
     B := TFmrButtonItem(FManager.FindItem('btnCustomize'));
-    B.LargeGlyph.GlyphCode := $E713;
+    B.Glyph.GlyphCode := $E713;
     Link(G, B, [TFmrViewLevel.Large]);
 
     { contextual tabs }
@@ -442,10 +436,10 @@ begin
     G.Name := 'grpTableStyles';
     for I := 1 to 3 do
     begin
-      B := Btn('btnTableStyle' + IntToStr(I), 'Style ' + IntToStr(I), 0, False, TFmrButtonStyle.Check);
+      B := Btn('btnTableStyle' + IntToStr(I), 'Style ' + IntToStr(I), 0, TFmrButtonStyle.Check);
       B.GroupIndex := 4;
-      B.LargeGlyph.PathData := PathTable;
-      B.LargeGlyph.PathViewBox := 24;
+      B.Glyph.PathData := PathTable;
+      B.Glyph.PathViewBox := 24;
       Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     end;
   finally

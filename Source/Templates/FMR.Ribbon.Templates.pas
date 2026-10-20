@@ -422,16 +422,16 @@ begin
   Result := TFmrButtonItem(NewItem(TFmrButtonItem, AName, ACaption));
   Result.ButtonStyle := AStyle;
   if AGlyph <> 0 then
-  begin
     Result.Glyph.GlyphCode := AGlyph;
-    if ASize = TFmrTemplateButtonSize.Large then
-      Result.LargeGlyph.GlyphCode := AGlyph;
-  end;
   if AGroup <> nil then
   begin
     L := AddLink(AGroup, Result, [], ABeginGroup);
     if ASize = TFmrTemplateButtonSize.IconOnly then
-      L.ViewLevels := [TFmrViewLevel.Small];
+      L.ViewLevels := [TFmrViewLevel.Small]
+    else if ASize = TFmrTemplateButtonSize.Large then
+      L.ViewLevels := FmrAllViewLevels
+    else if not Result.Glyph.IsEmpty then
+      L.ViewLevels := FmrSmallViewLevels;
   end;
 end;
 
@@ -475,8 +475,6 @@ begin
   Result := TFmrColorItem(NewItem(TFmrColorItem, AName, ACaption));
   Result.Color := AColor;
   Result.Glyph.GlyphCode := AGlyph;
-  if ASize = TFmrTemplateButtonSize.Large then
-    Result.LargeGlyph.GlyphCode := AGlyph;
   if AGroup <> nil then
   begin
     L := AddLink(AGroup, Result);
@@ -484,7 +482,11 @@ begin
     begin
       L.ViewLevels := [TFmrViewLevel.Small];
       PlaceInRow(L, APos);
-    end;
+    end
+    else if ASize = TFmrTemplateButtonSize.Large then
+      L.ViewLevels := FmrAllViewLevels
+    else if not Result.Glyph.IsEmpty then
+      L.ViewLevels := FmrSmallViewLevels;
   end;
 end;
 
@@ -548,7 +550,6 @@ var
 begin
   Result := TFmrGalleryItem(NewItem(TFmrGalleryItem, AName, ACaption));
   Result.Glyph.GlyphCode := AGlyph;
-  Result.LargeGlyph.GlyphCode := AGlyph;
   Result.CaptionPosition := TFmrGalleryCaptionPosition.Bottom;
   Result.MinColumns := 2;
   Result.MaxColumns := 5;

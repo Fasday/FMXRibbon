@@ -178,12 +178,15 @@ var
 begin
   FmrApplyRibbonTemplate(Ribbon, TFmrRibbonTemplate.Document);
   Paste := Manager.ItemByName('btnPaste');
-  Assert.AreEqual(Cardinal(FmrGlyphPaste), Paste.Glyph.GlyphCode);
-  Assert.AreEqual(Cardinal(FmrGlyphPaste), Paste.LargeGlyph.GlyphCode, 'large buttons get a large glyph');
+  Assert.AreEqual(Cardinal(FmrGlyphPaste), Paste.Glyph.GlyphCode, 'one glyph for large and small buttons');
   Assert.IsTrue(TFmrViewLevel.Large in Paste.DefaultViewLevels);
   Assert.AreEqual('Home', Paste.Category);
   Assert.AreEqual(TFmrButtonStyle.Split, TFmrButtonItem(Paste).ButtonStyle);
   Assert.IsTrue(TFmrButtonItem(Paste).DropDownLinks.Count >= 2, 'paste menu');
+  G := TFmrRibbonStructure.FindGroup(Ribbon, 'grpClipboard');
+  Assert.IsTrue(TFmrViewLevel.Large in G.ItemLinks.FindByItem(Paste).EffectiveViewLevels);
+  Assert.IsFalse(TFmrViewLevel.Large in G.ItemLinks.FindByItem(Manager.ItemByName('btnCut')).EffectiveViewLevels,
+    'compact links stay compact even though the same glyph can be drawn large');
   Bold := Manager.ItemByName('btnBold');
   Assert.AreEqual(Cardinal(FmrGlyphBold), Bold.Glyph.GlyphCode);
   Assert.AreEqual(TFmrImageKind.Glyph, Bold.Glyph.EffectiveKind);

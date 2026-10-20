@@ -143,6 +143,7 @@ type
     function CellRect(const AIndex: Integer): TRectF;
     function MaxTopRow: Integer;
     function SubPartAt(const P: TPointF; out ACell: Integer): TFmrGalleryPart;
+    procedure ResetHotCell;
     procedure EndPreview;
     procedure EnsureSelectedVisible;
     function StripState(const APart: TFmrGalleryPart): TFmrPartState;
@@ -389,9 +390,9 @@ begin
   Result := TSizeF.Create(Ceil(Result.Width), Ceil(Result.Height));
 end;
 
-procedure FmrDrawGalleryEntry(const ACanvas: TCanvas; const APainter: TFmrRibbonPainter;
+procedure DrawGalleryEntry(const ACanvas: TCanvas; const APainter: TFmrRibbonPainter;
   const AImages: TCustomImageList; const AGallery: TFmrGalleryItem; const AEntry: TFmrGalleryEntry;
-  const ARect: TRectF; const AStates: TFmrGalleryDrawStates);
+  const ARect: TRectF; const AStates: TFmrGalleryDrawStates; var ATextHeight: Single);
 var
   M: TFmrThemeMetrics;
   R, GR, TR: TRectF;
@@ -436,7 +437,13 @@ begin
   G := AEntry.Glyph;
   if (G <> nil) and G.IsEmpty(AImages) then
     G := nil;
-  TextH := APainter.TextSize('Wg').Height;
+  TextH := 0;
+  if AGallery.CaptionPosition <> TFmrGalleryCaptionPosition.None then
+  begin
+    if ATextHeight < 0 then
+      ATextHeight := APainter.TextSize('Wg').Height;
+    TextH := ATextHeight;
+  end;
   case AGallery.CaptionPosition of
     TFmrGalleryCaptionPosition.Bottom:
       begin
@@ -490,6 +497,16 @@ begin
       APainter.TextEx(ACanvas, RectF(R.Left + 2, R.Top, R.Right - 2, R.Bottom), AEntry.Caption, TextColor,
         TTextAlign.Center, TTextAlign.Center, 0, False, True);
   end;
+end;
+
+procedure FmrDrawGalleryEntry(const ACanvas: TCanvas; const APainter: TFmrRibbonPainter;
+  const AImages: TCustomImageList; const AGallery: TFmrGalleryItem; const AEntry: TFmrGalleryEntry;
+  const ARect: TRectF; const AStates: TFmrGalleryDrawStates);
+var
+  TextHeight: Single;
+begin
+  TextHeight := -1;
+  DrawGalleryEntry(ACanvas, APainter, AImages, AGallery, AEntry, ARect, AStates, TextHeight);
 end;
 
 { entry screen tips }
@@ -765,6 +782,74 @@ end;
 
 { TFmrGalleryView }
 
+type
+  // The queued command outlives its popup. Track the component's lifetime and resolve collection IDs, not
+  // pointers or indexes (deleting/reordering entries must never redirect a click to a different entry).
+  TGalleryItemWatch = class(TComponent)
+  protected
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+  public
+    Gallery: TFmrGalleryItem;
+    constructor Create(const AGallery: TFmrGalleryItem); reintroduce;
+  end;
+
+  IGalleryClickTarget = interface
+    ['{9C507ED7-0756-45AE-88AA-5F321070446C}']
+    function Resolve(out AGallery: TFmrGalleryItem; out AEntry: TFmrGalleryEntry): Boolean;
+  end;
+
+  TGalleryClickTarget = class(TInterfacedObject, IGalleryClickTarget)
+  private
+    FWatch: TGalleryItemWatch;
+    FGroupID, FEntryID: Integer;
+  public
+    constructor Create(const AGallery: TFmrGalleryItem; const AEntry: TFmrGalleryEntry);
+    destructor Destroy; override;
+    function Resolve(out AGallery: TFmrGalleryItem; out AEntry: TFmrGalleryEntry): Boolean;
+  end;
+
+constructor TGalleryItemWatch.Create(const AGallery: TFmrGalleryItem);
+begin
+  inherited Create(nil);
+  Gallery := AGallery;
+  Gallery.FreeNotification(Self);
+end;
+
+procedure TGalleryItemWatch.Notification(AComponent: TComponent; Operation: TOperation);
+begin
+  inherited;
+  if (Operation = opRemove) and (AComponent = Gallery) then
+    Gallery := nil;
+end;
+
+constructor TGalleryClickTarget.Create(const AGallery: TFmrGalleryItem; const AEntry: TFmrGalleryEntry);
+begin
+  inherited Create;
+  FWatch := TGalleryItemWatch.Create(AGallery);
+  FGroupID := AEntry.Group.ID;
+  FEntryID := AEntry.ID;
+end;
+
+destructor TGalleryClickTarget.Destroy;
+begin
+  FWatch.Free;
+  inherited;
+end;
+
+function TGalleryClickTarget.Resolve(out AGallery: TFmrGalleryItem; out AEntry: TFmrGalleryEntry): Boolean;
+var
+  Group: TFmrGalleryGroup;
+begin
+  AGallery := FWatch.Gallery;
+  AEntry := nil;
+  if (AGallery = nil) or (csDestroying in AGallery.ComponentState) then
+    Exit(False);
+  Group := TFmrGalleryGroup(AGallery.Groups.FindItemID(FGroupID));
+  if Group <> nil then
+    AEntry := TFmrGalleryEntry(Group.Items.FindItemID(FEntryID));
+  Result := AEntry <> nil;
+end;
+
 constructor TFmrGalleryView.Create(const AHost: IFmrElementHost; const ALink: TFmrItemLink;
   const APlace: TFmrViewPlace);
 begin
@@ -849,6 +934,7 @@ begin
     Exit;
   GR := GridRect;
   FRows := Max(1, Floor(GR.Height / Max(1, FItemSize.Height) + 0.001));
+  ResetHotCell;
   FGrid.Build(FItemSize, FColumns, False, 0);
   FTopRow := EnsureRange(FTopRow, 0, MaxTopRow);
 end;
@@ -920,10 +1006,12 @@ end;
 procedure TFmrGalleryView.ItemChanged(const AChange: TFmrItemChange);
 begin
   inherited;
-  FGridDirty := True;
+  if AChange = TFmrItemChange.Layout then
+    FGridDirty := True;
   if FInRibbon then
   begin
-    RebuildGrid;
+    if FGridDirty then
+      RebuildGrid;
     if AChange = TFmrItemChange.Value then
       EnsureSelectedVisible;
   end;
@@ -932,17 +1020,20 @@ end;
 
 procedure TFmrGalleryView.EnsureSelectedVisible;
 var
-  I, Row: Integer;
+  I, Row, OldTopRow: Integer;
 begin
   I := FGrid.IndexOfEntry(Gallery.SelectedEntry);
   if I < 0 then
     Exit;
+  OldTopRow := FTopRow;
   Row := FGrid[I].Row;
   if Row < FTopRow then
     FTopRow := Row
   else if Row >= FTopRow + FRows then
     FTopRow := Row - FRows + 1;
   FTopRow := EnsureRange(FTopRow, 0, MaxTopRow);
+  if FTopRow <> OldTopRow then
+    ResetHotCell;
 end;
 
 procedure TFmrGalleryView.ScrollRows(const ADelta: Integer);
@@ -963,8 +1054,9 @@ end;
 
 function TFmrGalleryView.SubPartAt(const P: TPointF; out ACell: Integer): TFmrGalleryPart;
 var
-  I: Integer;
+  Col, Row, Index: Integer;
   R: TRectF;
+  Y: Single;
 begin
   ACell := -1;
   if not FInRibbon or not Bounds.Contains(P) then
@@ -975,12 +1067,17 @@ begin
     Exit(TFmrGalleryPart.ScrollUp);
   if PartRect(TFmrGalleryPart.ScrollDown).Contains(P) then
     Exit(TFmrGalleryPart.ScrollDown);
-  for I := 0 to FGrid.Count - 1 do
+  R := GridRect;
+  if R.Contains(P) and (FItemSize.Width > 0) and (FItemSize.Height > 0) then
   begin
-    R := CellRect(I);
-    if not R.IsEmpty and R.Contains(P) then
+    Y := P.Y - R.Top - Round((R.Height - FRows * FItemSize.Height) / 2);
+    Col := Floor((P.X - R.Left) / FItemSize.Width);
+    Row := Floor(Y / FItemSize.Height);
+    Index := (FTopRow + Row) * FColumns + Col;
+    if (Col >= 0) and (Col < FColumns) and (Row >= 0) and (Row < FRows) and
+      (Index >= 0) and (Index < FGrid.Count) then
     begin
-      ACell := I;
+      ACell := Index;
       Exit(TFmrGalleryPart.Cell);
     end;
   end;
@@ -1007,6 +1104,15 @@ begin
     Result := inherited OpensOnPress(APart);
 end;
 
+procedure TFmrGalleryView.ResetHotCell;
+begin
+  if FHotCell >= 0 then
+    GalleryTipHover(Gallery, nil, TRectF.Empty, nil, nil);
+  FHotCell := -1;
+  if FSub = TFmrGalleryPart.Cell then
+    FSub := TFmrGalleryPart.None;
+end;
+
 procedure TFmrGalleryView.EndPreview;
 begin
   if FPreview then
@@ -1025,27 +1131,26 @@ var
   R: TRectF;
   TL, BR: TPointF;
   E: TFmrGalleryEntry;
+  G: TFmrGalleryItem;
+  PreviewChanged, PreviewEntry: Boolean;
 begin
   if not FInRibbon then
     Exit;
   Part := SubPartAt(P, Cell);
-  if (Part = FSub) and (Cell = FHotCell) then
+  if (Part = FSub) and (Cell = FHotCell) and not ((Cell < 0) and FPreview) then
     Exit;
   FSub := Part;
+  PreviewChanged := (Cell <> FHotCell) or ((Cell < 0) and FPreview);
+  PreviewEntry := False;
+  G := Gallery;
+  E := nil;
   if Cell <> FHotCell then
   begin
     FHotCell := Cell;
     E := nil;
     if Cell >= 0 then
       E := FGrid[Cell].Entry;
-    // Live preview while the mouse is over an entry; reverted when it leaves the entries.
-    if (E <> nil) and E.Enabled and IsEnabled then
-    begin
-      FPreview := True;
-      Gallery.HotTrack(E);
-    end
-    else
-      EndPreview;
+    PreviewEntry := (E <> nil) and E.Enabled and IsEnabled;
     HostCtl := nil;
     if Host <> nil then
       HostCtl := Host.GetHostControl;
@@ -1064,6 +1169,15 @@ begin
       GalleryTipHover(Gallery, nil, TRectF.Empty, nil, nil);
   end;
   Invalidate;
+  // OnHotTrack may clear the entries or delete the gallery/view. Do not use them after it returns.
+  if PreviewChanged then
+    if PreviewEntry then
+    begin
+      FPreview := True;
+      G.HotTrack(E);
+    end
+    else
+      EndPreview;
 end;
 
 function TFmrGalleryView.MouseWheel(const AWheelDelta: Integer): Boolean;
@@ -1093,6 +1207,8 @@ procedure TFmrGalleryView.Execute(const APart: TFmrElementPart);
 var
   E: TFmrGalleryEntry;
   G: TFmrGalleryItem;
+  Target: IGalleryClickTarget;
+  RevertPreview: Boolean;
 begin
   if not FInRibbon then
   begin
@@ -1118,11 +1234,17 @@ begin
         if not E.Enabled then
           Exit;
         G := Gallery;
-        // The preview is reverted before the click applies the entry for good.
-        EndPreview;
+        Target := TGalleryClickTarget.Create(G, E);
+        RevertPreview := FPreview;
+        FPreview := False;
         GalleryTipHover(G, nil, TRectF.Empty, nil, nil);
         Host.ElementExecuted(Self);
-        G.ClickEntry(E);
+        // Host notifications and preview handlers can delete the view, gallery or entry.
+        // Everything below uses the guarded target, never Self.
+        if RevertPreview and Target.Resolve(G, E) then
+          G.HotTrack(nil);
+        if Target.Resolve(G, E) then
+          G.ClickEntry(E);
       end;
   end;
 end;
@@ -1155,13 +1277,14 @@ end;
 
 procedure TFmrGalleryView.Paint(const ACanvas: TCanvas);
 var
-  I: Integer;
+  I, First, Last: Integer;
   R, GR, S: TRectF;
   States: TFmrGalleryDrawStates;
   State: TCanvasSaveState;
   E: TFmrGalleryEntry;
   BorderCol: TAlphaColor;
   Hot: Boolean;
+  TextHeight: Single;
 begin
   if not Visible then
     Exit;
@@ -1175,10 +1298,13 @@ begin
   Hot := (HotPart <> TFmrElementPart.None) or Focused or Host.IsElementDroppedDown(Self);
   Painter.DrawGalleryFrame(ACanvas, Bounds, Hot);
   GR := GridRect;
+  TextHeight := -1;
+  First := FTopRow * FColumns;
+  Last := Min(FGrid.Count, (FTopRow + FRows) * FColumns) - 1;
   State := ACanvas.SaveState;
   try
     ACanvas.IntersectClipRect(GR);
-    for I := 0 to FGrid.Count - 1 do
+    for I := First to Last do
     begin
       R := CellRect(I);
       if R.IsEmpty then
@@ -1196,7 +1322,7 @@ begin
       end;
       if not E.Enabled or not IsEnabled then
         Include(States, TFmrGalleryDrawState.Disabled);
-      FmrDrawGalleryEntry(ACanvas, Painter, Images, Gallery, E, R, States);
+      DrawGalleryEntry(ACanvas, Painter, Images, Gallery, E, R, States, TextHeight);
     end;
   finally
     ACanvas.RestoreState(State);
@@ -2090,6 +2216,7 @@ var
   E: TFmrGalleryEntry;
   G: TFmrGalleryItem;
   Ctx: IFmrPopupContext;
+  Target: IGalleryClickTarget;
 begin
   if ARef.IsNone then
     Exit;
@@ -2098,6 +2225,7 @@ begin
   G := S.FGallery;
   if not E.Enabled or not G.Enabled then
     Exit;
+  Target := TGalleryClickTarget.Create(G, E);
   Ctx := FContext;
   // The preview is reverted first, then the click applies the entry for good. The click runs from the message
   // loop: a handler that shows a modal dialog must not run inside the mouse handler of a popup that is freed
@@ -2107,9 +2235,15 @@ begin
   FmrPopups.CloseAll;
   TThread.ForceQueue(nil,
     procedure
+    var
+      Gallery: TFmrGalleryItem;
+      Entry: TFmrGalleryEntry;
     begin
-      Ctx.ItemExecuting(G);
-      G.ClickEntry(E);
+      if not Target.Resolve(Gallery, Entry) then
+        Exit;
+      Ctx.ItemExecuting(Gallery);
+      if Target.Resolve(Gallery, Entry) then
+        Gallery.ClickEntry(Entry);
     end);
 end;
 
@@ -2446,9 +2580,10 @@ var
   States: TFmrGalleryDrawStates;
   State: TCanvasSaveState;
   Ref: TCellRef;
-  RightEdge: Single;
+  RightEdge, TextHeight: Single;
 begin
   P := Painter;
+  TextHeight := -1;
   if FFilterRect.Height > 0 then
     P.DrawGalleryFilterBand(Canvas, FFilterRect, FilterCaption, FFilterHot);
   for I := 0 to FSections.Count - 1 do
@@ -2492,7 +2627,7 @@ begin
         end;
         if not E.Enabled or not S.FGallery.Enabled then
           Include(States, TFmrGalleryDrawState.Disabled);
-        FmrDrawGalleryEntry(Canvas, P, Images, S.FGallery, E, R, States);
+        DrawGalleryEntry(Canvas, P, Images, S.FGallery, E, R, States, TextHeight);
       end;
     finally
       Canvas.RestoreState(State);

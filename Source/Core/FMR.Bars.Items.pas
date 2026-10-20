@@ -1681,7 +1681,8 @@ begin
     Exit;
   if (FSelectedEntry <> nil) and (IndexOfEntry(FSelectedEntry) < 0) then
     FSelectedEntry := nil;
-  Changed(TFmrItemChange.Paint);
+  // Entries can be added, removed, reordered or hidden; captions and glyphs can also change the measured size.
+  Changed(TFmrItemChange.Layout);
 end;
 
 procedure TFmrGalleryItem.ClickEntry(const AEntry: TFmrGalleryEntry);

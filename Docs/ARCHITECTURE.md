@@ -118,13 +118,16 @@ inside a panel) the ribbon keeps both rows inside itself.
 - `TFmrBarManager = class(TFmxObject)` — non-visual, dropped on the form. Its **children are the items**
   (`TFmrBarItem = class(TFmxObject)`), so the Structure View shows manager → items and FMX streams them without
   extra code. `Images: TCustomImageList`, `Categories: TStrings`, item lookup, `BeginUpdate/EndUpdate`.
-- `TFmrBarItem` — Caption, Description, Hint, Enabled, Visible, `Glyph`/`LargeGlyph: TFmrImageSource`,
+- `TFmrBarItem` — Caption, Description, Hint, Enabled, Visible, one scalable `Glyph: TFmrImageSource`,
   ImageIndex, Action (FMX actions through `TFmxObject`'s `IActionClient`), ShortCut, KeyTip, ScreenTip, Category,
   OnClick. Items know their links and notify them on every change.
 - `TFmrItemLink = class(TCollectionItem)` — Item, BeginGroup, ViewLevels (`Large`, `SmallWithText`, `Small`),
   ButtonGroup position, Visible, UserCaption, KeyTip override. `TFmrItemLinks = class(TOwnedCollection)` notifies its
   owner (`IFmrItemLinksOwner`).
 - One item can have links in several groups, the QAT, menus and the mini toolbar at once.
+- The same glyph is requested at the size required by each view and its DPI. `TFmrItemLink.ViewLevels` controls
+  button sizes; there is no separate large-image property. With an icon, default button levels allow all sizes;
+  text-only buttons default to SmallWithText. Menu Auto rows become large for an icon plus a description.
 
 ## Ribbon structure (`FMR.Ribbon.Structure`)
 

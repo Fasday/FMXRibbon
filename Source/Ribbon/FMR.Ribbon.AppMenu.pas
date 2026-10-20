@@ -964,12 +964,8 @@ begin
   else
     GS := M.SmallGlyphSize;
   G := nil;
-  if ALarge and not ARow.Item.LargeGlyph.IsEmpty(Images) then
-    G := ARow.Item.LargeGlyph
-  else if not ARow.Item.Glyph.IsEmpty(Images) then
-    G := ARow.Item.Glyph
-  else if not ARow.Item.LargeGlyph.IsEmpty(Images) then
-    G := ARow.Item.LargeGlyph;
+  if not ARow.Item.Glyph.IsEmpty(Images) then
+    G := ARow.Item.Glyph;
   TR := RectF(R.Left + 8, R.Top, R.Right - 8, R.Bottom);
   if ALarge then
   begin

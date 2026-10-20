@@ -122,7 +122,7 @@ begin
   Manager.Parent := Self;
   Paste := TFmrButtonItem(Manager.CreateItem(TFmrButtonItem, 'btnPaste'));
   Paste.Caption := 'Вставить';
-  Paste.LargeGlyph.GlyphCode := $E77F;                       // глиф Segoe Fluent Icons
+  Paste.Glyph.GlyphCode := $E77F;                            // одна иконка для всех размеров
 
   Ribbon := TFmrRibbon.Create(Self);
   Ribbon.Parent := Self;

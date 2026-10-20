@@ -58,7 +58,7 @@ type
 
   /// <summary>Row style of a menu.</summary>
   TFmrMenuItemStyle = (
-    /// <summary>Large rows (32 dp glyph, bold caption, description) when an item has a large glyph and a
+    /// <summary>Large rows (32 dp glyph, bold caption, description) when an item has a glyph and a
     /// description; normal rows otherwise.</summary>
     Auto,
     Normal,
@@ -1834,15 +1834,8 @@ begin
   end;
   Gutter := RectF(R.Left, R.Top, R.Left + FMenu.FGutter, R.Bottom);
   G := nil;
-  if FItem <> nil then
-  begin
-    if FLarge and not FItem.LargeGlyph.IsEmpty(FMenu.GetImages) then
-      G := FItem.LargeGlyph
-    else if not FItem.Glyph.IsEmpty(FMenu.GetImages) then
-      G := FItem.Glyph
-    else if not FItem.LargeGlyph.IsEmpty(FMenu.GetImages) then
-      G := FItem.LargeGlyph;
-  end;
+  if (FItem <> nil) and not FItem.Glyph.IsEmpty(FMenu.GetImages) then
+    G := FItem.Glyph;
   if IsChecked then
   begin
     GlyphR := RectF(0, 0, Min(Gutter.Width - 6, R.Height - 4), Min(Gutter.Width - 6, R.Height - 4));
@@ -2055,14 +2048,14 @@ begin
   P := FContext.Painter;
   M := P.Metrics;
   FRows.Clear;
-  // Large rows: explicitly, or automatically when an item has a large glyph and a description.
+  // Large rows: explicitly, or automatically when an item has an icon and a description.
   AnyLarge := False;
   if FStyle = TFmrMenuItemStyle.Auto then
     for I := 0 to FLinks.Count - 1 do
     begin
       L := FLinks[I];
       if L.IsVisible and not (L.Item is TFmrSeparatorItem) and (L.Item.Description <> '') and
-        not L.Item.LargeGlyph.IsEmpty(FContext.Images) then
+        not L.Item.Glyph.IsEmpty(FContext.Images) then
       begin
         AnyLarge := True;
         Break;

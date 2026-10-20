@@ -159,7 +159,6 @@ type
     FEnabled: Boolean;
     FVisible: Boolean;
     FGlyph: TFmrImageSource;
-    FLargeGlyph: TFmrImageSource;
     FShortCut: TShortCut;
     FScreenTip: TFmrScreenTip;
     FOnClick: TNotifyEvent;
@@ -173,7 +172,6 @@ type
     procedure SetEnabled(const Value: Boolean);
     procedure SetVisible(const Value: Boolean);
     procedure SetGlyph(const Value: TFmrImageSource);
-    procedure SetLargeGlyph(const Value: TFmrImageSource);
     procedure SetShortCut(const Value: TShortCut);
     procedure SetScreenTip(const Value: TFmrScreenTip);
     function GetImageIndex: TImageIndex;
@@ -218,8 +216,8 @@ type
     procedure Click; virtual;
     /// <summary>Asks the action (if any) to update the item (OnUpdate of the action).</summary>
     procedure UpdateFromAction;
-    /// <summary>Levels a link uses when its ViewLevels is empty: all three when LargeGlyph is set, otherwise small
-    /// with text and small (only small with text when there is no glyph).</summary>
+    /// <summary>Levels a link uses when its ViewLevels is empty: all three with a Glyph, SmallWithText without
+    /// an image. Set the link's ViewLevels to restrict its sizes.</summary>
     function DefaultViewLevels: TFmrViewLevels; virtual;
     /// <summary>How the layout calculator treats links of this item.</summary>
     function LayoutKind: TFmrLayoutItemKind; virtual;
@@ -238,10 +236,8 @@ type
     /// <summary>Longer text shown in menus with descriptions and in command search.</summary>
     property Description: string read FDescription write SetDescription;
     property Enabled: Boolean read FEnabled write SetEnabled stored IsEnabledStored default True;
-    /// <summary>Small (16 dp) image; also used for large views when LargeGlyph is empty.</summary>
+    /// <summary>One image for every view size. The view supplies the target rectangle and canvas scale.</summary>
     property Glyph: TFmrImageSource read FGlyph write SetGlyph;
-    /// <summary>Large (32 dp) image.</summary>
-    property LargeGlyph: TFmrImageSource read FLargeGlyph write SetLargeGlyph;
     /// <summary>Shortcut to Glyph.ImageIndex (streamed by Glyph).</summary>
     property ImageIndex: TImageIndex read GetImageIndex write SetImageIndex stored False default -1;
     property Hint: string read FHint write SetHint stored IsHintStored;
@@ -676,8 +672,6 @@ begin
   FLinks := TList<TFmrItemLink>.Create;
   FGlyph := TFmrImageSource.Create(Self);
   FGlyph.OnChange := GlyphChanged;
-  FLargeGlyph := TFmrImageSource.Create(Self);
-  FLargeGlyph.OnChange := GlyphChanged;
   FScreenTip := TFmrScreenTip.Create(Self);
   FScreenTip.OnChange := ScreenTipChanged;
 end;
@@ -691,7 +685,6 @@ begin
   DetachManager;
   FreeAndNil(FLinks);
   FreeAndNil(FGlyph);
-  FreeAndNil(FLargeGlyph);
   FreeAndNil(FScreenTip);
   inherited;
 end;
@@ -870,12 +863,10 @@ end;
 
 function TFmrBarItem.DefaultViewLevels: TFmrViewLevels;
 begin
-  if not FLargeGlyph.IsEmpty then
-    Result := FmrAllViewLevels
-  else if FGlyph.IsEmpty then
+  if FGlyph.IsEmpty then
     Result := [TFmrViewLevel.SmallWithText]
   else
-    Result := FmrSmallViewLevels;
+    Result := FmrAllViewLevels;
 end;
 
 function TFmrBarItem.LayoutKind: TFmrLayoutItemKind;
@@ -980,11 +971,6 @@ end;
 procedure TFmrBarItem.SetGlyph(const Value: TFmrImageSource);
 begin
   FGlyph.Assign(Value);
-end;
-
-procedure TFmrBarItem.SetLargeGlyph(const Value: TFmrImageSource);
-begin
-  FLargeGlyph.Assign(Value);
 end;
 
 procedure TFmrBarItem.SetHint(const Value: string);

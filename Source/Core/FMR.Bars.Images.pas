@@ -43,7 +43,7 @@ type
   TFmrSvgRenderer = reference to function(const ASvg: string; const AWidth, AHeight: Integer;
     const ATint: TAlphaColor): TBitmap;
 
-  /// <summary>Icon of an item (Glyph, LargeGlyph of bar items, images of gallery entries and screen tips).</summary>
+  /// <summary>Scalable icon of a bar item, gallery entry or screen tip.</summary>
   TFmrImageSource = class(TPersistent)
   private type
     TCacheEntry = class

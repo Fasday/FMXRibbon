@@ -153,7 +153,6 @@ object NotesForm: TNotesForm
     object btnPaste: TFmrButtonItem
       Caption = 'Paste'
       Glyph.GlyphCode = 59263
-      LargeGlyph.GlyphCode = 59263
       KeyTip = 'V'
       ScreenTip.Header = 'Paste (Ctrl+V)'
       ScreenTip.Description = 'Add content from the clipboard to the document.'
@@ -183,7 +182,6 @@ object NotesForm: TNotesForm
     object btnCut: TFmrButtonItem
       Caption = 'Cut'
       Glyph.GlyphCode = 59590
-      LargeGlyph.GlyphCode = 59590
       KeyTip = 'X'
       ScreenTip.Header = 'Cut (Ctrl+X)'
       ScreenTip.Description = 'Remove the selection and put it on the clipboard.'
@@ -192,7 +190,6 @@ object NotesForm: TNotesForm
     object btnCopy: TFmrButtonItem
       Caption = 'Copy'
       Glyph.GlyphCode = 59592
-      LargeGlyph.GlyphCode = 59592
       KeyTip = 'C'
       ScreenTip.Header = 'Copy (Ctrl+C)'
       ScreenTip.Description = 'Put a copy of the selection on the clipboard.'
@@ -299,7 +296,6 @@ object NotesForm: TNotesForm
       Caption = 'lowercase'
       Category = 'Home'
       Glyph.GlyphCode = 59602
-      LargeGlyph.GlyphCode = 59602
       OnClick = ChangeCaseClick
     end
     object btnCaseUpper: TFmrButtonItem
@@ -307,7 +303,6 @@ object NotesForm: TNotesForm
       Caption = 'UPPERCASE'
       Category = 'Home'
       Glyph.GlyphCode = 59625
-      LargeGlyph.GlyphCode = 59625
       OnClick = ChangeCaseClick
     end
     object btnCaseTitle: TFmrButtonItem
@@ -495,7 +490,6 @@ object NotesForm: TNotesForm
     object btnSort: TFmrButtonItem
       Caption = 'Sort'
       Glyph.GlyphCode = 59595
-      LargeGlyph.GlyphCode = 59595
       KeyTip = 'SO'
       ScreenTip.Header = 'Sort'
       ScreenTip.Description = 'Sort the selected lines alphabetically.'
@@ -637,11 +631,6 @@ object NotesForm: TNotesForm
         'M7.1,13.5 L10.9,13.5 L9,8 Z M16,13 L21,13 L21,14.5 L16,14.5 Z M1' +
         '6,17 L21,17 L21,18.5 L16,18.5 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M3,19 L8,5 L10,5 L15,19 L12.8,19 L11.6,15.5 L6.4,15.5 L5.2,19 Z ' +
-        'M7.1,13.5 L10.9,13.5 L9,8 Z M16,13 L21,13 L21,14.5 L16,14.5 Z M1' +
-        '6,17 L21,17 L21,18.5 L16,18.5 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'L'
       ScreenTip.Header = 'Styles'
       ScreenTip.Description = 'Choose a style for the document. Point at a style to preview it.'
@@ -790,13 +779,6 @@ object NotesForm: TNotesForm
         '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
         '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
         '" y="16.8" width="7.4" height="7.4"/></g></svg>'
-      LargeGlyph.SvgSource = 
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><g f' +
-        'ill="none" stroke="#3E7CB1" stroke-width="1.6"><rect x="3.8" y="' +
-        '3.8" width="24.4" height="24.4"/><rect x="7.8" y="7.8" width="7.' +
-        '4" height="7.4"/><rect x="16.8" y="7.8" width="7.4" height="7.4"' +
-        '/><rect x="7.8" y="16.8" width="7.4" height="7.4"/><rect x="16.8' +
-        '" y="16.8" width="7.4" height="7.4"/></g></svg>'
       KeyTip = 'Y2'
       ScreenTip.Header = 'Add-ins'
       ScreenTip.Description = 'Find add-ins and manage them.'
@@ -806,7 +788,6 @@ object NotesForm: TNotesForm
       Tag = 1
       Caption = 'Blank Page'
       Glyph.GlyphCode = 60686
-      LargeGlyph.GlyphCode = 60686
       ScreenTip.Header = 'Blank Page'
       ScreenTip.Description = 'Insert empty lines at the cursor.'
       OnClick = InsertTextClick
@@ -814,7 +795,6 @@ object NotesForm: TNotesForm
     object btnPageBreak: TFmrButtonItem
       Caption = 'Page Break'
       Glyph.GlyphCode = 59217
-      LargeGlyph.GlyphCode = 59217
       ScreenTip.Header = 'Page Break'
       ScreenTip.Description = 'Insert a page break line at the cursor.'
       OnClick = InsertTextClick
@@ -828,13 +808,6 @@ object NotesForm: TNotesForm
         ',20 Z M9.5,16 L14.5,16 L14.5,20 L9.5,20 Z M16,16 L21,16 L21,20 L' +
         '16,20 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M3,4 L8,4 L8,8 L3,8 Z M9.5,4 L14.5,4 L14.5,8 L9.5,8 Z M16,4 L21,' +
-        '4 L21,8 L16,8 Z M3,10 L8,10 L8,14 L3,14 Z M9.5,10 L14.5,10 L14.5' +
-        ',14 L9.5,14 Z M16,10 L21,10 L21,14 L16,14 Z M3,16 L8,16 L8,20 L3' +
-        ',20 Z M9.5,16 L14.5,16 L14.5,20 L9.5,20 Z M16,16 L21,16 L21,20 L' +
-        '16,20 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'T'
       ScreenTip.Header = 'Add a Table'
       ScreenTip.Description = 'Insert a text table: pick its number of columns and rows.'
@@ -902,10 +875,6 @@ object NotesForm: TNotesForm
         'M3,12 L11,12 L11,20 L3,20 Z M17,3 L22,12 L12,12 Z M14,15 L21,15 ' +
         'L21,21 L14,21 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M3,12 L11,12 L11,20 L3,20 Z M17,3 L22,12 L12,12 Z M14,15 L21,15 ' +
-        'L21,21 L14,21 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'SH'
       ScreenTip.Header = 'Shapes'
       ScreenTip.Description = 
@@ -1048,7 +1017,6 @@ object NotesForm: TNotesForm
       Tag = 4
       Caption = 'Text Box'
       Glyph.GlyphCode = 59226
-      LargeGlyph.GlyphCode = 59226
       OnClick = InsertTextClick
     end
     object btnDateTime: TFmrButtonItem
@@ -1073,13 +1041,11 @@ object NotesForm: TNotesForm
       Tag = 5
       Caption = 'Link'
       Glyph.GlyphCode = 59163
-      LargeGlyph.GlyphCode = 59163
       OnClick = InsertTextClick
     end
     object galSymbols: TFmrRibbonGalleryItem
       Caption = 'Symbol'
       Glyph.GlyphCode = 59585
-      LargeGlyph.GlyphCode = 59585
       KeyTip = 'U'
       ScreenTip.Header = 'Symbol'
       ScreenTip.Description = 'Insert a symbol at the cursor.'
@@ -1196,7 +1162,6 @@ object NotesForm: TNotesForm
     object btnMargins: TFmrButtonItem
       Caption = 'Margins'
       Glyph.GlyphCode = 59289
-      LargeGlyph.GlyphCode = 59289
       KeyTip = 'M'
       ScreenTip.Header = 'Adjust Margins'
       ScreenTip.Description = 'Set the margins of the page.'
@@ -1246,7 +1211,6 @@ object NotesForm: TNotesForm
     object btnOrientation: TFmrButtonItem
       Caption = 'Orientation'
       Glyph.GlyphCode = 59572
-      LargeGlyph.GlyphCode = 59572
       KeyTip = 'O'
       ButtonStyle = DropDown
       DropDownLinks = <
@@ -1274,7 +1238,6 @@ object NotesForm: TNotesForm
     object btnSize: TFmrButtonItem
       Caption = 'Size'
       Glyph.GlyphCode = 59814
-      LargeGlyph.GlyphCode = 59814
       KeyTip = 'SZ'
       ButtonStyle = DropDown
       DropDownLinks = <
@@ -1315,10 +1278,6 @@ object NotesForm: TNotesForm
         'M4,3 L20,3 L20,21 L4,21 Z M6,5 L6,19 L18,19 L18,5 Z M7.5,15 L15,' +
         '7.5 L16.5,9 L9,16.5 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M4,3 L20,3 L20,21 L4,21 Z M6,5 L6,19 L18,19 L18,5 Z M7.5,15 L15,' +
-        '7.5 L16.5,9 L9,16.5 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'W'
       ScreenTip.Header = 'Watermark'
       ScreenTip.Description = 'Add ghosted text behind the content of the page.'
@@ -1373,12 +1332,6 @@ object NotesForm: TNotesForm
         ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
         ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
-        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
-        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
-        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'PC'
       ScreenTip.Header = 'Page Color'
       ScreenTip.Description = 'Change the color of the page.'
@@ -1388,7 +1341,6 @@ object NotesForm: TNotesForm
     object btnPageBorders: TFmrButtonItem
       Caption = 'Page Borders'
       Glyph.GlyphCode = 59193
-      LargeGlyph.GlyphCode = 59193
       KeyTip = 'PB'
       OnClick = PageBordersClick
       ButtonStyle = Check
@@ -1412,7 +1364,6 @@ object NotesForm: TNotesForm
     object btnReadMode: TFmrButtonItem
       Caption = 'Read Mode'
       Glyph.GlyphCode = 59190
-      LargeGlyph.GlyphCode = 59190
       KeyTip = 'F'
       OnClick = ViewModeClick
       ButtonStyle = Check
@@ -1422,7 +1373,6 @@ object NotesForm: TNotesForm
       Tag = 1
       Caption = 'Print Layout'
       Glyph.GlyphCode = 59331
-      LargeGlyph.GlyphCode = 59331
       KeyTip = 'P'
       OnClick = ViewModeClick
       ButtonStyle = Check
@@ -1433,7 +1383,6 @@ object NotesForm: TNotesForm
       Tag = 2
       Caption = 'Web Layout'
       Glyph.GlyphCode = 59252
-      LargeGlyph.GlyphCode = 59252
       KeyTip = 'L'
       OnClick = ViewModeClick
       ButtonStyle = Check
@@ -1456,7 +1405,6 @@ object NotesForm: TNotesForm
     object btnZoom: TFmrButtonItem
       Caption = 'Zoom'
       Glyph.GlyphCode = 59166
-      LargeGlyph.GlyphCode = 59166
       KeyTip = 'Q'
       ButtonStyle = DropDown
       DropDownLinks = <
@@ -1505,7 +1453,6 @@ object NotesForm: TNotesForm
       Tag = 100
       Caption = '100%'
       Glyph.GlyphCode = 59724
-      LargeGlyph.GlyphCode = 59724
       KeyTip = 'J'
       OnClick = ZoomClick
     end
@@ -1535,12 +1482,6 @@ object NotesForm: TNotesForm
         ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
         ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
       Glyph.PathViewBox = 24.00000000000000000
-      LargeGlyph.PathData = 
-        'M12,3 A9,9 0 1 0 12,21 Q14,21 14,19 Q14,18 13,17 Q12,16 13,15 L1' +
-        '6,15 A5,5 0 0 0 21,10 Q21,3 12,3 Z M7,9 A1.5,1.5 0 1 1 7,12 A1.5' +
-        ',1.5 0 1 1 7,9 Z M10,5.5 A1.5,1.5 0 1 1 10,8.5 A1.5,1.5 0 1 1 10' +
-        ',5.5 Z M15,6 A1.5,1.5 0 1 1 15,9 A1.5,1.5 0 1 1 15,6 Z'
-      LargeGlyph.PathViewBox = 24.00000000000000000
       KeyTip = 'TH'
       ScreenTip.Header = 'Themes'
       ScreenTip.Description = 
@@ -1665,7 +1606,6 @@ object NotesForm: TNotesForm
     object btnTheme: TFmrButtonItem
       Caption = 'Theme'
       Glyph.GlyphCode = 59280
-      LargeGlyph.GlyphCode = 59280
       KeyTip = 'OT'
       ScreenTip.Header = 'Theme'
       ScreenTip.Description = 
@@ -1717,7 +1657,6 @@ object NotesForm: TNotesForm
     object galAccent: TFmrRibbonGalleryItem
       Caption = 'Accent'
       Glyph.GlyphCode = 59280
-      LargeGlyph.GlyphCode = 59280
       KeyTip = 'AC'
       ScreenTip.Header = 'Accent Color'
       ScreenTip.Description = 
@@ -1808,7 +1747,6 @@ object NotesForm: TNotesForm
     object btnCustomize: TFmrButtonItem
       Caption = 'Customize Ribbon...'
       Glyph.GlyphCode = 59155
-      LargeGlyph.GlyphCode = 59155
       KeyTip = 'CR'
       ScreenTip.Header = 'Customize the Ribbon'
       ScreenTip.Description = 'Add, remove, rename and reorder tabs, groups and commands.'
@@ -1817,7 +1755,6 @@ object NotesForm: TNotesForm
     object btnResetRibbon: TFmrButtonItem
       Caption = 'Reset Ribbon'
       Glyph.GlyphCode = 59180
-      LargeGlyph.GlyphCode = 59180
       KeyTip = 'RR'
       ScreenTip.Header = 'Reset the Ribbon'
       ScreenTip.Description = 'Go back to the designed layout (undoes every customization).'
@@ -1827,14 +1764,12 @@ object NotesForm: TNotesForm
       Caption = 'Delete'
       Category = 'Selection'
       Glyph.GlyphCode = 59213
-      LargeGlyph.GlyphCode = 59213
       OnClick = DeleteSelClick
     end
     object btnQuote: TFmrButtonItem
       Caption = 'Add Quotes'
       Category = 'Selection'
       Glyph.GlyphCode = 59826
-      LargeGlyph.GlyphCode = 59826
       OnClick = QuoteClick
     end
     object stSelInfo: TFmrStaticItem
@@ -1846,14 +1781,12 @@ object NotesForm: TNotesForm
       Caption = 'Reverse Lines'
       Category = 'Selection'
       Glyph.GlyphCode = 59595
-      LargeGlyph.GlyphCode = 59595
       OnClick = ReverseLinesClick
     end
     object btnTrim: TFmrButtonItem
       Caption = 'Trim Spaces'
       Category = 'Selection'
       Glyph.GlyphCode = 59228
-      LargeGlyph.GlyphCode = 59228
       OnClick = TrimClick
     end
     object sepMini: TFmrSeparatorItem
@@ -2181,12 +2114,15 @@ object NotesForm: TNotesForm
           end
           item
             Item = btnDateTime
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnSignature
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnComment
+            ViewLevels = [SmallWithText, Small]
           end>
       end
       object grpLinks: TFmrRibbonGroup
@@ -2296,12 +2232,15 @@ object NotesForm: TNotesForm
           end
           item
             Item = btnZoomIn
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnZoomOut
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnPageWidth
+            ViewLevels = [SmallWithText, Small]
           end>
       end
       object grpThemes: TFmrRibbonGroup
@@ -2331,6 +2270,7 @@ object NotesForm: TNotesForm
           end
           item
             Item = btnLanguage
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnCustomize
@@ -2424,12 +2364,15 @@ object NotesForm: TNotesForm
         ItemLinks = <
           item
             Item = btnBullets
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnNumbering
+            ViewLevels = [SmallWithText, Small]
           end
           item
             Item = btnIndentInc
+            ViewLevels = [SmallWithText, Small]
           end>
       end
     end

@@ -34,17 +34,72 @@ type
     [Test] procedure MenuKnowsItsItemsAndLinks;
     [Test] procedure DestroyingHooksAreInstalled;
     [Test] procedure ThemedEditorsShareStyleNamesPerScheme;
+    [Test] procedure SingleGlyphRendersAtBothViewSizes;
   end;
 
 implementation
 
 uses
-  FMR.Tests.Themes;
+  System.Types, System.Math, System.Generics.Collections, FMX.Graphics, FMR.Bars.Images, FMR.Tests.Themes;
 
 type
   TPartAccess = class(TFmrRibbonPart);
 
 { TRibbonControlTests }
+
+procedure TRibbonControlTests.SingleGlyphRendersAtBothViewSizes;
+var
+  Item: TFmrButtonItem;
+  Group: TFmrRibbonGroup;
+  LargeLink, SmallLink: TFmrItemLink;
+  LargeView, SmallView: TFmrItemView;
+  SavedRenderer: TFmrSvgRenderer;
+  Sizes: TList<Integer>;
+  Bitmap: TBitmap;
+begin
+  Item := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, 'btnScalable'));
+  Item.Caption := 'Scalable';
+  Item.Glyph.SvgSource := '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"/>';
+  Group := FRibbon.AddTab('Home').AddGroup('Images');
+  LargeLink := Group.ItemLinks.AddItem(Item);
+  LargeLink.ViewLevels := [TFmrViewLevel.Large];
+  SmallLink := Group.ItemLinks.AddItem(Item);
+  SmallLink.ViewLevels := [TFmrViewLevel.Small];
+  FRibbon.UpdateLayout;
+  LargeView := TFmrItemView(LargeLink.ViewObject);
+  SmallView := TFmrItemView(SmallLink.ViewObject);
+  Assert.AreEqual(TFmrViewLevel.Large, LargeView.Level);
+  Assert.AreEqual(TFmrViewLevel.Small, SmallView.Level);
+  SavedRenderer := TFmrImageSource.SvgRenderer;
+  Sizes := TList<Integer>.Create;
+  Bitmap := TBitmap.Create(1000, 400);
+  try
+    TFmrImageSource.SvgRenderer :=
+      function(const ASvg: string; const AWidth, AHeight: Integer; const ATint: TAlphaColor): TBitmap
+      begin
+        Sizes.Add(AWidth);
+        Result := TBitmap.Create(AWidth, AHeight);
+        Result.Clear(TAlphaColors.Red);
+      end;
+    Assert.IsTrue(Bitmap.Canvas.BeginScene);
+    try
+      LargeView.Paint(Bitmap.Canvas);
+      SmallView.Paint(Bitmap.Canvas);
+      Assert.IsTrue(Sizes.Contains(Round(FRibbon.Painter.Metrics.LargeGlyphSize * Bitmap.Canvas.Scale)));
+      Assert.IsTrue(Sizes.Contains(Round(FRibbon.Painter.Metrics.SmallGlyphSize * Bitmap.Canvas.Scale)));
+      Assert.AreEqual<Integer>(2, Sizes.Count, 'one source rendered at two target sizes');
+      LargeView.Paint(Bitmap.Canvas);
+      SmallView.Paint(Bitmap.Canvas);
+      Assert.AreEqual<Integer>(2, Sizes.Count, 'each size is cached');
+    finally
+      Bitmap.Canvas.EndScene;
+    end;
+  finally
+    TFmrImageSource.SvgRenderer := SavedRenderer;
+    Bitmap.Free;
+    Sizes.Free;
+  end;
+end;
 
 procedure TRibbonControlTests.Setup;
 begin

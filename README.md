@@ -125,7 +125,7 @@ begin
   Manager.Parent := Self;
   Paste := TFmrButtonItem(Manager.CreateItem(TFmrButtonItem, 'btnPaste'));
   Paste.Caption := 'Paste';
-  Paste.LargeGlyph.GlyphCode := $E77F;                       // Segoe Fluent Icons glyph
+  Paste.Glyph.GlyphCode := $E77F;                            // one scalable icon for every size
 
   Ribbon := TFmrRibbon.Create(Self);
   Ribbon.Parent := Self;

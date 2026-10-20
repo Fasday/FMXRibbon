@@ -28,7 +28,7 @@ depend on it. `TFmrLayoutMetrics` is filled by the ribbon from the theme metrics
 ```
 Form (Owner of everything)
 ├── TFmrBarManager (TFmxObject, Parent = form)          Images, Categories, listeners
-│   └── TFmrBarItem children (Parent = manager)         Caption, Glyph, LargeGlyph, Action, ScreenTip, ...
+│   └── TFmrBarItem children (Parent = manager)         Caption, Glyph, Action, ScreenTip, ...
 │         └── knows its TFmrItemLink objects (not owned)
 └── TFmrRibbon (TControl, written later; implements IFmrRibbonStructureOwner)
     ├── QuickAccessToolbar: TFmrRibbonQuickAccessToolbar (persistent) → ItemLinks
@@ -95,14 +95,20 @@ action's `OnUpdate` (the ribbon should call it for visible items on idle, like F
 | `TFmrColorItem` | split button with `Color`, automatic/no color/more colors options |
 | `TFmrGalleryItem` | `Groups` → `Items` (entries with caption, glyph, hint, description), `MinColumns`/`MaxColumns` (in-ribbon), `DropDownColumns/Rows`, `ItemWidth/Height`, `ShowInRibbon`, `AllowFilter`, `SelectedIndex`/`SelectedEntry` (follows its entry), `ClickEntry` → `OnItemClick`, `HotTrack(entry or nil)` → `OnHotTrack` (live preview; nil = revert) |
 
-`DefaultViewLevels` of an item (used when a link's `ViewLevels` is empty): all three with a `LargeGlyph`, small
-with text and small with a `Glyph`, small with text only without glyphs; editors: small with text (with a caption)
-and small. `LayoutKind` tells the ribbon how to feed the layout calculator.
+`DefaultViewLevels` of an item (used when a link's `ViewLevels` is empty): all three with a `Glyph`, small with
+text only without an image; editors: small with text (with a caption) and small. Restrict a link to
+`FmrSmallViewLevels` for a compact button, or `[TFmrViewLevel.Large]` for a large one. `LayoutKind` tells the
+ribbon how to feed the layout calculator.
 
 `TFmrBarManager.SearchItems(text)` implements the data side of command search: every word must occur in
 caption, description, hint, `Keywords` or category; captions starting with the text come first.
 
 ### Images (`TFmrImageSource`)
+
+Each item has one `Glyph`, drawn at the size of its current view. `SmallGlyphSize` and `LargeGlyphSize` are theme
+metrics, not separate image sources. When migrating older code/forms, move `LargeGlyph.*` to `Glyph.*` (keep one
+copy when both were identical; choose the desired source when they differed). Set compact links' `ViewLevels`
+to `FmrSmallViewLevels`; an image no longer needs a second copy to be used by a large button.
 
 `Kind = Auto` picks SVG, then glyph, then path, then image list index. `Draw(Canvas, Rect, Opacity, Tint, Images)`
 centers the image keeping the aspect ratio and works with any canvas:
@@ -289,8 +295,8 @@ monotonic width, determinism, simplified overflow, scrolling, tabs, RTL), `FMR.T
   ShowMode and DisplayMode.
 - Items are owned by the manager's owner (the form) and parented to the manager (`CreateItem` does that), like the
   designer will.
-- One image list (`TFmrBarManager.Images`) for small and large glyphs: FMX image lists are multi-resolution and
-  `LargeGlyph.ImageIndex` can point anywhere.
+- One image source (`Glyph`) per item and one image list (`TFmrBarManager.Images`) for every size. FMX image
+  lists supply the requested size; SVG, font glyphs and paths scale to the view's target rectangle and DPI.
 - `TFmrItemLink.ViewObject` is reserved for the ribbon (control/view info per link); release it in `LinkRemoving`
   and when a group is removed (`StructureObjectRemoving`; links of a destroyed group are deleted silently).
 - `UserCaption` on tabs, groups and links is the customization rename; designed captions are never overwritten.

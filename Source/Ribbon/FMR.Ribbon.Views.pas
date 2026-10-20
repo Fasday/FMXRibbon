@@ -195,7 +195,7 @@ type
     function IsAvatar: Boolean;
     function IsStatic: Boolean;
     function ShowsText: Boolean;
-    function Glyph(const ALarge: Boolean): TFmrImageSource;
+    function Glyph: TFmrImageSource;
     function HasGlyph: Boolean;
     procedure SplitCaption;
     function ArrowAreaWidth: Single;
@@ -779,30 +779,16 @@ begin
   end;
 end;
 
-function TFmrButtonView.Glyph(const ALarge: Boolean): TFmrImageSource;
+function TFmrButtonView.Glyph: TFmrImageSource;
 begin
   Result := nil;
-  if Item = nil then
-    Exit;
-  if ALarge then
-  begin
-    if not Item.LargeGlyph.IsEmpty(Images) then
-      Result := Item.LargeGlyph
-    else if not Item.Glyph.IsEmpty(Images) then
-      Result := Item.Glyph;
-  end
-  else
-  begin
-    if not Item.Glyph.IsEmpty(Images) then
-      Result := Item.Glyph
-    else if not Item.LargeGlyph.IsEmpty(Images) then
-      Result := Item.LargeGlyph;
-  end;
+  if (Item <> nil) and not Item.Glyph.IsEmpty(Images) then
+    Result := Item.Glyph;
 end;
 
 function TFmrButtonView.HasGlyph: Boolean;
 begin
-  Result := Glyph(False) <> nil;
+  Result := Glyph <> nil;
 end;
 
 function TFmrButtonView.ArrowAreaWidth: Single;
@@ -1108,7 +1094,7 @@ var
   Bar: TRectF;
   Tint: TAlphaColor;
 begin
-  G := Glyph(R.Width > Metrics.SmallGlyphSize + 1);
+  G := Glyph;
   if G = nil then
     Exit;
   if AState = TFmrPartState.Disabled then

@@ -1240,9 +1240,7 @@ begin
     for I := 0 to FGroup.ItemLinks.Count - 1 do
       if FGroup.ItemLinks[I].IsVisible then
       begin
-        if not FGroup.ItemLinks[I].Item.LargeGlyph.IsEmpty(Images) then
-          G := FGroup.ItemLinks[I].Item.LargeGlyph
-        else if not FGroup.ItemLinks[I].Item.Glyph.IsEmpty(Images) then
+        if not FGroup.ItemLinks[I].Item.Glyph.IsEmpty(Images) then
           G := FGroup.ItemLinks[I].Item.Glyph;
         if G <> nil then
           Break;
@@ -7863,8 +7861,6 @@ var
           Minimized := False;
       end, Checked);
     C.Description := FmrStr(ADescription);
-    C.LargeGlyph.PathData := APath;
-    C.LargeGlyph.PathViewBox := 24;
     C.Glyph.PathData := APath;
     C.Glyph.PathViewBox := 24;
   end;

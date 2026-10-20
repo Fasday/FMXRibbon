@@ -80,7 +80,7 @@ design package is unloaded.
 |---|---|
 | `Theme` of `TFmrRibbon`, `TFmrRibbonBackstageView`, `TFmrStatusBar`, `TFmrPopupMenu` | Drop-down of `TFmrTheme.ThemeNames` |
 | `AccentColor` (ribbon, backstage view, status bar) | Drop-down "(theme default), Blue, Cobalt, Green, Orange, Azure, Purple, Crimson, Sky" (the `FmrAccent*` constants) with color swatches; `#AARRGGBB` / `#RRGGBB` / `$hex` typed; "..." opens the color dialog |
-| Every `TFmrImageSource` (`Glyph`, `LargeGlyph`, group glyphs, screen tip images, backstage glyphs...) | Summary "(Glyph $E8C8 Copy)", "(Image 3)", "(SVG)", "(Path)", "(None)"; sub-properties; "..." opens the **image dialog** |
+| Every `TFmrImageSource` (`Glyph`, group glyphs, screen tip images, backstage glyphs...) | Summary "(Glyph $E8C8 Copy)", "(Image 3)", "(SVG)", "(Path)", "(None)"; sub-properties; "..." opens the **image dialog** |
 | `TFmrImageSource.GlyphCode` | Shown as `$E8C8 Copy`; accepts `E8C8`, `$E8C8`, `U+E8C8`, `#E8C8`; "..." opens the dialog on the icon font page |
 | `TFmrImageSource.GlyphFontFamily` | Drop-down of the icon fonts installed (Segoe Fluent Icons, Segoe MDL2 Assets, Segoe UI Symbol...) |
 | `TFmrImageSource.SvgSource`, `PathData` | "(N characters)"; "..." opens the dialog on the SVG / path page |
@@ -164,8 +164,8 @@ Template, Manager = nil, Replace = False, Namer = nil)`.
 
 All templates fill the QAT with Save, Undo, Redo (shortcuts Ctrl+S/Z/Y), set key tips of the tabs and common
 commands, categories per tab, and use glyphs of the Segoe Fluent Icons / MDL2 font (`FmrGlyph*` constants), so no
-image files are needed. Large buttons get `LargeGlyph` (all three view levels), small ones `Glyph` only, icon-only
-buttons `ViewLevels = [Small]` in button-group rows (`TFmrTemplateRowPos`: new row, new segment, next).
+image files are needed. All buttons use one `Glyph`; links specify the permitted sizes through `ViewLevels`.
+Icon-only buttons use `[Small]` in button-group rows (`TFmrTemplateRowPos`: new row, new segment, next).
 Components are owned by the ribbon's owner and named through the name function: `DefaultNamer` (free name, else
 numbered) at run time, `Designer.UniqueName` at design time. The building blocks (`AddTab`, `AddGroup`, `AddButton`,
 `AddGroupButton`, `AddCheck`, `AddColor`, `AddCombo`, `AddFontName`, `AddSpin`, `AddGallery`, `AddMenuItem`,

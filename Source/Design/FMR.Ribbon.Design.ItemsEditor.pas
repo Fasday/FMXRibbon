@@ -356,8 +356,6 @@ var
   Src: TFmrImageSource;
 begin
   Src := AItem.Glyph;
-  if Src.IsEmpty(FManager.Images) then
-    Src := AItem.LargeGlyph;
   if (Src.EffectiveKind = TFmrImageKind.Glyph) and (Src.GlyphCode <> 0) then
     Exit(FmrAddGlyph(FImages, Src.GlyphCode, clWindowText, Src.GlyphFontFamily));
   if not Src.IsEmpty(FManager.Images) then

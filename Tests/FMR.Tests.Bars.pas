@@ -682,7 +682,7 @@ begin
   try
     Owner.Links.AddItem(Item);
     Owner.ItemChangedCount := 0;
-    Item.LargeGlyph.ImageIndex := 4;
+    Item.Glyph.ImageIndex := 4;
     Assert.AreEqual(1, Owner.ItemChangedCount);
     Assert.AreEqual(TFmrItemChange.Layout, Owner.LastChange);
     Item.ImageIndex := 5;
@@ -721,9 +721,7 @@ begin
   Item := NewButton('btnA', 'A');
   Assert.IsTrue(Item.DefaultViewLevels = [TFmrViewLevel.SmallWithText], 'no glyph: text only');
   Item.Glyph.ImageIndex := 0;
-  Assert.IsTrue(Item.DefaultViewLevels = FmrSmallViewLevels);
-  Item.LargeGlyph.ImageIndex := 0;
-  Assert.IsTrue(Item.DefaultViewLevels = FmrAllViewLevels);
+  Assert.IsTrue(Item.DefaultViewLevels = FmrAllViewLevels, 'one image supports every button size');
   Sep := TFmrSeparatorItem(FManager.CreateItem(TFmrSeparatorItem, 'sepA'));
   Assert.AreEqual(TFmrLayoutItemKind.Separator, Sep.LayoutKind);
   Edit := TFmrEditItem(FManager.CreateItem(TFmrEditItem, 'edA'));

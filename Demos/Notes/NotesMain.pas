@@ -2326,10 +2326,10 @@ begin
     DocArea.Fill.Color := $FFE6E6E6;
   // Modern 2024: a colored Paste icon (a clipboard under a page in the colors of the theme).
   if T.Style.Family = TFmrThemeFamily.Modern2024 then
-    BarManager1.ItemByName('btnPaste').LargeGlyph.SvgSource := Format(SvgPasteFmt,
+    BarManager1.ItemByName('btnPaste').Glyph.SvgSource := Format(SvgPasteFmt,
       [ColorHex(T.Colors[TFmrToken.GlyphTint]), ColorHex(T.Colors[TFmrToken.BodyFill])])
   else
-    BarManager1.ItemByName('btnPaste').LargeGlyph.SvgSource := '';
+    BarManager1.ItemByName('btnPaste').Glyph.SvgSource := '';
   ApplyFormat;
   FindPanel.Fill.Color := T.Colors[TFmrToken.StatusBarFill];
   FindPanel.Stroke.Color := T.Colors[TFmrToken.StatusBarSeparator];

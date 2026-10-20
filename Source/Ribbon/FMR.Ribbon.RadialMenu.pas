@@ -516,9 +516,7 @@ begin
       R := (InnerR + RingR) / 2;
       GP := PointF(C.X + R * Cos(DegToRad(Mid)), C.Y + R * Sin(DegToRad(Mid)) - 7);
       G := nil;
-      if not Item.LargeGlyph.IsEmpty(Images) then
-        G := Item.LargeGlyph
-      else if not Item.Glyph.IsEmpty(Images) then
+      if not Item.Glyph.IsEmpty(Images) then
         G := Item.Glyph;
       if G <> nil then
       begin

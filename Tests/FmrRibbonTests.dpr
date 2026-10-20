@@ -27,7 +27,8 @@ uses
   FMR.Tests.Customize in 'FMR.Tests.Customize.pas',
   FMR.Tests.Templates in 'FMR.Tests.Templates.pas',
   FMR.Tests.Themes in 'FMR.Tests.Themes.pas',
-  FMR.Tests.RibbonControl in 'FMR.Tests.RibbonControl.pas';
+  FMR.Tests.RibbonControl in 'FMR.Tests.RibbonControl.pas',
+  FMR.Tests.Gallery in 'FMR.Tests.Gallery.pas';
 
 var
   Runner: ITestRunner;

@@ -400,7 +400,6 @@ var
     Result := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, AName));
     Result.Caption := ACaption;
     Result.Glyph.GlyphCode := AGlyph;
-    Result.LargeGlyph.GlyphCode := AGlyph;
     Result.Category := 'Showcase';
     G.ItemLinks.AddItem(Result).ViewLevels := ALevels;
   end;
@@ -424,7 +423,6 @@ begin
   FThemeGallery.Caption := 'Themes';
   FThemeGallery.Glyph.PathData := PathPalette;
   FThemeGallery.Glyph.PathViewBox := 24;
-  FThemeGallery.LargeGlyph.Assign(FThemeGallery.Glyph);
   FThemeGallery.ItemWidth := 76;
   FThemeGallery.ItemHeight := 58;
   FThemeGallery.MinColumns := 2;
@@ -464,7 +462,6 @@ begin
   FShapesButton.ButtonStyle := TFmrButtonStyle.DropDown;
   FShapesButton.Glyph.PathData := PathShapes;
   FShapesButton.Glyph.PathViewBox := 24;
-  FShapesButton.LargeGlyph.Assign(FShapesButton.Glyph);
   Shapes := TFmrGalleryItem(FManager.CreateItem(TFmrGalleryItem, 'galSCShapes'));
   Shapes.Caption := 'Shapes';
   Shapes.ShowInRibbon := False;
@@ -546,7 +543,6 @@ begin
     else
       B.Glyph.GlyphCode := $E8BB;
     end;
-    B.LargeGlyph.Assign(B.Glyph);
     FAppMenu07.ItemLinks.AddItem(B, S = 'Close');
   end;
   FAppMenu07.RecentDocuments.Add('Showcase notes.docx', 'C:\Documents\Showcase notes.docx', True);
@@ -1532,13 +1528,11 @@ begin
           B := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, 'btnSCCrop'));
           B.Caption := 'Crop';
           B.Glyph.GlyphCode := $E7A8;
-          B.LargeGlyph.GlyphCode := $E7A8;
           B.OnClick := CommandClick;
           Grp.ItemLinks.AddItem(B);
           B := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, 'btnSCRotate'));
           B.Caption := 'Rotate';
           B.Glyph.GlyphCode := $E7AD;
-          B.LargeGlyph.GlyphCode := $E7AD;
           B.OnClick := CommandClick;
           Grp.ItemLinks.AddItem(B);
         finally
@@ -1877,7 +1871,6 @@ var
     B := TFmrButtonItem(FChildManager.CreateItem(TFmrButtonItem, AName));
     B.Caption := ACaption;
     B.Glyph.GlyphCode := AGlyph;
-    B.LargeGlyph.GlyphCode := AGlyph;
     B.OnClick := CommandClick;
     AGroup.ItemLinks.AddItem(B);
   end;
@@ -2146,11 +2139,12 @@ begin
           B := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, ''));
           B.Caption := Format('Cmd %d.%d', [I, J]);
           B.Glyph.GlyphCode := Glyphs[J mod 10];
-          if J <= 2 then
-            B.LargeGlyph.GlyphCode := Glyphs[J mod 10];
           B.OnClick := CommandClick;
           FPerfItems.Add(B);
-          G.ItemLinks.AddItem(B);
+          if J <= 2 then
+            G.ItemLinks.AddItem(B).ViewLevels := FmrAllViewLevels
+          else
+            G.ItemLinks.AddItem(B).ViewLevels := FmrSmallViewLevels;
         end;
       end;
     finally

@@ -607,8 +607,6 @@ begin
   if Item is TFmrSeparatorItem then
     Exit(ImgSeparator);
   Src := Item.Glyph;
-  if (Src.EffectiveKind <> TFmrImageKind.Glyph) and (Item.LargeGlyph.EffectiveKind = TFmrImageKind.Glyph) then
-    Src := Item.LargeGlyph;
   if (Src.EffectiveKind = TFmrImageKind.Glyph) and (Src.GlyphCode <> 0) and (Src.GlyphFontFamily = '') then
   begin
     Key := Src.GlyphCode;

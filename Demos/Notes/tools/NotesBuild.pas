@@ -41,7 +41,7 @@ type
     FOrder: Integer;
     function NextPos: Single;
     function Btn(const AName, ACaption: string; const AGlyph: Cardinal; const AClick: TNotifyEvent;
-      const AStyle: TFmrButtonStyle = TFmrButtonStyle.Default; const ALarge: Boolean = False): TFmrButtonItem;
+      const AStyle: TFmrButtonStyle = TFmrButtonStyle.Default): TFmrButtonItem;
     function Check(const AName, ACaption: string; const AChecked: Boolean; const AClick: TNotifyEvent): TFmrCheckItem;
     function Radio(const AParent: TFmrButtonItem; const AName, ACaption: string; const AGroupIndex, ATag: Integer;
       const ADown: Boolean; const AClick: TNotifyEvent): TFmrButtonItem;
@@ -122,17 +122,13 @@ begin
 end;
 
 function TBuilder.Btn(const AName, ACaption: string; const AGlyph: Cardinal; const AClick: TNotifyEvent;
-  const AStyle: TFmrButtonStyle; const ALarge: Boolean): TFmrButtonItem;
+  const AStyle: TFmrButtonStyle): TFmrButtonItem;
 begin
   Result := TFmrButtonItem(M.CreateItem(TFmrButtonItem, AName));
   Result.Caption := ACaption;
   Result.ButtonStyle := AStyle;
   if AGlyph <> 0 then
-  begin
     Result.Glyph.GlyphCode := AGlyph;
-    if ALarge then
-      Result.LargeGlyph.GlyphCode := AGlyph;
-  end;
   Result.OnClick := AClick;
 end;
 
@@ -173,6 +169,8 @@ function TBuilder.Link(const AGroup: TFmrRibbonGroup; const AItem: TFmrBarItem; 
 begin
   Result := AGroup.ItemLinks.AddItem(AItem, ABeginGroup);
   Result.ViewLevels := ALevels;
+  if (ALevels = []) and (AItem.LayoutKind = TFmrLayoutItemKind.Button) and not AItem.Glyph.IsEmpty then
+    Result.ViewLevels := FmrSmallViewLevels;
   Result.ButtonGroup := AButtonGroup;
 end;
 
@@ -463,7 +461,7 @@ begin
 
   { Clipboard }
   G := Group(T, 'grpClipboard', 'Clipboard');
-  B := Btn('btnPaste', 'Paste', FmrGlyphPaste, F.PasteClick, TFmrButtonStyle.Split, True);
+  B := Btn('btnPaste', 'Paste', FmrGlyphPaste, F.PasteClick, TFmrButtonStyle.Split);
   B.KeyTip := 'V';
   Tip(B, 'Paste (Ctrl+V)', 'Add content from the clipboard to the document.');
   B.ScreenTip.ShowShortcut := False;
@@ -532,9 +530,7 @@ begin
     ChangeCase.DropDownLinks.AddItem(B);
   end;
   M.ItemByName('btnCaseUpper').Glyph.GlyphCode := FmrGlyphChangeCase;
-  M.ItemByName('btnCaseUpper').LargeGlyph.GlyphCode := FmrGlyphChangeCase;
   M.ItemByName('btnCaseLower').Glyph.GlyphCode := $E8D2;
-  M.ItemByName('btnCaseLower').LargeGlyph.GlyphCode := $E8D2;
   Link(G, ChangeCase, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
   B := Btn('btnClearFormatting', 'Clear Formatting', FmrGlyphClearFormatting, F.ClearFormattingClick);
   B.KeyTip := 'E';
@@ -679,7 +675,6 @@ begin
   Styles.Caption := 'Styles';
   Styles.KeyTip := 'L';
   SetPath(Styles.Glyph, PathStyle);
-  SetPath(Styles.LargeGlyph, PathStyle);
   Styles.ItemWidth := 72;
   Styles.ItemHeight := 56;
   Styles.MinColumns := 2;
@@ -726,9 +721,8 @@ begin
 
   { Add-ins }
   G := Group(T, 'grpAddins', 'Add-ins');
-  B := Btn('btnAddins', 'Add-ins', 0, F.CommandClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnAddins', 'Add-ins', 0, F.CommandClick, TFmrButtonStyle.Default);
   B.Glyph.SvgSource := SvgAddins;
-  B.LargeGlyph.SvgSource := SvgAddins;
   B.KeyTip := 'Y2';
   Tip(B, 'Add-ins', 'Find add-ins and manage them.');
   Link(G, B, [TFmrViewLevel.Large]);
@@ -763,11 +757,11 @@ begin
 
   { Pages }
   G := Group(T, 'grpPages', 'Pages');
-  B := Btn('btnBlankPage', 'Blank Page', FmrGlyphBlankPage, F.InsertTextClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnBlankPage', 'Blank Page', FmrGlyphBlankPage, F.InsertTextClick, TFmrButtonStyle.Default);
   B.Tag := 1;
   Tip(B, 'Blank Page', 'Insert empty lines at the cursor.');
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-  B := Btn('btnPageBreak', 'Page Break', FmrGlyphPageBreak, F.InsertTextClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnPageBreak', 'Page Break', FmrGlyphPageBreak, F.InsertTextClick, TFmrButtonStyle.Default);
   B.Tag := 0;
   Tip(B, 'Page Break', 'Insert a page break line at the cursor.');
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
@@ -778,7 +772,6 @@ begin
   Table.Caption := 'Table';
   Table.KeyTip := 'T';
   SetPath(Table.Glyph, PathTable);
-  SetPath(Table.LargeGlyph, PathTable);
   Table.ShowInRibbon := False;
   Table.ItemWidth := 84;
   Table.ItemHeight := 70;
@@ -802,7 +795,6 @@ begin
   G := Group(T, 'grpIllustrations', 'Illustrations');
   B := Btn('btnShapes', 'Shapes', 0, nil, TFmrButtonStyle.DropDown);
   SetPath(B.Glyph, PathShapes);
-  SetPath(B.LargeGlyph, PathShapes);
   B.KeyTip := 'SH';
   Tip(B, 'Shapes', 'Insert a symbol shape (square, circle, arrow, star...) at the cursor.');
   Shapes := TFmrGalleryItem(M.CreateItem(TFmrGalleryItem, 'galShapes'));
@@ -823,7 +815,7 @@ begin
 
   { Text }
   G := Group(T, 'grpText', 'Text');
-  B := Btn('btnTextBox', 'Text Box', FmrGlyphTextBox, F.InsertTextClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnTextBox', 'Text Box', FmrGlyphTextBox, F.InsertTextClick, TFmrButtonStyle.Default);
   B.Tag := 4;
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
   B := Btn('btnDateTime', 'Date && Time', $E787, F.InsertTextClick);
@@ -839,7 +831,7 @@ begin
 
   { Links }
   G := Group(T, 'grpLinks', 'Links');
-  B := Btn('btnLink', 'Link', FmrGlyphLink, F.InsertTextClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnLink', 'Link', FmrGlyphLink, F.InsertTextClick, TFmrButtonStyle.Default);
   B.Tag := 5;
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
 
@@ -849,7 +841,6 @@ begin
   Symbols.Caption := 'Symbol';
   Symbols.KeyTip := 'U';
   Symbols.Glyph.GlyphCode := FmrGlyphSymbol;
-  Symbols.LargeGlyph.GlyphCode := FmrGlyphSymbol;
   Symbols.ItemWidth := 32;
   Symbols.ItemHeight := 30;
   Symbols.MinColumns := 3;
@@ -882,19 +873,19 @@ begin
 
   { Page Setup: drop-down menus with radio items }
   G := Group(T, 'grpPageSetup', 'Page Setup');
-  B := Btn('btnMargins', 'Margins', FmrGlyphMargins, nil, TFmrButtonStyle.DropDown, True);
+  B := Btn('btnMargins', 'Margins', FmrGlyphMargins, nil, TFmrButtonStyle.DropDown);
   B.KeyTip := 'M';
   Tip(B, 'Adjust Margins', 'Set the margins of the page.');
   for I := 0 to 3 do
     Radio(B, Pick(['btnMarginsNormal', 'btnMarginsNarrow', 'btnMarginsModerate', 'btnMarginsWide'], I),
       Pick(['Normal', 'Narrow', 'Moderate', 'Wide'], I), 10, I, I = 0, F.MarginsClick);
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-  B := Btn('btnOrientation', 'Orientation', FmrGlyphOrientation, nil, TFmrButtonStyle.DropDown, True);
+  B := Btn('btnOrientation', 'Orientation', FmrGlyphOrientation, nil, TFmrButtonStyle.DropDown);
   B.KeyTip := 'O';
   Radio(B, 'btnPortrait', 'Portrait', 11, 0, True, F.OrientationClick);
   Radio(B, 'btnLandscape', 'Landscape', 11, 1, False, F.OrientationClick);
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-  B := Btn('btnSize', 'Size', FmrGlyphSize, nil, TFmrButtonStyle.DropDown, True);
+  B := Btn('btnSize', 'Size', FmrGlyphSize, nil, TFmrButtonStyle.DropDown);
   B.KeyTip := 'SZ';
   Radio(B, 'btnSizeLetter', 'Letter (21.59 x 27.94 cm)', 12, 0, False, F.PageSizeClick);
   Radio(B, 'btnSizeA4', 'A4 (21 x 29.7 cm)', 12, 1, True, F.PageSizeClick);
@@ -905,7 +896,6 @@ begin
   G := Group(T, 'grpPageBackground', 'Page Background');
   B := Btn('btnWatermark', 'Watermark', 0, nil, TFmrButtonStyle.DropDown);
   SetPath(B.Glyph, PathWatermark);
-  SetPath(B.LargeGlyph, PathWatermark);
   B.KeyTip := 'W';
   Tip(B, 'Watermark', 'Add ghosted text behind the content of the page.');
   for I := 0 to 3 do
@@ -916,13 +906,12 @@ begin
   PageColor.Caption := 'Page Color';
   PageColor.KeyTip := 'PC';
   SetPath(PageColor.Glyph, PathPalette);
-  SetPath(PageColor.LargeGlyph, PathPalette);
   PageColor.AutomaticColor := TAlphaColors.White;
   PageColor.Color := TAlphaColors.Null;
   PageColor.OnClick := F.PageColorClick;
   Tip(PageColor, 'Page Color', 'Change the color of the page.');
   Link(G, PageColor, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-  B := Btn('btnPageBorders', 'Page Borders', FmrGlyphBorders, F.PageBordersClick, TFmrButtonStyle.Check, True);
+  B := Btn('btnPageBorders', 'Page Borders', FmrGlyphBorders, F.PageBordersClick, TFmrButtonStyle.Check);
   B.KeyTip := 'PB';
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
 
@@ -966,7 +955,7 @@ begin
   for I := 0 to 2 do
   begin
     B := Btn(Pick(['btnReadMode', 'btnPrintLayout', 'btnWebLayout'], I), Pick(['Read Mode', 'Print Layout', 'Web Layout'], I),
-      PickGlyph([FmrGlyphReadMode, FmrGlyphPrintLayout, FmrGlyphWebLayout], I), F.ViewModeClick, TFmrButtonStyle.Check, True);
+      PickGlyph([FmrGlyphReadMode, FmrGlyphPrintLayout, FmrGlyphWebLayout], I), F.ViewModeClick, TFmrButtonStyle.Check);
     B.GroupIndex := 3;
     B.Tag := I;
     B.Down := I = 1;
@@ -982,7 +971,7 @@ begin
 
   { Zoom }
   G := Group(T, 'grpZoom', 'Zoom');
-  Zoom := Btn('btnZoom', 'Zoom', FmrGlyphZoom, nil, TFmrButtonStyle.DropDown, True);
+  Zoom := Btn('btnZoom', 'Zoom', FmrGlyphZoom, nil, TFmrButtonStyle.DropDown);
   Zoom.KeyTip := 'Q';
   for I in [50, 75, 125, 150, 200] do
   begin
@@ -991,7 +980,7 @@ begin
     Zoom.DropDownLinks.AddItem(B);
   end;
   Link(G, Zoom, [TFmrViewLevel.Large]);
-  B := Btn('btnZoom100', '100%', FmrGlyphPercent, F.ZoomClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnZoom100', '100%', FmrGlyphPercent, F.ZoomClick, TFmrButtonStyle.Default);
   B.Tag := 100;
   B.KeyTip := 'J';
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
@@ -1012,7 +1001,6 @@ begin
   Themes.Caption := 'Themes';
   Themes.KeyTip := 'TH';
   SetPath(Themes.Glyph, PathPalette);
-  SetPath(Themes.LargeGlyph, PathPalette);
   Themes.ItemWidth := 78;
   Themes.ItemHeight := 60;
   Themes.MinColumns := 2;
@@ -1032,7 +1020,7 @@ begin
   Themes.OnItemClick := F.ThemeItemClick;
   Link(G, Themes);
   // The Modern 2024 themes and "use the system setting" (light or dark like the Windows apps).
-  B := Btn('btnTheme', 'Theme', $E790, nil, TFmrButtonStyle.DropDown, True);
+  B := Btn('btnTheme', 'Theme', $E790, nil, TFmrButtonStyle.DropDown);
   B.KeyTip := 'OT';
   Tip(B, 'Theme', 'Modern 2024 Light, Dark Gray or Dark, or the light or dark mode of Windows.');
   for I := 0 to 3 do
@@ -1043,7 +1031,6 @@ begin
   Accent.Caption := 'Accent';
   Accent.KeyTip := 'AC';
   Accent.Glyph.GlyphCode := $E790;
-  Accent.LargeGlyph.GlyphCode := $E790;
   Accent.ShowInRibbon := False;
   Accent.ItemWidth := 150;
   Accent.ItemHeight := 30;
@@ -1071,11 +1058,11 @@ begin
   Radio(B, 'btnLangEn', 'English', 15, 0, True, F.LanguageClick);
   Radio(B, 'btnLangRu', 'Русский', 15, 1, False, F.LanguageClick);
   Link(G, B);
-  B := Btn('btnCustomize', 'Customize Ribbon...', $E713, F.CustomizeClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnCustomize', 'Customize Ribbon...', $E713, F.CustomizeClick, TFmrButtonStyle.Default);
   B.KeyTip := 'CR';
   Tip(B, 'Customize the Ribbon', 'Add, remove, rename and reorder tabs, groups and commands.');
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText], TFmrButtonGroupPosition.None, True);
-  B := Btn('btnResetRibbon', 'Reset Ribbon', $E72C, F.ResetRibbonClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnResetRibbon', 'Reset Ribbon', $E72C, F.ResetRibbonClick, TFmrButtonStyle.Default);
   B.KeyTip := 'RR';
   Tip(B, 'Reset the Ribbon', 'Go back to the designed layout (undoes every customization).');
   Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
@@ -1100,14 +1087,12 @@ begin
   Link(G, M.ItemByName('btnCaseSentence'), [TFmrViewLevel.SmallWithText]);
   Link(G, M.ItemByName('btnCaseToggle'), [TFmrViewLevel.SmallWithText]);
   G := Group(T, 'grpSelEdit', 'Edit');
-  M.ItemByName('btnCut').LargeGlyph.GlyphCode := FmrGlyphCut;
-  M.ItemByName('btnCopy').LargeGlyph.GlyphCode := FmrGlyphCopy;
   Link(G, M.ItemByName('btnCut'), [TFmrViewLevel.Large]);
   Link(G, M.ItemByName('btnCopy'), [TFmrViewLevel.Large]);
-  B := Btn('btnDeleteSel', 'Delete', FmrGlyphDelete, F.DeleteSelClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnDeleteSel', 'Delete', FmrGlyphDelete, F.DeleteSelClick, TFmrButtonStyle.Default);
   B.Category := 'Selection';
   Link(G, B, [TFmrViewLevel.Large]);
-  B := Btn('btnQuote', 'Add Quotes', $E9B2, F.QuoteClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnQuote', 'Add Quotes', $E9B2, F.QuoteClick, TFmrButtonStyle.Default);
   B.Category := 'Selection';
   Link(G, B, [TFmrViewLevel.Large]);
   G := Group(T, 'grpSelInfo', 'Selection');
@@ -1120,12 +1105,11 @@ begin
   T := Tab('tabSelLines', 'Lines', 'JL');
   T.ContextGroup := Ctx;
   G := Group(T, 'grpSelLines', 'Lines');
-  M.ItemByName('btnSort').LargeGlyph.GlyphCode := FmrGlyphSort;
   Link(G, M.ItemByName('btnSort'), [TFmrViewLevel.Large]);
-  B := Btn('btnReverse', 'Reverse Lines', $E8CB, F.ReverseLinesClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnReverse', 'Reverse Lines', $E8CB, F.ReverseLinesClick, TFmrButtonStyle.Default);
   B.Category := 'Selection';
   Link(G, B, [TFmrViewLevel.Large]);
-  B := Btn('btnTrim', 'Trim Spaces', $E75C, F.TrimClick, TFmrButtonStyle.Default, True);
+  B := Btn('btnTrim', 'Trim Spaces', $E75C, F.TrimClick, TFmrButtonStyle.Default);
   B.Category := 'Selection';
   Link(G, B, [TFmrViewLevel.Large]);
   G := Group(T, 'grpSelLists', 'Lists');

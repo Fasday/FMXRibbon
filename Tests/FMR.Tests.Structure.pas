@@ -335,7 +335,7 @@ var
 begin
   S := TTestStructure.Create;
   try
-    S.Paste.LargeGlyph.ImageIndex := 7;
+    S.Paste.Glyph.ImageIndex := 7;
     S.Paste.ButtonStyle := TFmrButtonStyle.Split;
     S.Paste.DropDownLinks.AddItem(S.Copy);
     S.Paste.ScreenTip.Header := 'Paste (Ctrl+V)';
@@ -372,7 +372,7 @@ begin
       Bold := Manager.FindItem('btnBold') as TFmrButtonItem;
       Styles := Manager.FindItem('galStyles') as TFmrGalleryItem;
       Assert.AreEqual('Paste', Paste.Caption);
-      Assert.AreEqual(7, Integer(Paste.LargeGlyph.ImageIndex));
+      Assert.AreEqual(7, Integer(Paste.Glyph.ImageIndex));
       Assert.AreEqual(TFmrButtonStyle.Split, Paste.ButtonStyle);
       Assert.AreEqual(1, Paste.DropDownLinks.Count);
       Assert.AreSame(Manager.FindItem('btnCopy'), Paste.DropDownLinks[0].Item);

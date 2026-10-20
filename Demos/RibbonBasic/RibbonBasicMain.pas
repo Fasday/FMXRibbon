@@ -97,7 +97,7 @@ type
     procedure DropDownOf(const AItem: TFmrBarItem; const ATab: TFmrRibbonTab);
     function Glyph(const AItem: TFmrBarItem; const ACode: Cardinal): TFmrBarItem;
     function PathGlyph(const AItem: TFmrBarItem; const APath: string): TFmrBarItem;
-    function Btn(const AName, ACaption: string; const ACode: Cardinal = 0; const ALarge: Boolean = False;
+    function Btn(const AName, ACaption: string; const ACode: Cardinal = 0;
       const AStyle: TFmrButtonStyle = TFmrButtonStyle.Default): TFmrButtonItem;
     function Group(const ATab: TFmrRibbonTab; const ACaption: string): TFmrRibbonGroup;
     procedure Link(const AGroup: TFmrRibbonGroup; const AItem: TFmrBarItem; const ALevels: TFmrViewLevels = [];
@@ -268,18 +268,14 @@ begin
   Result := AItem;
 end;
 
-function TRibbonBasicForm.Btn(const AName, ACaption: string; const ACode: Cardinal; const ALarge: Boolean;
+function TRibbonBasicForm.Btn(const AName, ACaption: string; const ACode: Cardinal;
   const AStyle: TFmrButtonStyle): TFmrButtonItem;
 begin
   Result := TFmrButtonItem(FManager.CreateItem(TFmrButtonItem, AName));
   Result.Caption := ACaption;
   Result.ButtonStyle := AStyle;
   if ACode <> 0 then
-  begin
     Result.Glyph.GlyphCode := ACode;
-    if ALarge then
-      Result.LargeGlyph.GlyphCode := ACode;
-  end;
   Result.OnClick := CommandClick;
 end;
 
@@ -295,6 +291,8 @@ var
 begin
   L := AGroup.ItemLinks.AddItem(AItem, ABeginGroup);
   L.ViewLevels := ALevels;
+  if (ALevels = []) and (AItem.LayoutKind = TFmrLayoutItemKind.Button) and not AItem.Glyph.IsEmpty then
+    L.ViewLevels := FmrSmallViewLevels;
   L.ButtonGroup := AButtonGroup;
 end;
 
@@ -349,22 +347,19 @@ begin
     { Home }
     Home := FRibbon.AddTab('Home', 'tabHome');
     G := Group(Home, 'Clipboard');
-    Paste := Btn('btnPaste', 'Paste', $E77F, True, TFmrButtonStyle.Split);
+    Paste := Btn('btnPaste', 'Paste', $E77F, TFmrButtonStyle.Split);
     Paste.ShortCut := scCtrl or Ord('V');
     Paste.ScreenTip.Header := 'Paste (Ctrl+V)';
     Paste.ScreenTip.Description := 'Add content from the Clipboard to your document.';
     Paste.ScreenTip.ShowShortcut := False;
     Paste.ScreenTip.ShowFooter := True;
     Sub := Btn('btnPasteKeep', 'Keep Source Formatting', $E77F);
-    Sub.LargeGlyph.GlyphCode := $E77F;
     Sub.Description := 'Paste the content with the formatting of its source.';
     Paste.DropDownLinks.AddItem(Sub);
     Sub := Btn('btnPasteMerge', 'Merge Formatting', $E8D2);
-    Sub.LargeGlyph.GlyphCode := $E8D2;
     Sub.Description := 'Paste and use the formatting of the surrounding text.';
     Paste.DropDownLinks.AddItem(Sub);
     Sub := Btn('btnPasteText', 'Keep Text Only', $E8E9);
-    Sub.LargeGlyph.GlyphCode := $E8E9;
     Sub.Description := 'Paste the text without any formatting, pictures or tables.';
     Paste.DropDownLinks.AddItem(Sub);
     Sub := Btn('btnPasteSpecial', 'Paste Special...', 0);
@@ -399,14 +394,14 @@ begin
     FontSize.Text := '11';
     FontSize.Width := 52;
     Link(G, FontSize, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member, True);
-    Bold := Btn('btnBold', 'Bold', $E8DD, False, TFmrButtonStyle.Check);
+    Bold := Btn('btnBold', 'Bold', $E8DD, TFmrButtonStyle.Check);
     Bold.ShortCut := scCtrl or Ord('B');
     Bold.Hint := 'Make the text bold.';
-    Italic := Btn('btnItalic', 'Italic', $E8DB, False, TFmrButtonStyle.Check);
+    Italic := Btn('btnItalic', 'Italic', $E8DB, TFmrButtonStyle.Check);
     Italic.ShortCut := scCtrl or Ord('I');
-    Underline := Btn('btnUnderline', 'Underline', $E8DC, False, TFmrButtonStyle.Check);
+    Underline := Btn('btnUnderline', 'Underline', $E8DC, TFmrButtonStyle.Check);
     Underline.ShortCut := scCtrl or Ord('U');
-    Strike := Btn('btnStrike', 'Strikethrough', $EDE0, False, TFmrButtonStyle.Check);
+    Strike := Btn('btnStrike', 'Strikethrough', $EDE0, TFmrButtonStyle.Check);
     Link(G, Bold, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
     Link(G, Italic, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     Link(G, Underline, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
@@ -436,30 +431,30 @@ begin
     G.OnDialogLauncherClick := LauncherClick;
 
     G := Group(Home, 'Paragraph');
-    Bullets := TFmrButtonItem(Glyph(Btn('btnBullets', 'Bullets', 0, False, TFmrButtonStyle.Split), $E8FD));
+    Bullets := TFmrButtonItem(Glyph(Btn('btnBullets', 'Bullets', 0, TFmrButtonStyle.Split), $E8FD));
     for I := 1 to 3 do
       Bullets.DropDownLinks.AddItem(Btn('btnBullet' + IntToStr(I), 'Bullet Style ' + IntToStr(I), $E8FD));
-    Numbering := TFmrButtonItem(PathGlyph(Btn('btnNumbering', 'Numbering', 0, False, TFmrButtonStyle.Split),
+    Numbering := TFmrButtonItem(PathGlyph(Btn('btnNumbering', 'Numbering', 0, TFmrButtonStyle.Split),
       PathNumbering));
     Numbering.DropDownLinks.AddItem(Btn('btnNum1', '1. 2. 3.', 0));
     Numbering.DropDownLinks.AddItem(Btn('btnNum2', 'a) b) c)', 0));
-    Spacing := TFmrButtonItem(PathGlyph(Btn('btnSpacing', 'Line Spacing', 0, False, TFmrButtonStyle.DropDown),
+    Spacing := TFmrButtonItem(PathGlyph(Btn('btnSpacing', 'Line Spacing', 0, TFmrButtonStyle.DropDown),
       PathLineSpacing));
     for S in ['1.0', '1.15', '1.5', '2.0', '2.5', '3.0'] do
-      Spacing.DropDownLinks.AddItem(Btn('', S, 0, False, TFmrButtonStyle.Check));
+      Spacing.DropDownLinks.AddItem(Btn('', S, 0, TFmrButtonStyle.Check));
     Link(G, Bullets, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
     Link(G, Numbering, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
-    AL := Btn('btnAlignLeft', 'Align Left', $E8E4, False, TFmrButtonStyle.Check);
+    AL := Btn('btnAlignLeft', 'Align Left', $E8E4, TFmrButtonStyle.Check);
     AL.GroupIndex := 1;
     AL.Down := True;
     AL.ShortCut := scCtrl or Ord('L');
-    AC := Btn('btnAlignCenter', 'Center', $E8E3, False, TFmrButtonStyle.Check);
+    AC := Btn('btnAlignCenter', 'Center', $E8E3, TFmrButtonStyle.Check);
     AC.GroupIndex := 1;
     AC.ShortCut := scCtrl or Ord('E');
-    AR := Btn('btnAlignRight', 'Align Right', $E8E2, False, TFmrButtonStyle.Check);
+    AR := Btn('btnAlignRight', 'Align Right', $E8E2, TFmrButtonStyle.Check);
     AR.GroupIndex := 1;
     AR.ShortCut := scCtrl or Ord('R');
-    AJ := TFmrButtonItem(PathGlyph(Btn('btnJustify', 'Justify', 0, False, TFmrButtonStyle.Check), PathJustify));
+    AJ := TFmrButtonItem(PathGlyph(Btn('btnJustify', 'Justify', 0, TFmrButtonStyle.Check), PathJustify));
     AJ.GroupIndex := 1;
     AJ.ShortCut := scCtrl or Ord('J');
     Link(G, AL, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
@@ -473,7 +468,7 @@ begin
     Shading.ShowNoColor := True;
     Shading.OnClick := CommandClick;
     Link(G, Shading, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Start);
-    B := Btn('btnShowMarks', 'Show/Hide', $E8C1, False, TFmrButtonStyle.Check);
+    B := Btn('btnShowMarks', 'Show/Hide', $E8C1, TFmrButtonStyle.Check);
     Link(G, B, [TFmrViewLevel.Small], TFmrButtonGroupPosition.Member);
     G.ShowDialogLauncher := True;
     G.OnDialogLauncherClick := LauncherClick;
@@ -487,7 +482,7 @@ begin
     G.OnDialogLauncherClick := LauncherClick;
 
     G := Group(Home, 'Editing');
-    Find := Btn('btnFind', 'Find', $E721, False, TFmrButtonStyle.Split);
+    Find := Btn('btnFind', 'Find', $E721, TFmrButtonStyle.Split);
     Find.ShortCut := scCtrl or Ord('F');
     Find.DropDownLinks.AddItem(Btn('btnFindAdv', 'Advanced Find...', $E721));
     Find.DropDownLinks.AddItem(Btn('btnGoTo', 'Go To...', 0));
@@ -495,7 +490,7 @@ begin
     B := Btn('btnReplace', 'Replace', $E8AB);
     B.ShortCut := scCtrl or Ord('H');
     Link(G, B, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
-    Select := Btn('btnSelect', 'Select', $E8B3, False, TFmrButtonStyle.DropDown);
+    Select := Btn('btnSelect', 'Select', $E8B3, TFmrButtonStyle.DropDown);
     Select.DropDownLinks.AddItem(Btn('btnSelectAll', 'Select All', $E8B3));
     Select.DropDownLinks.AddItem(Btn('btnSelectObjects', 'Select Objects', 0));
     Link(G, Select, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small]);
@@ -518,27 +513,23 @@ begin
     // A drop-down gallery shown by a large button: group filter, owner-drawn pages, commands, resize grip.
     FCover := BuildCoverGallery;
     Link(G, FCover, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnBlankPage', 'Blank Page', $E7C3, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnPageBreak', 'Page Break', $E7C3, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnBlankPage', 'Blank Page', $E7C3), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnPageBreak', 'Page Break', $E7C3), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     G := Group(Insert, 'Tables');
-    B := TFmrButtonItem(PathGlyph(Btn('btnTable', 'Table', 0, False, TFmrButtonStyle.DropDown), PathTable));
-    B.LargeGlyph.PathData := PathTable;
-    B.LargeGlyph.PathViewBox := 24;
+    B := TFmrButtonItem(PathGlyph(Btn('btnTable', 'Table', 0, TFmrButtonStyle.DropDown), PathTable));
     B.DropDownLinks.AddItem(Btn('btnInsertTable', 'Insert Table...', 0));
     B.DropDownLinks.AddItem(Btn('btnDrawTable', 'Draw Table', $E70F));
     Link(G, B, [TFmrViewLevel.Large]);
-    FShowTableTools := Btn('btnTableTools', 'Table Tools', 0, False, TFmrButtonStyle.Check);
+    FShowTableTools := Btn('btnTableTools', 'Table Tools', 0, TFmrButtonStyle.Check);
     FShowTableTools.Glyph.PathData := PathTable;
     FShowTableTools.Glyph.PathViewBox := 24;
-    FShowTableTools.LargeGlyph.PathData := PathTable;
-    FShowTableTools.LargeGlyph.PathViewBox := 24;
     FShowTableTools.Hint := 'Show the contextual Table Tools tabs.';
     FShowTableTools.OnClick := TableToolsClick;
     Link(G, FShowTableTools, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     G := Group(Insert, 'Illustrations');
-    Link(G, Btn('btnPictures', 'Pictures', $E8B9, True), [TFmrViewLevel.Large]);
+    Link(G, Btn('btnPictures', 'Pictures', $E8B9), [TFmrViewLevel.Large]);
     // A drop-down menu whose links contain a gallery: the gallery is shown inline, the commands below it.
-    B := TFmrButtonItem(PathGlyph(Btn('btnShapes', 'Shapes', 0, False, TFmrButtonStyle.DropDown), PathShapes));
+    B := TFmrButtonItem(PathGlyph(Btn('btnShapes', 'Shapes', 0, TFmrButtonStyle.DropDown), PathShapes));
     B.KeyTip := 'SH';
     FShapesButton := B;
     FShapes := BuildShapesGallery;
@@ -548,19 +539,19 @@ begin
     Link(G, Btn('btnIcons', 'Icons', $E76E));
     Link(G, PathGlyph(Btn('btnChart', 'Chart'), PathChart));
     G := Group(Insert, 'Links');
-    Link(G, Btn('btnLink', 'Link', $E71B, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnBookmark', 'Bookmark', $E8A4, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnComment', 'Comment', $E90A, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnLink', 'Link', $E71B), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnBookmark', 'Bookmark', $E8A4), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnComment', 'Comment', $E90A), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     G := Group(Insert, 'Header && Footer');
     for S in ['Header', 'Footer', 'Page Number'] do
     begin
-      B := Btn('', S, $E7C3, True, TFmrButtonStyle.DropDown);
+      B := Btn('', S, $E7C3, TFmrButtonStyle.DropDown);
       B.DropDownLinks.AddItem(Btn('', 'Blank', 0));
       B.DropDownLinks.AddItem(Btn('', 'Remove ' + S, 0));
       Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     end;
     G := Group(Insert, 'Text');
-    Link(G, Btn('btnTextBox', 'Text Box', $E8D2, True), [TFmrViewLevel.Large]);
+    Link(G, Btn('btnTextBox', 'Text Box', $E8D2), [TFmrViewLevel.Large]);
     Link(G, Btn('btnTextEffects', 'Text Effects', $E8D2));
     Link(G, Btn('btnDropCap', 'Drop Cap', $E8D2));
     Link(G, Btn('btnSignature', 'Signature Line', $E70F));
@@ -568,24 +559,20 @@ begin
     { Layout }
     LayoutTab := FRibbon.AddTab('Layout', 'tabLayout');
     G := Group(LayoutTab, 'Page Setup');
-    B := TFmrButtonItem(PathGlyph(Btn('btnMargins', 'Margins', 0, False, TFmrButtonStyle.DropDown), PathMargins));
-    B.LargeGlyph.PathData := PathMargins;
-    B.LargeGlyph.PathViewBox := 24;
+    B := TFmrButtonItem(PathGlyph(Btn('btnMargins', 'Margins', 0, TFmrButtonStyle.DropDown), PathMargins));
     B.DropDownLinks.AddItem(Btn('', 'Normal', 0));
     B.DropDownLinks.AddItem(Btn('', 'Narrow', 0));
     B.DropDownLinks.AddItem(Btn('', 'Wide', 0));
     Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    B := Btn('btnOrientation', 'Orientation', $E7AD, True, TFmrButtonStyle.DropDown);
-    B.DropDownLinks.AddItem(Btn('', 'Portrait', 0, False, TFmrButtonStyle.Check));
-    B.DropDownLinks.AddItem(Btn('', 'Landscape', 0, False, TFmrButtonStyle.Check));
+    B := Btn('btnOrientation', 'Orientation', $E7AD, TFmrButtonStyle.DropDown);
+    B.DropDownLinks.AddItem(Btn('', 'Portrait', 0, TFmrButtonStyle.Check));
+    B.DropDownLinks.AddItem(Btn('', 'Landscape', 0, TFmrButtonStyle.Check));
     Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    B := Btn('btnSize', 'Size', $E740, True, TFmrButtonStyle.DropDown);
+    B := Btn('btnSize', 'Size', $E740, TFmrButtonStyle.DropDown);
     B.DropDownLinks.AddItem(Btn('', 'Letter', 0));
     B.DropDownLinks.AddItem(Btn('', 'A4', 0));
     Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    B := TFmrButtonItem(PathGlyph(Btn('btnColumns', 'Columns', 0, False, TFmrButtonStyle.DropDown), PathColumns));
-    B.LargeGlyph.PathData := PathColumns;
-    B.LargeGlyph.PathViewBox := 24;
+    B := TFmrButtonItem(PathGlyph(Btn('btnColumns', 'Columns', 0, TFmrButtonStyle.DropDown), PathColumns));
     B.DropDownLinks.AddItem(Btn('', 'One', 0));
     B.DropDownLinks.AddItem(Btn('', 'Two', 0));
     Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
@@ -616,9 +603,9 @@ begin
     G.ShowDialogLauncher := True;
     G.OnDialogLauncherClick := LauncherClick;
     G := Group(LayoutTab, 'Arrange');
-    Link(G, Btn('btnPosition', 'Position', $E8B9, True, TFmrButtonStyle.DropDown),
+    Link(G, Btn('btnPosition', 'Position', $E8B9, TFmrButtonStyle.DropDown),
       [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
-    Link(G, Btn('btnWrap', 'Wrap Text', $E8B9, True, TFmrButtonStyle.DropDown),
+    Link(G, Btn('btnWrap', 'Wrap Text', $E8B9, TFmrButtonStyle.DropDown),
       [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Link(G, Btn('btnForward', 'Bring Forward', $E8B9));
     Link(G, Btn('btnBackward', 'Send Backward', $E8B9));
@@ -629,7 +616,7 @@ begin
     G := Group(View, 'Views');
     for S in ['Read Mode', 'Print Layout', 'Web Layout'] do
     begin
-      B := Btn('', S, $E7C3, True, TFmrButtonStyle.Check);
+      B := Btn('', S, $E7C3, TFmrButtonStyle.Check);
       B.GroupIndex := 3;
       if S = 'Print Layout' then
         B.Down := True;
@@ -645,8 +632,8 @@ begin
       Link(G, Check);
     end;
     G := Group(View, 'Zoom');
-    Link(G, Btn('btnZoom', 'Zoom', $E71E, True), [TFmrViewLevel.Large]);
-    Link(G, Btn('btnZoom100', '100%', $E71E, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnZoom', 'Zoom', $E71E), [TFmrViewLevel.Large]);
+    Link(G, Btn('btnZoom100', '100%', $E71E), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Track := TFmrTrackBarItem(FManager.CreateItem(TFmrTrackBarItem, 'tbZoom'));
     Track.Caption := 'Zoom';
     Track.Min := 10;
@@ -655,12 +642,12 @@ begin
     Track.Width := 110;
     Link(G, Track, [TFmrViewLevel.SmallWithText, TFmrViewLevel.Small], TFmrButtonGroupPosition.None, True);
     G := Group(View, 'Touch');
-    B := Btn('btnRadialMenu', 'Radial Menu', $E7F4, True);
+    B := Btn('btnRadialMenu', 'Radial Menu', $E7F4);
     B.Hint := 'Show the radial menu at the mouse pointer.';
     B.OnClick := RadialClick;
     Link(G, B, [TFmrViewLevel.Large]);
     G := Group(View, 'Window');
-    Link(G, Btn('btnNewWindow', 'New Window', $E78B, True), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+    Link(G, Btn('btnNewWindow', 'New Window', $E78B), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Link(G, Btn('btnArrange', 'Arrange All', $E80A));
     Link(G, Btn('btnSplit', 'Split', $E80A));
     Link(G, Btn('btnSideBySide', 'View Side by Side', $E80A));
@@ -681,23 +668,20 @@ begin
     G := Group(TDesign, 'Table Styles');
     for I := 1 to 4 do
     begin
-      B := Btn('', 'Style ' + IntToStr(I), 0, False, TFmrButtonStyle.Check);
+      B := Btn('', 'Style ' + IntToStr(I), 0, TFmrButtonStyle.Check);
       B.GroupIndex := 4;
       B.Glyph.PathData := PathTable;
       B.Glyph.PathViewBox := 24;
-      B.LargeGlyph.PathData := PathTable;
-      B.LargeGlyph.PathViewBox := 24;
       Link(G, B, [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     end;
     G := Group(TDesign, 'Borders');
     Item := FManager.CreateItem(TFmrColorItem, 'clrTableShading');
     Item.Caption := 'Shading';
     Item.Glyph.GlyphCode := $E790;
-    Item.LargeGlyph.GlyphCode := $E790;
     TFmrColorItem(Item).Color := TAlphaColor($FFDDEBF7);
     Item.OnClick := CommandClick;
     Link(G, Item, [TFmrViewLevel.Large]);
-    B := Btn('btnBorders', 'Borders', $E80A, True, TFmrButtonStyle.Split);
+    B := Btn('btnBorders', 'Borders', $E80A, TFmrButtonStyle.Split);
     B.DropDownLinks.AddItem(Btn('', 'All Borders', $E80A));
     B.DropDownLinks.AddItem(Btn('', 'No Border', 0));
     Link(G, B, [TFmrViewLevel.Large]);
@@ -705,10 +689,10 @@ begin
     TLayout.ContextGroup := FTableTools;
     G := Group(TLayout, 'Rows && Columns');
     for S in ['Insert Above', 'Insert Below'] do
-      Link(G, PathGlyph(Btn('', S, 0, True), PathRows), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
+      Link(G, PathGlyph(Btn('', S, 0), PathRows), [TFmrViewLevel.Large, TFmrViewLevel.SmallWithText]);
     Link(G, PathGlyph(Btn('btnInsLeft', 'Insert Left'), PathColumns));
     Link(G, PathGlyph(Btn('btnInsRight', 'Insert Right'), PathColumns));
-    Link(G, Btn('btnDelete', 'Delete', $E74D, False, TFmrButtonStyle.DropDown));
+    Link(G, Btn('btnDelete', 'Delete', $E74D, TFmrButtonStyle.DropDown));
     G := Group(TLayout, 'Merge');
     Link(G, PathGlyph(Btn('btnMerge', 'Merge Cells'), PathTable));
     Link(G, PathGlyph(Btn('btnSplitCells', 'Split Cells'), PathTable));
@@ -952,8 +936,6 @@ begin
   Result := TFmrRibbonGalleryItem(FManager.CreateItem(TFmrRibbonGalleryItem, 'galStyles'));
   Result.Caption := 'Styles';
   Result.KeyTip := 'L';
-  Result.LargeGlyph.PathData := PathStyle;
-  Result.LargeGlyph.PathViewBox := 24;
   Result.Glyph.PathData := PathStyle;
   Result.Glyph.PathViewBox := 24;
   Result.ItemWidth := 76;
@@ -992,7 +974,6 @@ begin
   Result.Caption := 'Cover Page';
   Result.KeyTip := 'NV';
   Result.Glyph.GlyphCode := $E8A5;
-  Result.LargeGlyph.GlyphCode := $E8A5;
   Result.ShowInRibbon := False;
   Result.CaptionPosition := TFmrGalleryCaptionPosition.Bottom;
   Result.ItemWidth := 104;
@@ -1217,7 +1198,6 @@ var
   function Large(const AItem: TFmrBarItem; const ACode: Cardinal; const ADescription: string = ''): TFmrBarItem;
   begin
     AItem.Glyph.GlyphCode := ACode;
-    AItem.LargeGlyph.GlyphCode := ACode;
     AItem.Description := ADescription;
     Result := AItem;
   end;
@@ -1230,7 +1210,7 @@ begin
   FAppMenu07.ItemLinks.AddItem(Large(FManager.ItemByName('btnNew'), $E8A5));
   FAppMenu07.ItemLinks.AddItem(Large(FManager.ItemByName('btnOpen'), $E8E5));
   FAppMenu07.ItemLinks.AddItem(Large(FManager.ItemByName('btnSave'), $E74E));
-  SaveAs := Large(Btn('btnSaveAs07', 'Save &As', 0, False, TFmrButtonStyle.Split), $E792,
+  SaveAs := Large(Btn('btnSaveAs07', 'Save &As', 0, TFmrButtonStyle.Split), $E792,
     'Save a copy of the document');
   B := TFmrButtonItem(SaveAs);
   B.DropDownLinks.AddItem(Large(Btn('btnSaveDocx', 'Document'), $E8A5,
@@ -1242,7 +1222,7 @@ begin
   B.DropDownLinks.AddItem(Large(Btn('btnSaveOther', 'Other Formats'), $E792,
     'Open the Save As dialog box to select from all possible file types.'));
   FAppMenu07.ItemLinks.AddItem(SaveAs, True);
-  Print := Large(Btn('btnPrint07', '&Print', 0, False, TFmrButtonStyle.Split), $E749,
+  Print := Large(Btn('btnPrint07', '&Print', 0, TFmrButtonStyle.Split), $E749,
     'Preview and print the document');
   B := TFmrButtonItem(Print);
   B.DropDownLinks.AddItem(Large(Btn('btnPrintDialog', 'Print'), $E749,
